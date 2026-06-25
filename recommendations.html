@@ -1,5 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recommendations — Tyler Nakai Janczak</title>
+  <meta name="description" content="Recommendations and references for Tyler Nakai Janczak — healthcare technology and SaaS implementation leadership." />
 
- 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:          #F7F4EE;
+      --bg-subtle:   #EFEAE0;
+      --ink:         #1B1B1B;
+      --ink-soft:    #4A4A48;
+      --rule:        #D9D2C4;
+      --accent:      #6B1F1F;
+      --display:     "Fraunces", Georgia, serif;
+      --body:        "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* Masthead */
+    .masthead {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 0;
+      margin-bottom: 80px;
+    }
+
+    .masthead-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+
+    .masthead-mark {
+      font-family: var(--display);
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    .back-link {
+      color: var(--ink-soft);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 1px;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover { color: var(--accent); }
+
+    /* Page header */
+    .page-header {
+      margin-bottom: 80px;
+      text-align: center;
+    }
+
+    .page-header .eyebrow {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .page-header h1 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(40px, 6vw, 56px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      font-variation-settings: "opsz" 144;
+    }
+
+    .page-header .lead {
+      font-family: var(--display);
+      font-size: 20px;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--ink-soft);
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+
+    /* Recommendations */
+    .recommendations {
+      margin-bottom: 100px;
+    }
+
+    .recommendation {
+      padding: 64px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .recommendation:first-child { padding-top: 32px; }
+    .recommendation:last-child  { border-bottom: none; }
+
+    /* The quote */
+    .recommendation-quote {
+      font-family: var(--display);
+      font-size: clamp(20px, 2.6vw, 24px);
+      font-weight: 300;
+      line-height: 1.55;
+      color: var(--ink);
+      margin-bottom: 48px;
+      position: relative;
+      padding-left: 36px;
+    }
+
+    .recommendation-quote::before {
+      content: '\201C';
+      position: absolute;
+      left: 0;
+      top: -8px;
+      font-size: 64px;
+      line-height: 1;
+      color: var(--accent);
+      font-family: var(--display);
+      font-weight: 400;
+    }
+
+    .recommendation-quote p {
+      margin-bottom: 14px;
+    }
+
+    .recommendation-quote p:last-child { margin-bottom: 0; }
+
+    /* Electronically signed marker — the seal */
+    .signed-marker {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding-left: 36px;
+    }
+
+    .signed-marker-line {
+      width: 28px;
+      height: 1px;
+      background: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .signed-marker-line.long {
+      flex: 1;
+    }
+
+    .signed-marker-text {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.26em;
+      color: var(--accent);
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .signed-marker-check {
+      width: 11px;
+      height: 11px;
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* Attribution */
+    .attribution {
+      padding-left: 36px;
+    }
+
+    .attribution-name {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 19px;
+      color: var(--ink);
+      display: block;
+      margin-bottom: 4px;
+      letter-spacing: -0.005em;
+    }
+
+    .attribution-role {
+      color: var(--ink-soft);
+      font-size: 14px;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .attribution-context {
+      color: var(--ink-soft);
+      font-size: 13px;
+      font-style: italic;
+      display: block;
+    }
+
+    /* References note */
+    .references-note {
+      background: var(--bg-subtle);
+      border-left: 3px solid var(--accent);
+      padding: 40px 36px;
+      margin-bottom: 60px;
+    }
+
+    .references-note h2 {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .references-note p {
+      font-size: 16px;
+      color: var(--ink-soft);
+      line-height: 1.6;
+    }
+
+    .references-note a {
+      color: var(--ink);
+      border-bottom: 1px solid var(--accent);
+      text-decoration: none;
+      padding-bottom: 1px;
+    }
+
+    .references-note a:hover {
+      background: rgba(107, 31, 31, 0.08);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 36px 0 64px;
+      margin-top: 60px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+
+    footer .container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 0 24px; }
+      .masthead { margin-bottom: 56px; }
+      .page-header { margin-bottom: 56px; }
+      .recommendation { padding: 48px 0; }
+      .recommendation-quote { padding-left: 24px; font-size: 18px; margin-bottom: 36px; }
+      .recommendation-quote::before { font-size: 48px; }
+      .signed-marker { padding-left: 24px; gap: 10px; }
+      .signed-marker-text { font-size: 9px; letter-spacing: 0.2em; }
+      .signed-marker-line { width: 16px; }
+      .attribution { padding-left: 24px; }
+      .references-note { padding: 32px 24px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <a href="index.html" class="back-link">← Back</a>
+      <span class="masthead-mark">TNJ</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ============================================
+         PAGE HEADER
+         ============================================ -->
+    <section class="page-header">
+      <div class="eyebrow">Recommendations</div>
+      <h1>What colleagues and clients have said.</h1>
+      <p class="lead">
+        Selected feedback from leaders, peers, and clinical colleagues
+        — each electronically signed and verified through LinkedIn.
+      </p>
+    </section>
+
+    <!-- ============================================
+         RECOMMENDATIONS
+         ============================================ -->
+    <section class="recommendations">
+
+      <!-- ===== Jeff Zoeller ===== -->
       <article class="recommendation">
         <div class="recommendation-quote">
           <p>
@@ -10,18 +328,22 @@
             before.
           </p>
         </div>
+        <div class="signed-marker">
+          <span class="signed-marker-line"></span>
+          <span class="signed-marker-text">Electronically signed &amp; verified by</span>
+          <svg class="signed-marker-check" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 6.5L4.5 9L10 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="signed-marker-line long"></span>
+        </div>
         <div class="attribution">
-          <div class="attribution-rule"></div>
-          <div class="attribution-text">
-            <span class="attribution-name">Jeff Zoeller</span>
-            <span class="attribution-role">Senior Vice President, Compass Group</span>
-            <span class="attribution-context">Managed Tyler directly in the CORE Solutions division, 2026</span>
-          </div>
+          <span class="attribution-name">Jeff Zoeller</span>
+          <span class="attribution-role">Senior Vice President, Compass Group</span>
+          <span class="attribution-context">Managed Tyler directly in the CORE Solutions division, 2026</span>
         </div>
       </article>
 
-
-
+      <!-- ===== Brendan McEvoy ===== -->
       <article class="recommendation">
         <div class="recommendation-quote">
           <p>
@@ -37,17 +359,22 @@
             their jobs better and more efficiently.
           </p>
         </div>
+        <div class="signed-marker">
+          <span class="signed-marker-line"></span>
+          <span class="signed-marker-text">Electronically signed &amp; verified by</span>
+          <svg class="signed-marker-check" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 6.5L4.5 9L10 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="signed-marker-line long"></span>
+        </div>
         <div class="attribution">
-          <div class="attribution-rule"></div>
-          <div class="attribution-text">
-            <span class="attribution-name">Brendan McEvoy, MD</span>
-            <span class="attribution-role">Emergency Physician, Chicago</span>
-            <span class="attribution-context">Worked together in the ED at Carle Foundation Hospital, 2022–2023</span>
-          </div>
+          <span class="attribution-name">Brendan McEvoy, MD</span>
+          <span class="attribution-role">Emergency Physician, Chicago</span>
+          <span class="attribution-context">Worked together in the ED at Carle Foundation Hospital, 2022–2023</span>
         </div>
       </article>
 
-
+      <!-- ===== Dr. Nicole Godlock ===== -->
       <article class="recommendation">
         <div class="recommendation-quote">
           <p>
@@ -59,12 +386,44 @@
             implementation projects.
           </p>
         </div>
+        <div class="signed-marker">
+          <span class="signed-marker-line"></span>
+          <span class="signed-marker-text">Electronically signed &amp; verified by</span>
+          <svg class="signed-marker-check" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2 6.5L4.5 9L10 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="signed-marker-line long"></span>
+        </div>
         <div class="attribution">
-          <div class="attribution-rule"></div>
-          <div class="attribution-text">
-            <span class="attribution-name">Dr. Nicole Godlock, DBA, MS</span>
-            <span class="attribution-role">Senior Director, Technology Delivery</span>
-            <span class="attribution-context">Managed Tyler at Cardinal Health, 2024–2025</span>
-          </div>
+          <span class="attribution-name">Dr. Nicole Godlock, DBA, MS</span>
+          <span class="attribution-role">Senior Director, Technology Delivery</span>
+          <span class="attribution-context">Managed Tyler directly at Cardinal Health, 2024–2025</span>
         </div>
       </article>
+
+    </section>
+
+    <!-- ============================================
+         REFERENCES-ON-REQUEST CALLOUT
+         ============================================ -->
+    <aside class="references-note">
+      <h2>Formal references available on request.</h2>
+      <p>
+        Additional references from health system clients, direct reports, and clinical
+        partners available upon request. <a href="mailto:tjanczak13@gmail.com">Reach out by email</a>
+        and I'll connect you directly.
+      </p>
+    </aside>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>© 2026 Tyler Nakai Janczak</span>
+      <span><a href="index.html">Back to main page</a></span>
+    </div>
+  </footer>
+
+</body>
+</html>
+

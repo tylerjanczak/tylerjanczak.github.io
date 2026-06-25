@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tyler Nakai Janczak</title>
+  <meta name="description" content="Healthcare technology leader. SaaS implementation, customer onboarding, and post-go-live programs across multi-site enterprise environments." />
+
+  <!-- Editorial serif + clean sans pairing -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       Design tokens
+       ============================================ */
+    :root {
+      --bg:          #F7F4EE;       /* warm off-white */
+      --bg-subtle:   #EFEAE0;       /* slightly deeper warm */
+      --ink:         #1B1B1B;       /* near-black text */
+      --ink-soft:    #4A4A48;       /* muted text */
+      --rule:        #D9D2C4;       /* hairline color */
+      --accent:      #6B1F1F;       /* deep oxblood — used sparingly */
+      --display:     "Fraunces", Georgia, serif;
+      --body:        "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================
+       Layout — single column, generous margins
+       ============================================ */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ============================================
+       Masthead — magazine-style top strip
+       ============================================ */
+    .masthead {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 0;
+      margin-bottom: 90px;
+    }
+
+    .masthead-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+
+    .masthead-mark {
+      font-family: var(--display);
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    /* ============================================
+       Hero
+       ============================================ */
+    .hero {
+      margin-bottom: 80px;
+    }
+
+    .hero-eyebrow {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--ink-soft);
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(48px, 8vw, 76px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+      font-variation-settings: "opsz" 144;
+    }
+
+    .hero-tagline {
+      font-family: var(--display);
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--ink-soft);
+      max-width: 600px;
+    }
+
+    /* ============================================
+       Section structure
+       ============================================ */
+    section {
+      margin-bottom: 100px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      color: var(--accent);
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .section-heading {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(32px, 5vw, 42px);
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      margin-bottom: 36px;
+      max-width: 600px;
+    }
+
+    /* Lead paragraph */
+    .lead {
+      font-family: var(--display);
+      font-size: 22px;
+      line-height: 1.55;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+
+    .lead .accent {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    /* ============================================
+       Body prose
+       ============================================ */
+    p { margin-bottom: 18px; }
+
+    p.large { font-size: 18px; }
+
+    a {
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: 1px;
+      transition: background 0.15s;
+    }
+
+    a:hover {
+      background: rgba(107, 31, 31, 0.08);
+    }
+
+    /* ============================================
+       Numbers section — editorial stat block
+       ============================================ */
+    .numbers {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 56px 48px;
+      padding: 56px 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .stat-figure {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(48px, 7vw, 68px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      font-variation-settings: "opsz" 144;
+    }
+
+    .stat-figure .unit {
+      font-size: 0.55em;
+      color: var(--ink-soft);
+      margin-left: 4px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      line-height: 1.45;
+      color: var(--ink-soft);
+      max-width: 240px;
+    }
+
+    /* ============================================
+       Experience list
+       ============================================ */
+    .role {
+      padding: 32px 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .role:last-child { border-bottom: none; }
+
+    .role-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 24px;
+      margin-bottom: 6px;
+      flex-wrap: wrap;
+    }
+
+    .role-title {
+      font-family: var(--display);
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1.25;
+    }
+
+    .role-dates {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .role-company {
+      font-size: 15px;
+      color: var(--ink-soft);
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+
+    .role-body {
+      font-size: 16px;
+      line-height: 1.65;
+      max-width: 640px;
+    }
+
+    /* ============================================
+       Pull-quote — the signature element
+       ============================================ */
+    .pullquote {
+      margin: 100px -32px;
+      padding: 72px 48px;
+      background: var(--bg-subtle);
+      border-left: 3px solid var(--accent);
+    }
+
+    .pullquote p {
+      font-family: var(--display);
+      font-size: clamp(24px, 3.6vw, 32px);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.4;
+      letter-spacing: -0.005em;
+      color: var(--ink);
+      max-width: 580px;
+      margin: 0;
+    }
+
+    .pullquote-attr {
+      font-family: var(--body);
+      font-size: 12px;
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--ink-soft);
+      margin-top: 28px;
+      display: block;
+    }
+
+    /* ============================================
+       Credentials
+       ============================================ */
+    .credential-group {
+      margin-bottom: 36px;
+    }
+
+    .credential-group h3 {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+
+    .credential-group p {
+      color: var(--ink-soft);
+      font-size: 16px;
+      margin-bottom: 6px;
+    }
+
+    .cert-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 10px;
+      margin-top: 16px;
+    }
+
+    .cert {
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      padding: 5px 12px;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      color: var(--ink-soft);
+      background: var(--bg);
+    }
+
+    /* ============================================
+       Contact
+       ============================================ */
+    .contact {
+      padding-top: 24px;
+    }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px 28px;
+      font-size: 17px;
+      margin-top: 32px;
+    }
+
+    .contact-grid dt {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+      padding-top: 4px;
+    }
+
+    .contact-grid dd { font-family: var(--display); font-size: 19px; }
+
+    /* ============================================
+       Footer
+       ============================================ */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 36px 0 64px;
+      margin-top: 80px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    /* ============================================
+       Responsive
+       ============================================ */
+    @media (max-width: 640px) {
+      .container { padding: 0 24px; }
+      .masthead { margin-bottom: 60px; }
+      .hero, section { margin-bottom: 72px; }
+      .numbers { grid-template-columns: 1fr; gap: 40px; }
+      .pullquote { margin: 72px -24px; padding: 56px 32px; }
+      .role-header { flex-direction: column; gap: 4px; }
+      .role-dates { font-size: 11px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <span class="masthead-mark">TNJ</span>
+      <span>Wilmette, Illinois</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ============================================
+         HERO
+         ============================================ -->
+    <section class="hero">
+      <div class="hero-eyebrow">Healthcare Technology · Implementation · Operations</div>
+      <h1>Tyler Nakai Janczak</h1>
+      <p class="hero-tagline">
+        Leading enterprise software into hospitals — and still picking up ICU shifts on the side.
+      </p>
+    </section>
+
+    <!-- ============================================
+         LEAD / ABOUT
+         ============================================ -->
+    <section>
+      <div class="section-label">About</div>
+      <p class="lead">
+        I scale SaaS implementation, customer onboarding, and post-go-live programs across
+        <span class="accent">multi-site healthcare environments</span> —
+        the kind of work where the platform has to be live by Monday and the nurses on the
+        floor have to actually want to use it.
+      </p>
+      <p class="large">
+        Most recently I led a 52-person team at Compass Group running enterprise platform
+        implementation and migration across 100+ venues. Before that, at Cardinal Health, I
+        owned the WaveMark SaaS lifecycle for six health systems — including Johns Hopkins
+        and Cleveland Clinic — deploying RFID and Kanban inventory tracking into 500+
+        procedural and nursing areas.
+      </p>
+      <p class="large">
+        I&rsquo;m finishing an M.S. in Health Analytics at Northwestern, hold a B.S. in
+        Health Administration and Neuroscience from the University of Illinois
+        (<em>summa cum laude</em>), and carry the operational certifications you&rsquo;d
+        expect — Six Sigma Black Belt, ADKAR, CPHIMS, SAFe.
+      </p>
+    </section>
+
+    <!-- ============================================
+         NUMBERS — what the work has produced
+         ============================================ -->
+    <section>
+      <div class="section-label">By the numbers</div>
+      <div class="numbers">
+
+        <div class="stat">
+          <div class="stat-figure">$2.6<span class="unit">M+</span></div>
+          <div class="stat-label">Documented cost savings delivered across deployed customer base at Cardinal Health.</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-figure">50<span class="unit">%</span></div>
+          <div class="stat-label">Reduction in expired inventory across the same customer base.</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-figure">57,000<span class="unit"> hrs</span></div>
+          <div class="stat-label">Approximate annual labor hours saved through SaaS implementation programs.</div>
+        </div>
+
+        <div class="stat">
+          <div class="stat-figure">100<span class="unit">+</span></div>
+          <div class="stat-label">Commercial venues onboarded onto Birchstreet during the Compass Group rollout.</div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================
+         PULL QUOTE — the signature moment
+         ============================================ -->
+    <aside class="pullquote">
+      <p>
+        I&rsquo;ve kept a continuous PRN ICU practice through every corporate role.
+        The signal from the bedside is what keeps the enterprise work honest.
+      </p>
+      <span class="pullquote-attr">— On staying close to the floor</span>
+    </aside>
+
+    <!-- ============================================
+         EXPERIENCE
+         ============================================ -->
+    <section>
+      <div class="section-label">Experience</div>
+      <h2 class="section-heading">A decade between boardrooms and bedsides.</h2>
+
+      <div class="role">
+        <div class="role-header">
+          <div class="role-title">Director, CORE Solutions</div>
+          <div class="role-dates">Feb 2026 — May 2026</div>
+        </div>
+        <div class="role-company">Compass Group USA · Chicago, IL</div>
+        <p class="role-body">
+          Led a 52-person team — five managers, 44 analysts, three interns — owning enterprise
+          platform implementation, migration, and operational support across multi-site operations.
+          Directed end-to-end Birchstreet onboarding across 100+ venues, completed enterprise Azure
+          Active Directory rollout unifying hundreds of disconnected applications under a single
+          SSO and access governance model, and implemented AI-driven business and labor forecasting
+          to free management capacity for strategic work.
+        </p>
+      </div>
+
+      <div class="role">
+        <div class="role-header">
+          <div class="role-title">Senior SaaS Implementation Specialist</div>
+          <div class="role-dates">Feb 2024 — Oct 2025</div>
+        </div>
+        <div class="role-company">Cardinal Health · Dublin, OH</div>
+        <p class="role-body">
+          Led end-to-end onboarding and go-live of the WaveMark SaaS platform across six health
+          systems — including Johns Hopkins and Cleveland Clinic — deploying RFID and Kanban inventory
+          tracking into 500+ procedural and nursing areas. Owned the full customer lifecycle from
+          discovery through hypercare, partnered with Sales during pre-sale scoping, and served as the
+          primary technical escalation point during go-live and stabilization. Delivered $2.6M+ in
+          documented savings and a 50% reduction in expired inventory.
+        </p>
+      </div>
+
+      <div class="role">
+        <div class="role-header">
+          <div class="role-title">SaaS Supply Chain Analyst</div>
+          <div class="role-dates">Aug 2023 — Feb 2024</div>
+        </div>
+        <div class="role-company">Cardinal Health · Dublin, OH</div>
+        <p class="role-body">
+          Drove inventory accuracy and waste reduction through audits and clinical team partnerships.
+          Promoted to Senior SaaS Implementation Specialist after six months.
+        </p>
+      </div>
+
+      <div class="role">
+        <div class="role-header">
+          <div class="role-title">Senior Technologist <em style="font-style: italic; font-weight: 400; color: var(--ink-soft);">(PRN)</em></div>
+          <div class="role-dates">Mar 2023 — Present</div>
+        </div>
+        <div class="role-company">Endeavor Health · Evanston, IL</div>
+        <p class="role-body">
+          Maintained continuous PRN ICU practice across all corporate roles — keeping frontline
+          clinical insight informing enterprise healthcare technology and operations work. Operate
+          in high-acuity, time-critical environments, making rapid decisions during code and
+          rapid-response events. ACLS, BLS, PALS, NRP certified. Employee of the Month (×7),
+          Service Value Award (×11).
+        </p>
+      </div>
+    </section>
+
+    <!-- ============================================
+         CREDENTIALS
+         ============================================ -->
+    <section>
+      <div class="section-label">Credentials</div>
+
+      <div class="credential-group">
+        <h3>Education</h3>
+        <p>M.S. Health Analytics — Northwestern University <em>(in progress)</em></p>
+        <p>B.S. Health Administration &amp; Neuroscience — University of Illinois <em>(summa cum laude)</em></p>
+      </div>
+
+      <div class="credential-group">
+        <h3>Certifications</h3>
+        <div class="cert-list">
+          <span class="cert">Six Sigma Black Belt</span>
+          <span class="cert">ProSci ADKAR</span>
+          <span class="cert">CPHIMS</span>
+          <span class="cert">SAFe Scrum Fundamentals</span>
+          <span class="cert">SAFe AI-Native Foundations</span>
+          <span class="cert">Microsoft PL-300</span>
+          <span class="cert">Excellence in Speaking Institute</span>
+          <span class="cert">ACLS · BLS · PALS · NRP</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================
+         CONTACT
+         ============================================ -->
+    <section class="contact">
+      <div class="section-label">Contact</div>
+      <h2 class="section-heading">Reach out.</h2>
+      <p class="large" style="max-width: 580px;">
+        Best for opportunities in healthcare technology leadership, SaaS implementation,
+        customer success, or operations roles in regulated multi-site environments.
+      </p>
+
+      <dl class="contact-grid">
+        <dt>Email</dt>
+        <dd><a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a></dd>
+
+        <dt>LinkedIn</dt>
+        <dd><a href="https://www.linkedin.com/in/tylerjanczak" target="_blank" rel="noopener">linkedin.com/in/tylerjanczak</a></dd>
+
+        <dt>Location</dt>
+        <dd>Wilmette, Illinois</dd>
+      </dl>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container" style="display: flex; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 12px;">
+      <span>© 2026 Tyler Nakai Janczak</span>
+      <span>Last updated June 2026</span>
+    </div>
+  </footer>
+
+</body>
+</html>

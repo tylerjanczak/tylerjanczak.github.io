@@ -686,31 +686,36 @@
   </footer>
 
 </body>
-   <!-- ============================================
-       Section ECG loaders — fire once per section per session
+<!-- ============================================
+       Section ECG loaders — heart + drawing ECG
        ============================================ -->
- <template id="ecg-template">
+  <template id="ecg-template">
     <div class="section-ecg">
-      <div class="ecg-monitor">
-        <svg viewBox="0 0 400 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="none">
-          <defs>
-            <pattern id="ecgGrid" width="14" height="14" patternUnits="userSpaceOnUse">
-              <path d="M 14 0 L 0 0 0 14" fill="none" stroke="rgba(107,31,31,0.07)" stroke-width="0.5"/>
-            </pattern>
-          </defs>
-          <rect width="400" height="80" fill="url(#ecgGrid)"/>
-          <!-- two identical traces side by side, animated as one for seamless looping -->
-          <g class="ecg-trace">
-            <path d="M 0 40 L 30 40 Q 38 37 46 40 L 70 40 L 78 37 L 84 52 L 90 24 L 96 50 L 102 40 L 140 40 Q 152 32 164 40 L 200 40
-                     M 200 40 L 230 40 Q 238 37 246 40 L 270 40 L 278 37 L 284 52 L 290 24 L 296 50 L 302 40 L 340 40 Q 352 32 364 40 L 400 40"
-                  fill="none"
-                  stroke="#6B1F1F"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"/>
-          </g>
-          <!-- the moving dot that traces the wave — the signature touch -->
-          <circle class="ecg-dot" cx="0" cy="40" r="3" fill="#6B1F1F"/>
+      <div class="ecg-stage">
+        <svg class="ecg-heart" viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Filled heart silhouette behind -->
+          <path d="M100 165 C 40 120, 10 80, 10 50 C 10 28, 28 10, 50 10 C 68 10, 86 22, 100 40 C 114 22, 132 10, 150 10 C 172 10, 190 28, 190 50 C 190 80, 160 120, 100 165 Z"
+                fill="#6B1F1F"
+                class="heart-shape"/>
+          <!-- ECG line drawing across the front -->
+          <path d="M 0 90
+                   L 40 90
+                   Q 48 87 56 90
+                   L 80 90
+                   L 88 87
+                   L 94 105
+                   L 100 65
+                   L 106 102
+                   L 112 90
+                   L 140 90
+                   Q 152 80 164 90
+                   L 200 90"
+                fill="none"
+                stroke="#F7F4EE"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="ecg-draw-line"/>
         </svg>
       </div>
       <div class="section-ecg-label">Just a sec...</div>
@@ -718,7 +723,6 @@
   </template>
 
   <style>
-    /* Section content is hidden until the ECG completes */
     .section-loading > *:not(.section-ecg) {
       opacity: 0;
       transition: opacity 0.5s ease;
@@ -728,14 +732,13 @@
       opacity: 1;
     }
 
-    /* The mini ECG overlay */
     .section-ecg {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      min-height: 120px;
+      gap: 14px;
+      min-height: 160px;
       opacity: 1;
       transition: opacity 0.5s ease;
     }
@@ -749,64 +752,64 @@
       overflow: hidden;
     }
 
-    .section-ecg svg {
-      width: min(320px, 80%);
-      height: auto;
-    }
-
-    
-     .ecg-monitor {
-      width: min(360px, 80%);
-      overflow: hidden;
+    .ecg-stage {
+      width: 140px;
       position: relative;
     }
 
-    .ecg-monitor svg {
+    .ecg-heart {
       width: 100%;
       height: auto;
       display: block;
     }
 
-    .ecg-trace {
-      animation: sweep 2s linear infinite;
+    /* The heart gently pulses */
+    .heart-shape {
+      transform-origin: 100px 90px;
+      animation: heartPulse 1.1s ease-in-out infinite;
     }
 
-    @keyframes sweep {
-      from { transform: translateX(0); }
-      to   { transform: translateX(-200px); }
+    @keyframes heartPulse {
+      0%, 100% { transform: scale(1); }
+      15%      { transform: scale(1.06); }
+      30%      { transform: scale(1); }
+      45%      { transform: scale(1.03); }
+      60%      { transform: scale(1); }
     }
 
-    .ecg-dot {
-      animation: dotPulse 0.86s ease-in-out infinite;
+    /* The ECG line draws across, then repeats */
+    .ecg-draw-line {
+      stroke-dasharray: 500;
+      stroke-dashoffset: 500;
+      animation: drawAndRepeat 1.4s linear infinite;
     }
 
-    @keyframes dotPulse {
-      0%, 100% { opacity: 0.4; r: 2.5; }
-      50%      { opacity: 1; r: 4; }
+    @keyframes drawAndRepeat {
+      0%   { stroke-dashoffset: 500; }
+      70%  { stroke-dashoffset: 0; }
+      85%  { stroke-dashoffset: 0; opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 0; }
     }
 
     .section-ecg-label {
       font-family: var(--display);
       font-style: italic;
-      font-size: 12px;
+      font-size: 13px;
       color: var(--ink-soft);
       letter-spacing: 0.04em;
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .section-ecg-line { animation: none; stroke-dashoffset: 0; }
-      .section-loading > *:not(.section-ecg) { opacity: 1; }
-      .section-ecg { display: none; }
+      .heart-shape, .ecg-draw-line { animation: none; }
+      .ecg-draw-line { stroke-dashoffset: 0; }
     }
   </style>
 
   <script>
     (function() {
-      // Sections to apply the loader to — match the IDs in your HTML
       const sectionIds = ['numbers', 'experience', 'credentials', 'outside', 'contact'];
       const template = document.getElementById('ecg-template');
 
-      // Load which sections have already been seen this session
       let seen = {};
       try {
         seen = JSON.parse(sessionStorage.getItem('sectionsSeen') || '{}');
@@ -818,37 +821,32 @@
         const section = document.getElementById(id);
         if (!section) return;
 
-        // If already seen this session, skip the loader entirely
         if (seen[id]) {
           section.classList.add('section-loaded');
           return;
         }
 
-        // Inject the ECG template as the first child of the section
         const ecg = template.content.cloneNode(true);
         section.insertBefore(ecg, section.firstChild);
         section.classList.add('section-loading');
 
-        // Watch for the section to enter the viewport
         const observer = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
               observer.unobserve(section);
-
-              // After ECG animation completes (1s) + brief pause (200ms), reveal content
               setTimeout(() => {
                 section.classList.remove('section-loading');
                 section.classList.add('section-loaded');
                 seen[id] = true;
                 try {
                   sessionStorage.setItem('sectionsSeen', JSON.stringify(seen));
-                } catch (e) { /* storage full or disabled, no problem */ }
-              }, 1200);
+                } catch (e) { /* storage full or disabled */ }
+              }, 1400);
             }
           });
         }, {
-          threshold: 0.15,  // fires when 15% of section is visible
-          rootMargin: '0px 0px -100px 0px'  // small offset so it triggers slightly before fully in view
+          threshold: 0.15,
+          rootMargin: '0px 0px -100px 0px'
         });
 
         observer.observe(section);

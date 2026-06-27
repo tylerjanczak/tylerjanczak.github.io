@@ -754,14 +754,35 @@
       height: auto;
     }
 
-    .section-ecg-line {
-      stroke-dasharray: 900;
-      stroke-dashoffset: 900;
-      animation: drawSectionEcg 1s linear forwards;
+    
+     .ecg-monitor {
+      width: min(360px, 80%);
+      overflow: hidden;
+      position: relative;
     }
 
-    @keyframes drawSectionEcg {
-      to { stroke-dashoffset: 0; }
+    .ecg-monitor svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .ecg-trace {
+      animation: sweep 2s linear infinite;
+    }
+
+    @keyframes sweep {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-200px); }
+    }
+
+    .ecg-dot {
+      animation: dotPulse 0.86s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.4; r: 2.5; }
+      50%      { opacity: 1; r: 4; }
     }
 
     .section-ecg-label {

@@ -1,5 +1,168 @@
 <!DOCTYPE html>
 <html lang="en">
+   <!-- ============================================
+       Section ECG loaders — fire once per section per session
+       ============================================ -->
+  <template id="ecg-template">
+    <div class="section-ecg">
+      <svg viewBox="0 0 400 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <pattern id="ecgGrid" width="14" height="14" patternUnits="userSpaceOnUse">
+            <path d="M 14 0 L 0 0 0 14" fill="none" stroke="rgba(107,31,31,0.07)" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+        <rect width="400" height="60" fill="url(#ecgGrid)"/>
+        <path d="M 0 30
+                 L 40 30
+                 Q 48 27 56 30
+                 L 80 30
+                 L 88 27
+                 L 94 42
+                 L 100 14
+                 L 106 40
+                 L 112 30
+                 L 150 30
+                 Q 162 22 174 30
+                 L 220 30
+                 L 228 27 L 234 30
+                 L 260 30
+                 L 268 27
+                 L 274 42
+                 L 280 14
+                 L 286 40
+                 L 292 30
+                 L 330 30
+                 Q 342 22 354 30
+                 L 400 30"
+              fill="none"
+              stroke="#6B1F1F"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="section-ecg-line"/>
+      </svg>
+      <div class="section-ecg-label">Reading...</div>
+    </div>
+  </template>
+
+  <style>
+    /* Section content is hidden until the ECG completes */
+    .section-loading > *:not(.section-ecg) {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .section-loaded > *:not(.section-ecg) {
+      opacity: 1;
+    }
+
+    /* The mini ECG overlay */
+    .section-ecg {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 120px;
+      opacity: 1;
+      transition: opacity 0.5s ease;
+    }
+
+    .section-loaded .section-ecg {
+      opacity: 0;
+      pointer-events: none;
+      position: absolute;
+      height: 0;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .section-ecg svg {
+      width: min(320px, 80%);
+      height: auto;
+    }
+
+    .section-ecg-line {
+      stroke-dasharray: 900;
+      stroke-dashoffset: 900;
+      animation: drawSectionEcg 1s linear forwards;
+    }
+
+    @keyframes drawSectionEcg {
+      to { stroke-dashoffset: 0; }
+    }
+
+    .section-ecg-label {
+      font-family: var(--display);
+      font-style: italic;
+      font-size: 12px;
+      color: var(--ink-soft);
+      letter-spacing: 0.04em;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .section-ecg-line { animation: none; stroke-dashoffset: 0; }
+      .section-loading > *:not(.section-ecg) { opacity: 1; }
+      .section-ecg { display: none; }
+    }
+  </style>
+
+  <script>
+    (function() {
+      // Sections to apply the loader to — match the IDs in your HTML
+      const sectionIds = ['numbers', 'experience', 'credentials', 'outside', 'contact'];
+      const template = document.getElementById('ecg-template');
+
+      // Load which sections have already been seen this session
+      let seen = {};
+      try {
+        seen = JSON.parse(sessionStorage.getItem('sectionsSeen') || '{}');
+      } catch (e) {
+        seen = {};
+      }
+
+      sectionIds.forEach(id => {
+        const section = document.getElementById(id);
+        if (!section) return;
+
+        // If already seen this session, skip the loader entirely
+        if (seen[id]) {
+          section.classList.add('section-loaded');
+          return;
+        }
+
+        // Inject the ECG template as the first child of the section
+        const ecg = template.content.cloneNode(true);
+        section.insertBefore(ecg, section.firstChild);
+        section.classList.add('section-loading');
+
+        // Watch for the section to enter the viewport
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              observer.unobserve(section);
+
+              // After ECG animation completes (1s) + brief pause (200ms), reveal content
+              setTimeout(() => {
+                section.classList.remove('section-loading');
+                section.classList.add('section-loaded');
+                seen[id] = true;
+                try {
+                  sessionStorage.setItem('sectionsSeen', JSON.stringify(seen));
+                } catch (e) { /* storage full or disabled, no problem */ }
+              }, 1200);
+            }
+          });
+        }, {
+          threshold: 0.15,  // fires when 15% of section is visible
+          rootMargin: '0px 0px -100px 0px'  // small offset so it triggers slightly before fully in view
+        });
+
+        observer.observe(section);
+      });
+    })();
+  </script>
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -472,7 +635,7 @@
     <!-- ============================================
          NUMBERS — what the work has produced
          ============================================ -->
-    <section>
+    <section id="numbers">
       <div class="section-label">By the numbers</div>
       <div class="numbers">
 
@@ -513,7 +676,7 @@
     <!-- ============================================
          EXPERIENCE
          ============================================ -->
-    <section>
+    <section id="experience">
       <div class="section-label">Experience</div>
       <h2 class="section-heading">A decade between boardrooms and bedsides.</h2>
 
@@ -584,7 +747,7 @@
     <!-- ============================================
          CREDENTIALS
          ============================================ -->
-    <section>
+    <section id="credentials">
       <div class="section-label">Credentials</div>
 
       <div class="credential-group">

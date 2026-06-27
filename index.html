@@ -689,30 +689,29 @@
 <!-- ============================================
        Section ECG loaders — heart + drawing ECG
        ============================================ -->
-  <template id="ecg-template">
+   <template id="ecg-template">
     <div class="section-ecg">
       <div class="ecg-stage">
         <svg class="ecg-heart" viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- Filled heart silhouette behind -->
+          <!-- Filled heart silhouette -->
           <path d="M100 165 C 40 120, 10 80, 10 50 C 10 28, 28 10, 50 10 C 68 10, 86 22, 100 40 C 114 22, 132 10, 150 10 C 172 10, 190 28, 190 50 C 190 80, 160 120, 100 165 Z"
-                fill="#6B1F1F"
+                fill="#C84545"
                 class="heart-shape"/>
-          <!-- ECG line drawing across the front -->
-          <path d="M 0 90
-                   L 40 90
-                   Q 48 87 56 90
-                   L 80 90
-                   L 88 87
-                   L 94 105
-                   L 100 65
-                   L 106 102
-                   L 112 90
-                   L 140 90
-                   Q 152 80 164 90
-                   L 200 90"
+          <!-- ECG line drawing INSIDE the heart, tight to the shape -->
+          <path d="M 35 95
+                   L 65 95
+                   L 72 92
+                   L 80 105
+                   L 90 70
+                   L 100 115
+                   L 110 65
+                   L 120 105
+                   L 128 92
+                   L 135 95
+                   L 165 95"
                 fill="none"
-                stroke="#F7F4EE"
-                stroke-width="3"
+                stroke="#FFFFFF"
+                stroke-width="5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
                 class="ecg-draw-line"/>

@@ -689,45 +689,31 @@
    <!-- ============================================
        Section ECG loaders — fire once per section per session
        ============================================ -->
-  <template id="ecg-template">
+ <template id="ecg-template">
     <div class="section-ecg">
-      <svg viewBox="0 0 400 60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <pattern id="ecgGrid" width="14" height="14" patternUnits="userSpaceOnUse">
-            <path d="M 14 0 L 0 0 0 14" fill="none" stroke="rgba(107,31,31,0.07)" stroke-width="0.5"/>
-          </pattern>
-        </defs>
-        <rect width="400" height="60" fill="url(#ecgGrid)"/>
-        <path d="M 0 30
-                 L 40 30
-                 Q 48 27 56 30
-                 L 80 30
-                 L 88 27
-                 L 94 42
-                 L 100 14
-                 L 106 40
-                 L 112 30
-                 L 150 30
-                 Q 162 22 174 30
-                 L 220 30
-                 L 228 27 L 234 30
-                 L 260 30
-                 L 268 27
-                 L 274 42
-                 L 280 14
-                 L 286 40
-                 L 292 30
-                 L 330 30
-                 Q 342 22 354 30
-                 L 400 30"
-              fill="none"
-              stroke="#6B1F1F"
-              stroke-width="1.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="section-ecg-line"/>
-      </svg>
-      <div class="section-ecg-label">Reading...</div>
+      <div class="ecg-monitor">
+        <svg viewBox="0 0 400 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" preserveAspectRatio="none">
+          <defs>
+            <pattern id="ecgGrid" width="14" height="14" patternUnits="userSpaceOnUse">
+              <path d="M 14 0 L 0 0 0 14" fill="none" stroke="rgba(107,31,31,0.07)" stroke-width="0.5"/>
+            </pattern>
+          </defs>
+          <rect width="400" height="80" fill="url(#ecgGrid)"/>
+          <!-- two identical traces side by side, animated as one for seamless looping -->
+          <g class="ecg-trace">
+            <path d="M 0 40 L 30 40 Q 38 37 46 40 L 70 40 L 78 37 L 84 52 L 90 24 L 96 50 L 102 40 L 140 40 Q 152 32 164 40 L 200 40
+                     M 200 40 L 230 40 Q 238 37 246 40 L 270 40 L 278 37 L 284 52 L 290 24 L 296 50 L 302 40 L 340 40 Q 352 32 364 40 L 400 40"
+                  fill="none"
+                  stroke="#6B1F1F"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
+          </g>
+          <!-- the moving dot that traces the wave — the signature touch -->
+          <circle class="ecg-dot" cx="0" cy="40" r="3" fill="#6B1F1F"/>
+        </svg>
+      </div>
+      <div class="section-ecg-label">Just a sec...</div>
     </div>
   </template>
 

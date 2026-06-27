@@ -12,17 +12,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     /* Spotlight: dim non-focused recommendations when arriving via anchor link */
-.spotlight-active .recommendation {
+.spotlight-active .artlicle {
   opacity: 0.25;
   transition: opacity 0.6s ease;
 }
 
-.spotlight-active .recommendation.spotlight-target {
+.spotlight-active .article.spotlight-target {
   opacity: 1;
 }
 
 /* Visitor can still hover other recommendations to read them */
-.spotlight-active .recommendation:hover {
+.spotlight-active .article:hover {
   opacity: 0.85;
 }
 
@@ -488,8 +488,7 @@
     const target = document.getElementById(targetId);
 
     // Only activate if the target is actually a recommendation
-    if (!target || !target.classList.contains('recommendation')) return;
-
+    if (!target || target.tagName !== 'ARTICLE') return;
     // Activate spotlight after a brief pause (lets the scroll happen first)
     setTimeout(() => {
       document.body.classList.add('spotlight-active');

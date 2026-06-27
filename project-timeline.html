@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23F7F4EE'/%3E%3Ctext x='50' y='68' font-family='Georgia, serif' font-size='52' font-weight='600' fill='%236B1F1F' text-anchor='middle'%3ETNJ%3C/text%3E%3C/svg%3E">
+  <title>Case Study: WaveMark Rollout — Tyler Nakai Janczak</title>
+  <meta name="description" content="An end-to-end SaaS implementation case study: scaling WaveMark RFID and Kanban inventory across six U.S. health systems." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:          #F7F4EE;
+      --bg-subtle:   #EFEAE0;
+      --ink:         #1B1B1B;
+      --ink-soft:    #4A4A48;
+      --rule:        #D9D2C4;
+      --accent:      #6B1F1F;
+      --display:     "Fraunces", Georgia, serif;
+      --body:        "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      font-weight: 400;
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* Masthead */
+    .masthead {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 0;
+      margin-bottom: 80px;
+    }
+
+    .masthead-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+
+    .masthead-mark {
+      font-family: var(--display);
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    .back-link {
+      color: var(--ink-soft);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 1px;
+      transition: color 0.15s;
+    }
+
+    .back-link:hover { color: var(--accent); }
+
+    /* Page header */
+    .page-header {
+      margin-bottom: 72px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .page-header h1 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(40px, 6vw, 58px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+      font-variation-settings: "opsz" 144;
+    }
+
+    .page-header .subtitle {
+      font-family: var(--display);
+      font-size: clamp(20px, 2.4vw, 24px);
+      font-weight: 300;
+      font-style: italic;
+      line-height: 1.45;
+      color: var(--ink-soft);
+      max-width: 600px;
+    }
+
+    /* Lead summary */
+    .lead-summary {
+      font-family: var(--display);
+      font-size: 20px;
+      line-height: 1.55;
+      font-weight: 300;
+      margin-bottom: 48px;
+      color: var(--ink);
+    }
+
+    .lead-summary .accent {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    /* Stats strip */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      padding: 36px 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      margin-bottom: 100px;
+    }
+
+    .stat {
+      padding: 0 14px;
+      border-right: 1px solid var(--rule);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-figure {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(28px, 3.6vw, 38px);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+      font-variation-settings: "opsz" 144;
+    }
+
+    .stat-figure .unit {
+      font-size: 0.6em;
+      color: var(--ink-soft);
+      margin-left: 2px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      line-height: 1.3;
+      color: var(--ink-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Section labels */
+    .section-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.28em;
+      color: var(--accent);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .section-heading {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(30px, 4.4vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      margin-bottom: 56px;
+      max-width: 560px;
+    }
+
+    /* ============================================
+       Timeline
+       ============================================ */
+    .timeline {
+      position: relative;
+      margin-bottom: 100px;
+      padding-left: 60px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 23px;
+      top: 12px;
+      bottom: 12px;
+      width: 1px;
+      background: var(--rule);
+    }
+
+    .phase {
+      position: relative;
+      margin-bottom: 4px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .phase:last-child { border-bottom: none; }
+
+    .phase-marker {
+      position: absolute;
+      left: -60px;
+      top: 28px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--bg);
+      border: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 16px;
+      color: var(--ink-soft);
+      transition: all 0.3s ease;
+      z-index: 1;
+    }
+
+    .phase.open .phase-marker {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      transform: scale(1.05);
+    }
+
+    .phase-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      padding: 28px 0;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+
+    .phase-header:hover .phase-name {
+      color: var(--accent);
+    }
+
+    .phase-name {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: clamp(20px, 2.6vw, 24px);
+      line-height: 1.25;
+      letter-spacing: -0.005em;
+      color: var(--ink);
+      transition: color 0.2s;
+      flex: 1;
+    }
+
+    .phase-meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-shrink: 0;
+    }
+
+    .phase-duration {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--ink-soft);
+      white-space: nowrap;
+    }
+
+    .phase-toggle {
+      width: 22px;
+      height: 22px;
+      border: 1px solid var(--ink-soft);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .phase-toggle::before,
+    .phase-toggle::after {
+      content: '';
+      position: absolute;
+      background: var(--ink-soft);
+      transition: all 0.3s ease;
+    }
+
+    .phase-toggle::before {
+      width: 8px;
+      height: 1px;
+    }
+
+    .phase-toggle::after {
+      width: 1px;
+      height: 8px;
+    }
+
+    .phase.open .phase-toggle {
+      border-color: var(--accent);
+      background: var(--accent);
+      transform: rotate(45deg);
+    }
+
+    .phase.open .phase-toggle::before,
+    .phase.open .phase-toggle::after {
+      background: white;
+    }
+
+    .phase-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+    }
+
+    .phase.open .phase-content {
+      max-height: 1200px;
+      padding-bottom: 36px;
+    }
+
+    .phase-narrative {
+      font-size: 16px;
+      line-height: 1.65;
+      color: var(--ink);
+      margin-bottom: 24px;
+      max-width: 600px;
+    }
+
+    .phase-narrative .accent {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .activities-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--ink-soft);
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .activities-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .activities-list li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 8px;
+      font-size: 15px;
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    .activities-list li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 11px;
+      width: 8px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    /* ============================================
+       Outcomes
+       ============================================ */
+    .outcomes {
+      background: var(--bg-subtle);
+      border-left: 3px solid var(--accent);
+      padding: 56px 40px;
+      margin-bottom: 80px;
+    }
+
+    .outcomes h2 {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 28px;
+      margin-bottom: 24px;
+    }
+
+    .outcomes .lead-result {
+      font-family: var(--display);
+      font-size: 19px;
+      line-height: 1.5;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--ink);
+      margin-bottom: 24px;
+      max-width: 580px;
+    }
+
+    .outcome-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .outcome-list li {
+      position: relative;
+      padding-left: 24px;
+      margin-bottom: 10px;
+      font-size: 15px;
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .outcome-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 36px 0 64px;
+      margin-top: 60px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+
+    footer .container {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    @media (max-width: 720px) {
+      .container { padding: 0 24px; }
+      .masthead { margin-bottom: 56px; }
+      .page-header { margin-bottom: 56px; }
+      .stats-strip {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 28px 0;
+      }
+      .stat { padding: 8px 14px; border-right: none; }
+      .stat:nth-child(odd) { border-right: 1px solid var(--rule); }
+      .timeline { padding-left: 48px; }
+      .timeline::before { left: 19px; }
+      .phase-marker {
+        left: -48px;
+        width: 38px;
+        height: 38px;
+        font-size: 14px;
+      }
+      .phase-header { padding: 22px 0; gap: 16px; }
+      .phase-meta { gap: 12px; }
+      .phase-duration { font-size: 10px; }
+      .outcomes { padding: 40px 28px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <a href="index.html" class="back-link">← Back</a>
+      <span class="masthead-mark">TNJ</span>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ============================================
+         PAGE HEADER
+         ============================================ -->
+    <section class="page-header">
+      <div class="eyebrow">Case Study · 2024–2025</div>
+      <h1>The WaveMark Rollout.</h1>
+      <p class="subtitle">
+        An end-to-end SaaS implementation across six U.S. health systems —
+        from pre-sale discovery to documented outcomes.
+      </p>
+    </section>
+
+    <!-- ============================================
+         LEAD SUMMARY + STATS
+         ============================================ -->
+    <p class="lead-summary">
+      At Cardinal Health I led the WaveMark platform lifecycle for
+      <span class="accent">six health systems</span>, including Johns Hopkins
+      and Cleveland Clinic — deploying RFID and Kanban inventory tracking
+      into 500+ procedural and nursing areas, and owning the customer
+      journey from sales scoping through go-live and beyond.
+    </p>
+
+    <div class="stats-strip">
+      <div class="stat">
+        <div class="stat-figure">$2.6<span class="unit">M+</span></div>
+        <div class="stat-label">Documented<br>cost savings</div>
+      </div>
+      <div class="stat">
+        <div class="stat-figure">50<span class="unit">%</span></div>
+        <div class="stat-label">Reduction in<br>expired inventory</div>
+      </div>
+      <div class="stat">
+        <div class="stat-figure">6</div>
+        <div class="stat-label">Health systems<br>onboarded</div>
+      </div>
+      <div class="stat">
+        <div class="stat-figure">500<span class="unit">+</span></div>
+        <div class="stat-label">Procedural &amp;<br>nursing areas</div>
+      </div>
+    </div>
+
+    <!-- ============================================
+         TIMELINE
+         ============================================ -->
+    <section>
+      <div class="section-label">The Work</div>
+      <h2 class="section-heading">Six phases. Each one earned the next.</h2>
+
+      <div class="timeline">
+
+        <!-- ===== Phase 01 ===== -->
+        <article class="phase open" data-phase="01">
+          <div class="phase-marker">01</div>
+          <div class="phase-header">
+            <div class="phase-name">Pre-Sale Discovery &amp; Scoping</div>
+            <div class="phase-meta">
+              <span class="phase-duration">~4–6 weeks</span>
+              <span class="phase-toggle"></span>
+            </div>
+          </div>
+          <div class="phase-content">
+            <p class="phase-narrative">
+              Before any implementation begins, the question is whether it's
+              even the right fit. I partnered with the Cardinal Health sales
+              team during pre-sale discovery — site visits, stakeholder
+              identification, and feasibility assessment. The goal was to
+              surface the technical and operational realities that would
+              shape — or sometimes kill — the rollout before contracts were
+              signed.
+            </p>
+            <div class="activities-label">Key activities</div>
+            <ul class="activities-list">
+              <li>Site visits to procedural and nursing areas</li>
+              <li>Identifying clinical, supply chain, and IT stakeholders</li>
+              <li>Assessing existing inventory and ERP infrastructure</li>
+              <li>Setting accurate expectations with health system leadership</li>
+              <li>Scoping feasibility for RFID and Kanban deployment</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- ===== Phase 02 ===== -->
+        <article class="phase" data-phase="02">
+          <div class="phase-marker">02</div>
+          <div class="phase-header">
+            <div class="phase-name">Requirements &amp; Workflow Mapping</div>
+            <div class="phase-meta">
+              <span class="phase-duration">~6–8 weeks</span>
+              <span class="phase-toggle"></span>
+            </div>
+          </div>
+          <div class="phase-content">
+            <p class="phase-narrative">
+              Inventory in a procedural area at Johns Hopkins doesn't look like
+              inventory in a nursing unit at Cleveland Clinic — the workflows,
+              the case carts, the par levels, the people involved are all
+              different. I led multi-stakeholder discovery to map the actual
+              flow of supplies, identify friction points, and define what
+              success would look like in each environment.
+            </p>
+            <div class="activities-label">Key activities</div>
+            <ul class="activities-list">
+              <li>Process mapping across procedural and nursing areas</li>
+              <li>Stakeholder interviews — supply chain, OR/nursing leadership, IT, finance</li>
+              <li>Defining KPIs and customer success criteria</li>
+              <li>Documenting current-state vs. future-state workflows</li>
+              <li>Identifying integration requirements with existing ERP and EHR systems</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- ===== Phase 03 ===== -->
+        <article class="phase" data-phase="03">
+          <div class="phase-marker">03</div>
+          <div class="phase-header">
+            <div class="phase-name">System Configuration</div>
+            <div class="phase-meta">
+              <span class="phase-duration">~8–10 weeks</span>
+              <span class="phase-toggle"></span>
+            </div>
+          </div>
+          <div class="phase-content">
+            <p class="phase-narrative">
+              WaveMark out of the box isn't WaveMark at Johns Hopkins. The
+              platform had to be configured to each health system's
+              catalogue, par levels, departmental hierarchy, and reporting
+              needs. I owned this configuration work — translating the
+              workflow maps into platform settings that actually reflected
+              how supplies moved on the floor.
+            </p>
+            <div class="activities-label">Key activities</div>
+            <ul class="activities-list">
+              <li>Platform configuration to health system catalogue and par structure</li>
+              <li>RFID hardware and tag specification</li>
+              <li>Kanban bin configuration and replenishment logic</li>
+              <li>Integration with existing ERP, EHR, and inventory systems</li>
+              <li>User access roles and permissions</li>
+              <li>User acceptance testing with health system designees</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- ===== Phase 04 ===== -->
+        <article class="phase" data-phase="04">
+          <div class="phase-marker">04</div>
+          <div class="phase-header">
+            <div class="phase-name">Training &amp; Enablement</div>
+            <div class="phase-meta">
+              <span class="phase-duration">~4–6 weeks</span>
+              <span class="phase-toggle"></span>
+            </div>
+          </div>
+          <div class="phase-content">
+            <p class="phase-narrative">
+              A SaaS platform is only as good as the people who actually use
+              it. With 500+ procedural and nursing areas across the customer
+              base, training had to scale — not just one-time sessions, but
+              train-the-trainer programs that would survive turnover and
+              shift changes.
+            </p>
+            <div class="activities-label">Key activities</div>
+            <ul class="activities-list">
+              <li>Role-based training for supply chain, clinical, and management users</li>
+              <li>Train-the-trainer programs with health system designees</li>
+              <li>Standard operating procedures and quick-reference guides</li>
+              <li>Hands-on workflow simulations before go-live</li>
+              <li>Feedback loops to surface confusion before it hit production</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- ===== Phase 05 ===== -->
+        <article class="phase" data-phase="05">
+          <div class="phase-marker">05</div>
+          <div class="phase-header">
+            <div class="phase-name">Go-Live</div>
+            <div class="phase-meta">
+              <span class="phase-duration">~2–4 weeks</span>
+              <span class="phase-toggle"></span>
+            </div>
+          </div>
+          <div class="phase-content">
+            <p class="phase-narrative">
+              Go-live is the moment everything is real. I served as the
+              <span class="accent">primary technical escalation point</span>
+              during go-live and stabilization, coordinating across clinical,
+              supply chain, and engineering teams to resolve issues in
+              near-real time and protect the customer experience when the
+              stakes were highest.
+            </p>
+            <div class="activities-label">Key activities</div>
+            <ul class="activities-list">
+              <li>Phased rollout by department or service line</li>
+              <li>On-site and remote command-center support during cutover</li>
+              <li>Real-time issue triage across clinical, supply chain, and engineering</li>
+              <li>Daily standups with health system leadership</li>
+              <li>Continuous communication on issue status and resolution</li>
+            </ul>
+          </div>
+        </article>
+
+        <!-- ===== Phase 06 ===== -->
+        <article class="phase" data-phase="06">
+          <div class="phase-marker">06</div>
+          <div class="phase-header">
+            <div class="phase-name">Hypercare &amp; Measured Outcomes</div>
+            <div class="phase-meta">
+              <span class="phase-duration">8–12 weeks</span>
+              <span class="phase-toggle"></span>
+            </div>
+          </div>
+          <div class="phase-content">
+            <p class="phase-narrative">
+              The story doesn't end at go-live. Hypercare is the period when
+              adoption either sticks or doesn't — when the team is still
+              close enough to catch problems but the customer is starting to
+              own the system. I owned the hypercare program structure, the
+              KPIs, and the eventual measurement that proved the
+              implementation worked.
+            </p>
+            <div class="activities-label">Key activities</div>
+            <ul class="activities-list">
+              <li>Daily → weekly → monthly cadence of customer success reviews</li>
+              <li>KPI tracking: inventory accuracy, expiration rates, staff time</li>
+              <li>Continuous improvement on workflows and configurations</li>
+              <li>Final outcome documentation and case-study build-out</li>
+              <li>Handoff to long-term customer success</li>
+            </ul>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ============================================
+         OUTCOMES
+         ============================================ -->
+    <aside class="outcomes">
+      <div class="section-label">Measured Outcomes</div>
+      <h2>What the work produced.</h2>
+      <p class="lead-result">
+        Documented results across the deployed customer base — the kind of
+        numbers that hold up under audit.
+      </p>
+      <ul class="outcome-list">
+        <li><strong>$2.6M+</strong> in documented cost savings across the customer base</li>
+        <li><strong>50% reduction</strong> in expired inventory across six health systems</li>
+        <li><strong>Six health systems</strong> onboarded, including Johns Hopkins and Cleveland Clinic</li>
+        <li><strong>500+ procedural and nursing areas</strong> deployed with RFID and Kanban inventory tracking</li>
+        <li>Promotion from SaaS Supply Chain Analyst to Senior SaaS Implementation Specialist after six months</li>
+      </ul>
+    </aside>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <span>© 2026 Tyler Janczak</span>
+      <span><a href="index.html">Back to main page</a></span>
+    </div>
+  </footer>
+
+  <script>
+    document.querySelectorAll('.phase-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.parentElement.classList.toggle('open');
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -683,17 +683,30 @@
         Best for opportunities in healthcare technology leadership, SaaS implementation,
         customer success, or operations roles in regulated multi-site environments.
       </p>
+<div class="contact-icons">
+  <a href="mailto:tjanczak13@gmail.com" class="contact-icon" aria-label="Email Tyler">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6zm-2 0l-8 5-8-5h16zm0 12H4V8l8 5 8-5v10z" fill="currentColor"/>
+    </svg>
+    <span class="contact-icon-label">Email</span>
+  </a>
 
-      <dl class="contact-grid">
-        <dt>Email</dt>
-        <dd><a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a></dd>
+  <a href="https://www.linkedin.com/in/tylerjanczak" target="_blank" rel="noopener" class="contact-icon" aria-label="LinkedIn">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3v9zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z" fill="currentColor"/>
+    </svg>
+    <span class="contact-icon-label">LinkedIn</span>
+  </a>
 
-        <dt>LinkedIn</dt>
-        <dd><a href="https://www.linkedin.com/in/tylerjanczak" target="_blank" rel="noopener">linkedin.com/in/tylerjanczak</a></dd>
+  <a href="https://github.com/tylerjanczak" target="_blank" rel="noopener" class="contact-icon" aria-label="GitHub">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.55v-1.95c-3.2.7-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.68-1.27-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.28-5.23-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.47.11-3.06 0 0 .97-.31 3.18 1.18.92-.26 1.91-.39 2.9-.39s1.98.13 2.9.39c2.21-1.49 3.18-1.18 3.18-1.18.63 1.59.24 2.77.12 3.06.73.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.4-5.25 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.66.79.55C20.21 21.39 23.5 17.08 23.5 12c0-6.35-5.15-11.5-11.5-11.5z" fill="currentColor"/>
+    </svg>
+    <span class="contact-icon-label">GitHub</span>
+  </a>
+</div>
 
-        <dt>Location</dt>
-        <dd>Wilmette, Illinois</dd>
-      </dl>
+<p class="contact-location">Wilmette, Illinois</p>
     </section>
 
   </main>
@@ -751,6 +764,67 @@
   </template>
 
   <style>
+.contact-icons {
+  display: flex;
+  gap: 24px;
+  margin-top: 36px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.contact-icon {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  border: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 20px 28px;
+  min-width: 100px;
+  transition: all 0.2s ease;
+  background: transparent;
+}
+
+.contact-icon:hover {
+  background: rgba(107, 31, 31, 0.04);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.contact-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.contact-icon-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: inherit;
+  font-family: var(--body);
+}
+
+.contact-location {
+  font-family: var(--display);
+  font-size: 16px;
+  font-style: italic;
+  color: var(--ink-soft);
+  margin-top: 8px;
+}
+
+@media (max-width: 540px) {
+  .contact-icons {
+    gap: 14px;
+  }
+  .contact-icon {
+    padding: 16px 20px;
+    min-width: 90px;
+  }
+}
     .hero-byline {
   display: flex;
   align-items: center;

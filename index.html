@@ -698,7 +698,15 @@
   <footer>
     <div class="container" style="display: flex; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 12px;">
       <span>© 2026 Tyler Janczak</span>
-      <span>Last updated June 2026</span>
+      <span class="secure-badge">
+      <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="2" y="7" width="10" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="7" cy="11" r="1" fill="currentColor"/>
+      </svg>
+      Secure connection
+    </span>
+    <span>Last updated June 2026</span>
     </div>
   </footer>
 
@@ -741,6 +749,21 @@
   </template>
 
   <style>
+    .secure-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+.secure-badge svg {
+  width: 11px;
+  height: 13px;
+  flex-shrink: 0;
+}
     .case-study-link {
   display: block;
   font-family: var(--display);

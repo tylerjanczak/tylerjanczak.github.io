@@ -541,7 +541,113 @@
       <span><a href="index.html">Back to main page</a></span>
     </div>
   </footer>
+ <style>
+    /* Page loader */
+    #page-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 260px;
+      margin: 40px 0;
+      opacity: 1;
+      transition: opacity 0.6s ease;
+    }
+    #page-loader.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .neural-stage { width: 220px; }
+    .neural-stage svg { width: 100%; height: auto; display: block; }
 
+    #skills-content.loading {
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    #skills-content.revealed {
+      opacity: 1;
+    }
+
+    .node {
+      fill: #6B1F1F;
+      opacity: 0;
+      transform: scale(0);
+      transform-origin: center;
+      transform-box: fill-box;
+      animation: nodeAppear 1.4s ease-out infinite;
+    }
+    .n1 { animation-delay: 0s; }
+    .n2 { animation-delay: 0.05s; }
+    .n3 { animation-delay: 0.1s; }
+    .n4 { animation-delay: 0.2s; }
+    .n5 { animation-delay: 0.25s; }
+    .n6 { animation-delay: 0.3s; }
+    .n7 { animation-delay: 0.35s; }
+    .n8 { animation-delay: 0.45s; }
+    .n9 { animation-delay: 0.5s; }
+
+    @keyframes nodeAppear {
+      0%, 5%   { opacity: 0; transform: scale(0); }
+      15%      { opacity: 1; transform: scale(1.4); }
+      25%, 80% { opacity: 1; transform: scale(1); }
+      100%     { opacity: 0; transform: scale(1); }
+    }
+
+    .conn {
+      stroke: #6B1F1F;
+      stroke-width: 1;
+      opacity: 0;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      animation: connDraw 1.4s ease-out infinite;
+    }
+    .c-h1 { animation-delay: 0.4s; }
+    .c-h2 { animation-delay: 0.65s; }
+
+    @keyframes connDraw {
+      0%, 25%  { stroke-dashoffset: 100; opacity: 0; }
+      40%      { opacity: 0.45; }
+      55%, 80% { stroke-dashoffset: 0; opacity: 0.45; }
+      100%     { stroke-dashoffset: 0; opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .node, .conn { animation: none; opacity: 1; transform: scale(1); stroke-dashoffset: 0; }
+      #page-loader { display: none; }
+      #skills-content.loading { opacity: 1; }
+    }
+  </style>
+
+  <script>
+    (function() {
+      const STORAGE_KEY = 'skillsPageSeen';
+      const loader = document.getElementById('page-loader');
+      const content = document.getElementById('skills-content');
+
+      if (!loader || !content) return;
+
+      let seen = false;
+      try {
+        seen = sessionStorage.getItem(STORAGE_KEY) === 'true';
+      } catch (e) {}
+
+      if (seen) {
+        loader.remove();
+        return;
+      }
+
+      loader.hidden = false;
+      content.classList.add('loading');
+
+      setTimeout(() => {
+        loader.classList.add('fade-out');
+        content.classList.add('revealed');
+        setTimeout(() => loader.remove(), 800);
+        try {
+          sessionStorage.setItem(STORAGE_KEY, 'true');
+        } catch (e) {}
+      }, 2000);
+    })();
+  </script>
 </body>
 </html>
 

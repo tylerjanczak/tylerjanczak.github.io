@@ -451,6 +451,8 @@
     <section class="hero">
       <div class="hero-eyebrow">Healthcare Technology · Implementation · Operations</div>
       <h1>Tyler  Janczak</h1>
+       <div class="hero-byline">
+    <img src="1769799789989.jpeg" alt="Tyler Janczak" class="hero-photo" />
       <p class="hero-tagline">
         Leading healthcare transformation through enterprise technology, operational excellence, and frontline clinical insight.
       </p>
@@ -748,6 +750,36 @@
   </template>
 
   <style>
+    .hero-byline {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.hero-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--rule);
+}
+
+.hero-byline .hero-tagline {
+  flex: 1;
+  min-width: 280px;
+  margin: 0;
+}
+
+@media (max-width: 540px) {
+  .hero-byline {
+    gap: 20px;
+  }
+  .hero-photo {
+    width: 96px;
+    height: 96px;
+  }
     .secure-badge {
   display: inline-flex;
   align-items: center;

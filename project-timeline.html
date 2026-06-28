@@ -486,6 +486,61 @@
       .phase-duration { font-size: 10px; }
       .outcomes { padding: 40px 28px; }
     }
+    /* Page loader */
+    #page-loader {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 240px;
+      margin: 40px 0;
+      opacity: 1;
+      transition: opacity 0.6s ease;
+    }
+    #page-loader.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .heart-stage { width: 140px; }
+    .heart-stage svg { width: 100%; height: auto; display: block; }
+
+    #case-study-content.loading {
+      opacity: 0;
+      transition: opacity 0.8s ease;
+    }
+    #case-study-content.revealed {
+      opacity: 1;
+    }
+
+    .heart-shape {
+      transform-origin: 100px 90px;
+      animation: heartPulse 1.1s ease-in-out infinite;
+    }
+    @keyframes heartPulse {
+      0%, 100% { transform: scale(1); }
+      15%      { transform: scale(1.06); }
+      30%      { transform: scale(1); }
+      45%      { transform: scale(1.03); }
+      60%      { transform: scale(1); }
+    }
+
+    .ecg-draw-line {
+      stroke-dasharray: 500;
+      stroke-dashoffset: 500;
+      animation: drawAndRepeat 1.2s linear infinite;
+    }
+    @keyframes drawAndRepeat {
+      0%   { stroke-dashoffset: 500; }
+      70%  { stroke-dashoffset: 0; }
+      85%  { stroke-dashoffset: 0; opacity: 1; }
+      100% { stroke-dashoffset: 0; opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .heart-shape, .ecg-draw-line { animation: none; }
+      .ecg-draw-line { stroke-dashoffset: 0; }
+      #page-loader { display: none; }
+      #case-study-content.loading { opacity: 1; }
+    }
   </style>
 </head>
 
@@ -511,6 +566,38 @@
         from pre-sale discovery to documented outcomes.
       </p>
     </section>
+<!-- Heart + ECG page loader -->
+    <div id="page-loader" hidden>
+      <div class="heart-stage">
+        <svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M100 165 C 40 120, 10 80, 10 50 C 10 28, 28 10, 50 10 C 68 10, 86 22, 100 40 C 114 22, 132 10, 150 10 C 172 10, 190 28, 190 50 C 190 80, 160 120, 100 165 Z"
+                fill="#6B1F1F"
+                class="heart-shape"/>
+          <path d="M 0 90
+                   L 30 90
+                   Q 38 85 46 90
+                   Q 54 95 60 90
+                   L 80 90
+                   L 86 87
+                   L 90 95
+                   L 94 60
+                   L 98 115
+                   L 102 90
+                   L 110 90
+                   Q 118 80 130 90
+                   Q 142 100 150 90
+                   L 200 90"
+                fill="none"
+                stroke="#F7F4EE"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="ecg-draw-line"/>
+        </svg>
+      </div>
+    </div>
+     <!-- Wrapper for page loader reveal -->
+    <div id="case-study-content">
 
     <!-- ============================================
          LEAD SUMMARY + STATS
@@ -753,7 +840,7 @@
         <li>Promotion from SaaS Supply Chain Analyst to Senior SaaS Implementation Specialist after six months</li>
       </ul>
     </aside>
-
+</div> <!-- end case-study-content -->
   </main>
 
   <footer>
@@ -763,12 +850,44 @@
     </div>
   </footer>
 
-  <script>
+<script>
+    // Phase toggle (existing functionality)
     document.querySelectorAll('.phase-header').forEach(header => {
       header.addEventListener('click', () => {
         header.parentElement.classList.toggle('open');
       });
     });
+
+    // Page loader: heart + ECG, fires once per session
+    (function() {
+      const STORAGE_KEY = 'caseStudyPageSeen';
+      const loader = document.getElementById('page-loader');
+      const content = document.getElementById('case-study-content');
+
+      if (!loader || !content) return;
+
+      let seen = false;
+      try {
+        seen = sessionStorage.getItem(STORAGE_KEY) === 'true';
+      } catch (e) {}
+
+      if (seen) {
+        loader.remove();
+        return;
+      }
+
+      loader.hidden = false;
+      content.classList.add('loading');
+
+      setTimeout(() => {
+        loader.classList.add('fade-out');
+        content.classList.add('revealed');
+        setTimeout(() => loader.remove(), 800);
+        try {
+          sessionStorage.setItem(STORAGE_KEY, 'true');
+        } catch (e) {}
+      }, 2500);
+    })();
   </script>
 
 </body>

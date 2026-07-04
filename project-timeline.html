@@ -66,15 +66,51 @@
       letter-spacing: 0.1em;
     }
 
-    .back-link {
-      color: var(--ink-soft);
-      text-decoration: none;
-      border-bottom: 1px solid var(--rule);
-      padding-bottom: 1px;
-      transition: color 0.15s;
-    }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 6px 16px 6px 6px;
+  background: var(--bg);
+  transition: all 0.2s ease;
+}
 
-    .back-link:hover { color: var(--accent); }
+.back-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--bg);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.back-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.back-link:hover {
+  background: rgba(200, 69, 69, 0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(200, 69, 69, 0.12);
+}
+
+.back-link:hover .back-icon {
+  transform: translateX(-2px);
+}
 
     /* Page header */
     .page-header {
@@ -548,9 +584,19 @@
 
   <header class="masthead">
     <div class="container masthead-inner">
-      <a href="index.html" class="back-link">← Back</a>
-      <span class="masthead-mark">TNJ</span>
-    </div>
+<a href="index.html" class="back-link">
+  <span class="back-icon">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M9 5 L14 5 A5 5 0 0 1 19 10 L19 13 M9 5 L12 2 M9 5 L12 8" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2.5" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"/>
+    </svg>
+  </span>
+  Back
+</a>
   </header>
 
   <main class="container">

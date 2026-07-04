@@ -362,7 +362,65 @@
       color: var(--ink-soft);
       background: var(--bg);
     }
+    /* Tooltip on hover — shows full certification name */
+.cert {
+  position: relative;
+  cursor: help;
+}
 
+.cert[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--ink);
+  color: var(--bg);
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  padding: 10px 14px;
+  border-radius: 6px;
+  width: max-content;
+  max-width: 280px;
+  text-align: center;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.cert[data-tooltip]::before {
+  content: "";
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--ink);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 10;
+}
+
+.cert[data-tooltip]:hover::after,
+.cert[data-tooltip]:hover::before {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 640px) {
+  .cert[data-tooltip]::after,
+  .cert[data-tooltip]::before {
+    display: none;
+  }
+}
     /* ============================================
        Contact
        ============================================ */
@@ -606,23 +664,27 @@
 
       <div class="credential-group">
         <h3>Education</h3>
-         <p>MBA Business Administration — Northwestern University<em>(Beginning 2028)</em></p>
+         <p>MBA Business Administration — Northwestern University<em>(Candidate, Starting 2028)</em></p>
         <p>M.S. Health Data Science — Northwestern University</em></p>
-        <p>B.S. Health Administration &amp; Neuroscience — University of Illinois <em>(summa cum laude)</em></p>
+        <p>B.S. Health Administration &amp; Neuroscience — University of Illinois <em>(cum laude)</em></p>
       </div>
-
       <div class="credential-group">
         <h3>Certifications</h3>
-        <div class="cert-list">
-          <span class="cert">Six Sigma Black Belt</span>
-          <span class="cert">ProSci ADKAR</span>
-          <span class="cert">CPHIMS</span>
-          <span class="cert">SAFe Scrum Fundamentals</span>
-          <span class="cert">SAFe AI-Native Foundations</span>
-          <span class="cert">Microsoft PL-300</span>
-          <span class="cert">Excellence in Speaking Institute</span>
-          <span class="cert">ACLS · BLS · PALS · NRP</span>
-        </div>
+<div class="cert-list">
+  <span class="cert" data-tooltip="Lean Six Sigma Black Belt — process improvement and defect reduction methodology">Six Sigma Black Belt</span>
+  <span class="cert" data-tooltip="Prosci ADKAR — change management framework: Awareness, Desire, Knowledge, Ability, Reinforcement">ProSci ADKAR</span>
+  <span class="cert" data-tooltip="Certified Professional in Healthcare Information &amp; Management Systems">CPHIMS</span>
+  <span class="cert" data-tooltip="Scaled Agile Framework — Scrum Fundamentals">SAFe Scrum Fundamentals</span>
+  <span class="cert" data-tooltip="Scaled Agile Framework — AI-Native Foundations">SAFe AI-Native Foundations</span>
+  <span class="cert" data-tooltip="Microsoft Power BI Data Analyst Associate">Microsoft PL-300</span>
+  <span class="cert" data-tooltip="Excellence in Speaking Institute — professional communication training">Excellence in Speaking Institute</span>
+  <span class="cert" data-tooltip="Basic Life Support">BLS</span>
+  <span class="cert" data-tooltip="Advanced Cardiac Life Support">ACLS</span>
+  <span class="cert" data-tooltip="Pediatric Advanced Life Support">PALS</span>
+  <span class="cert" data-tooltip="Pediatric Advanced Life Support">PALS</span>
+  <span class="cert" data-tooltip="Neonatal Resuscitation Program">NRP</span>
+</div>
+
       </div>
     </section>
   <!-- ============================================

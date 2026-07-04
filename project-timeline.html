@@ -83,12 +83,30 @@
   transition: all 0.2s ease;
 }
 
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #D93838;
+  text-decoration: none;
+  border: 1px solid #D93838;
+  border-radius: 999px;
+  padding: 4px 20px 4px 4px;
+  background: var(--bg);
+  transition: all 0.2s ease;
+}
+
 .back-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: #D93838;
   color: var(--bg);
@@ -97,29 +115,15 @@
 }
 
 .back-icon svg {
-  width: 14px;
-  height: 14px;
+  width: 22px;
+  height: 22px;
+  display: block;
 }
 
 .back-link:hover {
   background: rgba(217, 56, 56, 0.06);
   transform: translateY(-1px);
   box-shadow: 0 0 0 3px rgba(217, 56, 56, 0.15);
-}
-
-.back-link:hover .back-icon {
-  transform: translateX(-2px);
-}
-
-.back-icon svg {
-  width: 14px;
-  height: 14px;
-}
-
-.back-link:hover {
-  background: rgba(200, 69, 69, 0.06);
-  transform: translateY(-1px);
-  box-shadow: 0 0 0 3px rgba(200, 69, 69, 0.12);
 }
 
 .back-link:hover .back-icon {

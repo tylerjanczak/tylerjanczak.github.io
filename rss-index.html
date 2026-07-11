@@ -144,6 +144,30 @@
       .outcomes { margin: 48px -12px; padding: 40px 24px; }
       .lesson-pullquote { font-size: 20px; margin: 60px auto; }
     }
+    .diagram {
+  margin: 32px 0 48px;
+  padding: 32px 20px;
+  background: var(--bg-subtle);
+  border-radius: 6px;
+}
+
+.diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.diagram-caption {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-top: 20px;
+  padding: 0 20px;
+}
+
   </style>
 </head>
 <body>
@@ -213,6 +237,66 @@
           <div class="stat-label">Person<br>Built It</div>
         </div>
       </div>
+      <div class="diagram">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 260" aria-label="CORE Intelligence pipeline diagram">
+    <defs>
+      <style>
+        .box-outline { fill: #F7F4EE; stroke: #6B1F1F; stroke-width: 1.5; }
+        .box-outline-mock { fill: #FFFFFF; stroke: #6B1F1F; stroke-width: 1; }
+        .box-label { font-family: "Fraunces", Georgia, serif; font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; fill: #6B1F1F; }
+        .box-title { font-family: "Fraunces", Georgia, serif; font-size: 15px; font-weight: 500; fill: #1B1B1B; }
+        .box-detail { font-family: "Inter", sans-serif; font-size: 11px; fill: #4A4A48; }
+        .arrow-line { stroke: #6B1F1F; stroke-width: 1.5; fill: none; }
+        .arrow-head { fill: #6B1F1F; }
+        .priority-tag { fill: #6B1F1F; }
+        .priority-tag-text { font-family: "Inter", sans-serif; font-size: 9px; font-weight: 500; fill: #F7F4EE; letter-spacing: 0.05em; }
+        .summary-text { font-family: "Inter", sans-serif; font-size: 10px; fill: #1B1B1B; }
+      </style>
+    </defs>
+
+    <rect x="10" y="40" width="200" height="200" rx="4" class="box-outline"/>
+    <text x="110" y="65" text-anchor="middle" class="box-label">01 · Ingestion</text>
+    <text x="110" y="100" text-anchor="middle" class="box-title">Python Scripts</text>
+    <text x="110" y="132" text-anchor="middle" class="box-detail">25+ RSS feeds</text>
+    <text x="110" y="152" text-anchor="middle" class="box-detail">Supply chain · AI</text>
+    <text x="110" y="172" text-anchor="middle" class="box-detail">Foodservice · Ent. tech</text>
+    <text x="110" y="210" text-anchor="middle" class="box-detail" style="font-style: italic;">Normalize to structured format</text>
+
+    <line x1="215" y1="140" x2="255" y2="140" class="arrow-line"/>
+    <polygon points="255,135 265,140 255,145" class="arrow-head"/>
+
+    <rect x="270" y="40" width="200" height="200" rx="4" class="box-outline"/>
+    <text x="370" y="65" text-anchor="middle" class="box-label">02 · Classification</text>
+    <text x="370" y="97" text-anchor="middle" class="box-title">Power Automate</text>
+    <text x="370" y="115" text-anchor="middle" class="box-title">+ AI Builder</text>
+    <text x="370" y="145" text-anchor="middle" class="box-detail">Score each article</text>
+    <text x="370" y="163" text-anchor="middle" class="box-detail">against strategic</text>
+    <text x="370" y="181" text-anchor="middle" class="box-detail">priorities</text>
+    <text x="370" y="215" text-anchor="middle" class="box-detail" style="font-style: italic;">Tag + summarize matches</text>
+
+    <line x1="475" y1="140" x2="515" y2="140" class="arrow-line"/>
+    <polygon points="515,135 525,140 515,145" class="arrow-head"/>
+
+    <rect x="530" y="40" width="180" height="200" rx="4" class="box-outline"/>
+    <text x="620" y="65" text-anchor="middle" class="box-label">03 · Delivery</text>
+    <text x="620" y="97" text-anchor="middle" class="box-title">MS Teams Post</text>
+
+    <rect x="545" y="115" width="150" height="90" rx="3" class="box-outline-mock"/>
+    <rect x="555" y="123" width="85" height="14" rx="7" class="priority-tag"/>
+    <text x="597" y="133" text-anchor="middle" class="priority-tag-text">SUPPLY CHAIN · AI</text>
+
+    <text x="555" y="155" class="summary-text">New warehouse robotics</text>
+    <text x="555" y="169" class="summary-text">platform announces</text>
+    <text x="555" y="183" class="summary-text">enterprise pricing. Could</text>
+    <text x="555" y="197" class="summary-text">affect Q3 evaluation.</text>
+
+    <text x="620" y="225" text-anchor="middle" class="box-detail" style="font-style: italic;">5-min executive briefing</text>
+  </svg>
+  <p class="diagram-caption">
+    Data flows one direction: feeds are ingested, classified against Compass's strategic priorities, and delivered to executive leadership as a daily briefing.
+  </p>
+</div>
+
 
       <h2 class="section-heading">From manual scan to automated signal.</h2>
       <p class="section-intro">

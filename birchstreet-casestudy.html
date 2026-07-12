@@ -113,6 +113,30 @@
     .phase-body-inner ul { margin: 8px 0 16px 20px; }
     .phase-body-inner li { margin-bottom: 6px; }
     .phase-body-inner strong { color: var(--ink); font-weight: 500; }
+    
+    .diagram {
+  margin: 32px 0 48px;
+  padding: 32px 20px;
+  background: var(--bg-subtle);
+  border-radius: 6px;
+}
+
+.diagram svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+.diagram-caption {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+  text-align: center;
+  margin-top: 20px;
+  padding: 0 20px;
+}
 
     /* CALLOUT — for the recipe-decrement example */
     .callout-example {
@@ -227,6 +251,78 @@
           <div class="stat-label">Level<br>Decrementing</div>
         </div>
       </div>
+<div class="diagram">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 480" aria-label="Birchstreet and POS integration diagram">
+    <defs>
+      <style>
+        .bs-box { fill: #F7F4EE; stroke: #6B1F1F; stroke-width: 1.5; }
+        .bs-box-recipe { fill: #FFFFFF; stroke: #6B1F1F; stroke-width: 1.5; }
+        .bs-label { font-family: "Fraunces", Georgia, serif; font-size: 11px; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; fill: #6B1F1F; }
+        .bs-title { font-family: "Fraunces", Georgia, serif; font-size: 18px; font-weight: 500; fill: #1B1B1B; }
+        .bs-subtitle { font-family: "Inter", sans-serif; font-size: 11px; fill: #4A4A48; }
+        .bs-arrow { stroke: #6B1F1F; stroke-width: 2; fill: none; }
+        .bs-arrow-thin { stroke: #6B1F1F; stroke-width: 1.5; fill: none; }
+        .bs-arrowhead { fill: #6B1F1F; }
+        .bs-annotation { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 12px; fill: #4A4A48; }
+        .bs-recipe-header { font-family: "Fraunces", Georgia, serif; font-size: 12px; font-weight: 500; fill: #1B1B1B; text-transform: uppercase; letter-spacing: 0.1em; }
+        .bs-recipe-item { font-family: "Inter", sans-serif; font-size: 12px; fill: #4A4A48; }
+        .bs-recipe-value { font-family: "Inter", sans-serif; font-size: 12px; font-weight: 500; fill: #1B1B1B; }
+      </style>
+    </defs>
+
+    <text x="30" y="30" class="bs-label">Before</text>
+    <rect x="120" y="55" width="180" height="80" rx="4" class="bs-box"/>
+    <text x="210" y="90" text-anchor="middle" class="bs-title">Birchstreet</text>
+    <text x="210" y="112" text-anchor="middle" class="bs-subtitle">Procurement platform</text>
+
+    <line x1="305" y1="95" x2="415" y2="95" class="bs-arrow"/>
+    <polygon points="415,88 428,95 415,102" class="bs-arrowhead"/>
+    <text x="360" y="78" text-anchor="middle" class="bs-annotation">One-way pull</text>
+
+    <rect x="430" y="55" width="180" height="80" rx="4" class="bs-box"/>
+    <text x="520" y="90" text-anchor="middle" class="bs-title">POS System</text>
+    <text x="520" y="112" text-anchor="middle" class="bs-subtitle">Live sales at venues</text>
+
+    <text x="365" y="155" text-anchor="middle" class="bs-annotation">
+      Manual reconciliation required — sometimes days later.
+    </text>
+
+    <line x1="30" y1="185" x2="690" y2="185" stroke="#D9D2C4" stroke-width="1"/>
+
+    <text x="30" y="215" class="bs-label">After</text>
+    <rect x="120" y="240" width="180" height="80" rx="4" class="bs-box"/>
+    <text x="210" y="275" text-anchor="middle" class="bs-title">Birchstreet</text>
+    <text x="210" y="297" text-anchor="middle" class="bs-subtitle">Procurement platform</text>
+
+    <line x1="305" y1="280" x2="425" y2="280" class="bs-arrow"/>
+    <polygon points="425,273 438,280 425,287" class="bs-arrowhead"/>
+    <polygon points="305,273 292,280 305,287" class="bs-arrowhead"/>
+    <text x="365" y="263" text-anchor="middle" class="bs-annotation">Live, two-way</text>
+
+    <rect x="440" y="240" width="180" height="80" rx="4" class="bs-box"/>
+    <text x="530" y="275" text-anchor="middle" class="bs-title">POS System</text>
+    <text x="530" y="297" text-anchor="middle" class="bs-subtitle">Live sales at venues</text>
+
+    <line x1="530" y1="325" x2="530" y2="355" class="bs-arrow-thin"/>
+    <polygon points="524,354 530,364 536,354" class="bs-arrowhead"/>
+
+    <rect x="200" y="365" width="360" height="105" rx="4" class="bs-box-recipe"/>
+    <text x="380" y="388" text-anchor="middle" class="bs-recipe-header">Sale · Hot Dog</text>
+    <text x="230" y="418" class="bs-recipe-item">Recipe auto-decrements:</text>
+
+    <circle cx="245" cy="435" r="2" fill="#6B1F1F"/>
+    <text x="258" y="439" class="bs-recipe-value">1 frankfurter</text>
+    <text x="345" y="439" class="bs-recipe-item">→ Birchstreet inventory −1</text>
+
+    <circle cx="245" cy="455" r="2" fill="#6B1F1F"/>
+    <text x="258" y="459" class="bs-recipe-value">1 bun</text>
+    <text x="345" y="459" class="bs-recipe-item">→ Birchstreet inventory −1</text>
+  </svg>
+  <p class="diagram-caption">
+    Before: data flowed from Birchstreet to the POS, with reconciliation happening manually.
+    After: the systems talk both directions, and every sale automatically decrements ingredient-level inventory.
+  </p>
+</div>
 
       <h2 class="section-heading">Closing the loop between what's ordered and what's sold.</h2>
       <p class="section-intro">

@@ -52,13 +52,19 @@ If the answer is not in the portfolio, say you don't know.
       })
     });
 
-    const data = await response.json();
+   const data = await response.json();
 
-    return res.status(200).json({
-      success: true,
-      response: data.output_text || "No response returned."
-    });
+let answerText = data.output_text; // in case OpenAI adds this later
+if (!answerText && Array.isArray(data.output)) {
+  const messageItem = data.output.find(item => item.type === "message");
+  const textPart = messageItem?.content?.find(c => c.type === "output_text");
+  answerText = textPart?.text;
+}
 
+return res.status(200).json({
+  success: true,
+  response: answerText || "No response returned."
+});
   } catch (err) {
     console.error(err);
 

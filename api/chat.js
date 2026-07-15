@@ -1,56 +1,70 @@
 export default async function handler(req, res) {
+  // Allow requests from your website
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { question } = req.body;
+  try {
+    const { question } = req.body;
 
-  const knowledge = `
-Tyler Janczak is a healthcare transformation and technology implementation professional.
+    if (!question) {
+      return res.status(400).json({ error: "No question provided." });
+    }
 
-Experience:
-- Director of Core Solutions at Compass Group.
-- Led implementations across 100+ venues.
-- Managed a 52-person team.
-- Previously worked at Cardinal Health on WaveMark implementations.
-- Supported six health systems and 500+ procedural/nursing areas.
-- Helped generate over $2.6M in savings.
-- Reduced expired inventory by approximately 50%.
+    const portfolio = `
+You are answering questions about Tyler Janczak.
+
+Professional Background:
+- Healthcare technology implementation
+- Director of Core Solutions at Compass Group
+- Led implementations across 100+ venues
+- Managed a 52-person team
+- Previously worked at Cardinal Health on WaveMark
+- Supported six health systems
+- Helped generate over $2.6M in savings
+- Reduced expired inventory by approximately 50%
 
 Education:
-- MS from Northwestern University.
-- BS from the University of Illinois Urbana-Champaign.
+- Northwestern University Master's degree
+- University of Illinois Urbana-Champaign Bachelor's degree
 
 Only answer questions using this information.
+If the answer is not in the portfolio, say you don't know.
 `;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-5.5",
-      input: [
-        {
-          role: "system",
-          content: `You are Tyler's portfolio assistant. Use ONLY the supplied portfolio knowledge. If you don't know the answer, say so.`
-        },
-        {
-          role: "user",
-          content: `Portfolio:\n${knowledge}\n\nQuestion: ${question}`
-        }
-      ]
-    })
-  });
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        input: `Portfolio:\n${portfolio}\n\nQuestion: ${question}`
+      })
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  res.status(200).json({
-    answer: data.output_text
-  });
+    return res.status(200).json({
+      success: true,
+      response: data.output_text || "No response returned."
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
+  }
 }

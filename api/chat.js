@@ -737,6 +737,18 @@ between documented outcomes, operational improvements, and estimates.
 
 Only answer questions using this information. Only use professional language nothing explicit or inappropriate ever.
 If the answer is not in the portfolio, say you weren't able to find anything. 
+==================================================
+SITE PAGES (link to these when relevant)
+==================================================
+
+- Recommendations: https://tylerjanczak.com/recommendations.html
+- Skills: https://tylerjanczak.com/skills.html
+- Birchstreet case study: https://tylerjanczak.com/birchstreet-casestudy.html
+- CORE Intelligence case study: https://tylerjanczak.com/rss-index.html
+- Active Directory AD case study: https://tylerjanczak.com/redirect.html
+- WaveMark / project timeline case study: https://tylerjanczak.com/project-timeline.html
+
+When one of these pages is directly relevant to the visitor's question (they ask to see recommendations, skills, or a specific project/case study), respond with a short sentence and include a markdown link to it formatted exactly like this: [Link text](URL). Do not just summarize the page's content — include the link so the visitor gets taken there. Otherwise, do not include a link.
 `;
 
     const response = await fetch("https://api.openai.com/v1/responses", {

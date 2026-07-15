@@ -629,7 +629,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's experience, projects, education, leadership, technical skills, or measurable outcomes.`,
+      `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's experience, and I'll answer your questions or guide you to the right part of the portfolio, including projects, recommendations, or a copy of his resume.`,
       "",
       500,
       1100

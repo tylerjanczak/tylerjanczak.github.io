@@ -411,14 +411,6 @@
       opacity: 0.55;
     }
 
-    .tyler-ai-privacy {
-      margin: 9px 4px 0;
-      color: var(--ta-muted);
-      font-size: 10px;
-      line-height: 1.35;
-      text-align: center;
-    }
-
     @media (max-width: 520px) {
       #tyler-ai-widget {
         right: 14px;
@@ -517,12 +509,6 @@
             Send
           </button>
         </form>
-
-        <p class="tyler-ai-privacy">
-          Conversations may be recorded to improve Tyler AI,
-          system quality, and personalization. Do not submit
-          confidential or sensitive information.
-        </p>
       </footer>
     </div>
 
@@ -609,7 +595,7 @@
   ------------------------------------------------------------------ */
 
   addAssistantMessage(
-    "Thanks for dropping by. Conversations may be recorded for quality, system improvement, and personalization.",
+    "We and our partners may monitor and record conversations for quality, systems training, and personalization.",
     "notice"
   );
 

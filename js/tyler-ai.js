@@ -384,6 +384,9 @@
 
     #tyler-ai-input::placeholder {
       color: #8b857e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #tyler-ai-send {
@@ -590,7 +593,7 @@
     return "Hi";
   }
 
- function wait(ms) {
+  function wait(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 

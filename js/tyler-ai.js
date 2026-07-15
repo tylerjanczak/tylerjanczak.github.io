@@ -319,39 +319,54 @@
     .tyler-ai-typing {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      min-width: 54px;
-      min-height: 42px;
+      justify-content: center;
+      min-width: 64px;
+      min-height: 32px;
     }
 
-    .tyler-ai-typing span {
+    .tyler-ai-typing svg {
       display: block;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #888078;
-      animation: tylerAiTyping 1.1s infinite ease-in-out;
+      width: 64px;
+      height: 26px;
     }
 
-    .tyler-ai-typing span:nth-child(2) {
-      animation-delay: 0.15s;
+    .tyler-ai-ecg-line {
+      fill: none;
+      stroke: var(--ta-red);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+      animation: tylerAiEcgDraw 1.5s linear infinite;
     }
 
-    .tyler-ai-typing span:nth-child(3) {
-      animation-delay: 0.3s;
-    }
-
-    @keyframes tylerAiTyping {
-      0%,
-      60%,
-      100% {
-        transform: translateY(0);
-        opacity: 0.45;
+    @keyframes tylerAiEcgDraw {
+      0% {
+        stroke-dashoffset: 100;
+        opacity: 1;
       }
 
-      30% {
-        transform: translateY(-4px);
+      65% {
+        stroke-dashoffset: 0;
         opacity: 1;
+      }
+
+      85% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
+
+      100% {
+        stroke-dashoffset: 0;
+        opacity: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tyler-ai-ecg-line {
+        animation: none;
+        stroke-dashoffset: 0;
       }
     }
 
@@ -990,9 +1005,13 @@
     typing.setAttribute("aria-label", "Tyler AI is responding");
 
     typing.innerHTML = `
-      <span></span>
-      <span></span>
-      <span></span>
+      <svg viewBox="0 0 130 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          class="tyler-ai-ecg-line"
+          pathLength="100"
+          d="M0 20 L20 20 Q26 16 32 20 Q38 24 42 20 L54 20 L60 6 L66 34 L72 20 L84 20 Q90 12 96 20 Q102 28 108 20 L130 20"
+        />
+      </svg>
     `;
 
     row.appendChild(avatar);

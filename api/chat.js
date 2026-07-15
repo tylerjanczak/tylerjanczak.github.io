@@ -26,18 +26,18 @@ Professional Background:
 - Healthcare technology implementation
 - Director of Core Solutions at Compass Group
 - Led implementations across 100+ venues
-- Managed a 52-person team
+- Managed a 52-person team at Compass Group
 - Previously worked at Cardinal Health on WaveMark
-- Supported six health systems
-- Helped generate over $2.6M in savings
-- Reduced expired inventory by approximately 50%
+- Supported six health systemsat Cardinal Health on WaveMark
+- Helped generate over $2.6M in savings linked to Implementation Specialist at Cardinal Health
+- Reduced expired inventory by approximately 50% linked to Implementation Specialist at Cardinal Health
 
 Education:
-- Northwestern University Master's degree
-- University of Illinois Urbana-Champaign Bachelor's degree
+- Northwestern University Master's degree in Health Data Science
+- University of Illinois Urbana-Champaign Bachelor's degree in Health Administration
 
 Only answer questions using this information.
-If the answer is not in the portfolio, say you don't know.
+If the answer is not in the portfolio, say you weren't able to find anything.
 `;
 
     const response = await fetch("https://api.openai.com/v1/responses", {

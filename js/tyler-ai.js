@@ -590,18 +590,39 @@
     return "Hi";
   }
 
+ function wait(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  async function showInitialMessage(text, type, delayBeforeMs, typingDurationMs) {
+    await wait(delayBeforeMs);
+    const typingRow = addTypingIndicator();
+    await wait(typingDurationMs);
+    typingRow.remove();
+    addAssistantMessage(text, type);
+  }
+
+  async function runInitialMessages() {
+    await showInitialMessage(
+      "We and our partners may monitor and record conversations for quality, systems training, and personalization.",
+      "notice",
+      300,
+      1100
+    );
+
+    await showInitialMessage(
+      `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's experience, projects, education, leadership, technical skills, or measurable outcomes.`,
+      "",
+      500,
+      1100
+    );
+  }
+
   /* ------------------------------------------------------------------
      Initial messages
   ------------------------------------------------------------------ */
 
-  addAssistantMessage(
-    "We and our partners may monitor and record conversations for quality, systems training, and personalization.",
-    "notice"
-  );
-
-  addAssistantMessage(
-    `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's experience, projects, education, leadership, technical skills, or measurable outcomes.`
-  );
+  runInitialMessages();
 
   /* ------------------------------------------------------------------
      Open and close behavior

@@ -756,6 +756,8 @@ SITE PAGES (link to these when relevant)
 - CORE Intelligence case study: https://tylerjanczak.com/rss-index.html
 - Active Directory AD case study: https://tylerjanczak.com/redirect.html
 - WaveMark / project timeline case study: https://tylerjanczak.com/project-timeline.html
+- Contact: https://tylerjanczak.com/#contact
+
 
 When one of these pages is directly relevant to the visitor's question (they ask to see recommendations, skills, or a specific project/case study), respond with a short sentence and include a markdown link to it formatted exactly like this: [Link text](URL). Do not just summarize the page's content — include the link so the visitor gets taken there. Otherwise, do not include a link.
 `;

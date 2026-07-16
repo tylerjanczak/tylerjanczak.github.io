@@ -700,7 +700,6 @@
     try {
       return window.localStorage.getItem(VISITOR_NAME_KEY);
     } catch {
-      // Storage disabled (private browsing, locked-down browser, etc.)
       return null;
     }
   }
@@ -709,7 +708,6 @@
     try {
       window.localStorage.setItem(VISITOR_NAME_KEY, name);
     } catch {
-      // Fails silently — worst case, it just asks again next visit.
     }
   }
 
@@ -738,7 +736,6 @@
       banner.classList.add("tyler-ai-banner-visible");
     }, 60);
 
-    // Auto-dismiss after a while so it doesn't linger indefinitely.
     window.setTimeout(() => {
       if (document.body.contains(banner)) {
         banner.classList.remove("tyler-ai-banner-visible");
@@ -750,13 +747,6 @@
   if (visitorFirstName) {
     showWelcomeBanner(visitorFirstName);
   }
-
-  /* ------------------------------------------------------------------
-     Link handling — the AI is instructed to output markdown-style
-     links like [Recommendations](https://.../recommendations.html).
-     We render them safely, then auto-navigate the browser there
-     after the person has had a moment to read the answer.
-  ------------------------------------------------------------------ */
 
   function formatMessageHtml(text) {
     const escaped = escapeHtml(text);
@@ -812,8 +802,8 @@
     );
 
     const greetingText = visitorFirstName
-      ? `${getTimeBasedGreeting()}, ${visitorFirstName}! I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`
-      : `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
+      ? `${getTimeBasedGreeting()}, ${visitorFirstName}! What would you like to explore first?`
+      : `${getTimeBasedGreeting()}, I'm Tyler's automated assistant, ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
 
     await showInitialMessage(greetingText, "", 500, 1100);
 
@@ -950,7 +940,7 @@
       visitorFirstName = formattedName;
       storeFirstName(formattedName);
 
-      addAssistantMessage(`Nice to meet you, ${formattedName}!`);
+      addAssistantMessage(`Nice to meet you, ${formattedName}! What can I help you find?`);
       return;
     }
 

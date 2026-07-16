@@ -9,6 +9,7 @@
 
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
+    resumeUrl: "https://tylerjanczak-github-io.vercel.app/resume.pdf",
     resumeApiUrl: "https://tylerjanczak-github-io.vercel.app/api/send-resume",
     assistantName: "Tyler AI",
     profileImage: "tyler-ai-avatar.jpg",
@@ -370,6 +371,80 @@
       }
     }
 
+    .tyler-ai-searching {
+      min-width: 190px;
+    }
+
+    .tyler-ai-searching-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ta-muted);
+      margin-bottom: 9px;
+    }
+
+    .tyler-ai-searching-title svg {
+      display: block;
+      width: 30px;
+      height: 14px;
+      flex: 0 0 auto;
+    }
+
+    .tyler-ai-searching-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .tyler-ai-searching-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--ta-muted);
+      opacity: 0.5;
+      transition: opacity 200ms ease, color 200ms ease;
+    }
+
+    .tyler-ai-searching-list li.tyler-ai-checked {
+      opacity: 1;
+      color: var(--ta-text);
+    }
+
+    .tyler-ai-check-icon {
+      position: relative;
+      flex: 0 0 15px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 1.5px solid var(--ta-border);
+      transition: background 200ms ease, border-color 200ms ease;
+    }
+
+    .tyler-ai-searching-list li.tyler-ai-checked .tyler-ai-check-icon {
+      background: var(--ta-red);
+      border-color: var(--ta-red);
+    }
+
+    .tyler-ai-searching-list li.tyler-ai-checked .tyler-ai-check-icon::after {
+      content: "";
+      position: absolute;
+      left: 4.5px;
+      top: 2px;
+      width: 4px;
+      height: 7px;
+      border-right: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      transform: rotate(40deg);
+    }
+
     .tyler-ai-footer {
       padding: 12px;
       border-top: 1px solid var(--ta-border);
@@ -457,6 +532,56 @@
 
       #tyler-ai-messages {
         scroll-behavior: auto;
+      }
+    }
+
+    #tyler-ai-welcome-banner {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      z-index: 999997;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px 10px 18px;
+      background: #f7f4ee;
+      border: 1px solid #d9d2c4;
+      border-radius: 999px;
+      box-shadow: 0 12px 30px rgba(30, 22, 20, 0.15);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px;
+      color: #1b1b1b;
+      opacity: 0;
+      transform: translate(-50%, -10px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
+    }
+
+    #tyler-ai-welcome-banner.tyler-ai-banner-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      pointer-events: auto;
+    }
+
+    #tyler-ai-welcome-banner button {
+      border: 0;
+      background: transparent;
+      font-size: 17px;
+      line-height: 1;
+      color: #746e67;
+      cursor: pointer;
+      padding: 0 2px;
+    }
+
+    #tyler-ai-welcome-banner button:hover {
+      color: #1b1b1b;
+    }
+
+    @media (max-width: 520px) {
+      #tyler-ai-welcome-banner {
+        top: 10px;
+        font-size: 13px;
+        padding: 8px 12px 8px 16px;
       }
     }
   `;
@@ -562,11 +687,69 @@
 
   let requestInProgress = false;
   let conversationStarted = false;
+  let awaitingFirstName = false;
   let awaitingResumeEmail = false;
 
   const resumeRequestPattern =
-    /(resume|cv).*(send|email|copy|share|forward|get)|(send|email|copy|share|forward|get).*(resume|cv)/i;
+    /(resume|cv).*(send|email|copy|share|forward|get|see|view)|(send|email|copy|share|forward|get|see|view).*(resume|cv)/i;
+  const namePattern = /^[A-Za-z][A-Za-z'\-\s]{0,29}$/;
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const VISITOR_NAME_KEY = "tylerAiVisitorFirstName";
+
+  function getStoredFirstName() {
+    try {
+      return window.localStorage.getItem(VISITOR_NAME_KEY);
+    } catch {
+      // Storage disabled (private browsing, locked-down browser, etc.)
+      return null;
+    }
+  }
+
+  function storeFirstName(name) {
+    try {
+      window.localStorage.setItem(VISITOR_NAME_KEY, name);
+    } catch {
+      // Fails silently — worst case, it just asks again next visit.
+    }
+  }
+
+  let visitorFirstName = getStoredFirstName();
+
+  function showWelcomeBanner(name) {
+    if (document.getElementById("tyler-ai-welcome-banner")) {
+      return;
+    }
+
+    const banner = document.createElement("div");
+    banner.id = "tyler-ai-welcome-banner";
+    banner.innerHTML = `
+      <span>Welcome back, ${escapeHtml(name)}</span>
+      <button type="button" aria-label="Dismiss">&times;</button>
+    `;
+
+    document.body.appendChild(banner);
+
+    banner.querySelector("button").addEventListener("click", () => {
+      banner.classList.remove("tyler-ai-banner-visible");
+      window.setTimeout(() => banner.remove(), 220);
+    });
+
+    window.setTimeout(() => {
+      banner.classList.add("tyler-ai-banner-visible");
+    }, 60);
+
+    // Auto-dismiss after a while so it doesn't linger indefinitely.
+    window.setTimeout(() => {
+      if (document.body.contains(banner)) {
+        banner.classList.remove("tyler-ai-banner-visible");
+        window.setTimeout(() => banner.remove(), 220);
+      }
+    }, 6000);
+  }
+
+  if (visitorFirstName) {
+    showWelcomeBanner(visitorFirstName);
+  }
 
   /* ------------------------------------------------------------------
      Link handling — the AI is instructed to output markdown-style
@@ -628,12 +811,21 @@
       1100
     );
 
-    await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler's Automated Assistant. I can answer a variety of questions, recommend where to explore next, or connect you with the information you're looking for; including projects, recommendations, or a copy of his resume.`,
-      "",
-      500,
-      1100
-    );
+    const greetingText = visitorFirstName
+      ? `${getTimeBasedGreeting()}, ${visitorFirstName}! I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`
+      : `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
+
+    await showInitialMessage(greetingText, "", 500, 1100);
+
+    if (!visitorFirstName) {
+      await showInitialMessage(
+        "By the way, what's your first name?",
+        "",
+        400,
+        900
+      );
+      awaitingFirstName = true;
+    }
   }
 
   /* ------------------------------------------------------------------
@@ -735,6 +927,33 @@
     input.value = "";
     input.style.height = "auto";
 
+    // If we just asked for their first name, treat this reply as the
+    // name instead of a normal chat question.
+    if (awaitingFirstName) {
+      awaitingFirstName = false;
+
+      const candidateName = question.split(/\s+/)[0];
+
+      if (!namePattern.test(candidateName)) {
+        addAssistantMessage(
+          "That doesn't look like a name — could you try again? Just your first name is fine.",
+          "error"
+        );
+        awaitingFirstName = true;
+        return;
+      }
+
+      const formattedName =
+        candidateName.charAt(0).toUpperCase() +
+        candidateName.slice(1).toLowerCase();
+
+      visitorFirstName = formattedName;
+      storeFirstName(formattedName);
+
+      addAssistantMessage(`Nice to meet you, ${formattedName}!`);
+      return;
+    }
+
     // If we just asked for an email to send the resume to, treat this
     // reply as the email address instead of a normal chat question.
     if (awaitingResumeEmail) {
@@ -767,7 +986,7 @@
     sendButton.disabled = true;
     input.disabled = true;
 
-    const typingElement = addTypingIndicator();
+    const typingElement = addSearchingIndicator();
 
     try {
       const controller = new AbortController();
@@ -784,7 +1003,8 @@
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          question: question
+          question: question,
+          firstName: visitorFirstName || null
         }),
         signal: controller.signal
       });
@@ -1020,6 +1240,67 @@
     scrollToBottom();
 
     return row;
+  }
+
+  function addSearchingIndicator() {
+    const row = document.createElement("div");
+    row.className = "tyler-ai-row assistant";
+
+    const avatar = document.createElement("div");
+    avatar.className = "tyler-ai-small-avatar";
+
+    if (CONFIG.profileImage) {
+      const image = document.createElement("img");
+      image.src = CONFIG.profileImage;
+      image.alt = "";
+      avatar.appendChild(image);
+    } else {
+      avatar.textContent = "TJ";
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = "tyler-ai-message tyler-ai-searching";
+    bubble.setAttribute("aria-label", "Searching Tyler's portfolio");
+    bubble.innerHTML = `
+      <div class="tyler-ai-searching-title">
+        <svg viewBox="0 0 130 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path
+            class="tyler-ai-ecg-line"
+            pathLength="100"
+            d="M0 20 L20 20 Q26 16 32 20 Q38 24 42 20 L54 20 L60 6 L66 34 L72 20 L84 20 Q90 12 96 20 Q102 28 108 20 L130 20"
+          />
+        </svg>
+        Searching Portfolio...
+      </div>
+      <ul class="tyler-ai-searching-list">
+        <li><span class="tyler-ai-check-icon"></span>Experience</li>
+        <li><span class="tyler-ai-check-icon"></span>Skills &amp; Certifications</li>
+        <li><span class="tyler-ai-check-icon"></span>Measurable Outcomes</li>
+      </ul>
+    `;
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messages.appendChild(row);
+    scrollToBottom();
+
+    const items = bubble.querySelectorAll(".tyler-ai-searching-list li");
+    const timers = [];
+
+    items.forEach((item, index) => {
+      const timer = window.setTimeout(() => {
+        item.classList.add("tyler-ai-checked");
+        scrollToBottom();
+      }, 350 + index * 420);
+      timers.push(timer);
+    });
+
+    return {
+      remove() {
+        timers.forEach((timer) => window.clearTimeout(timer));
+        row.remove();
+      }
+    };
   }
 
   function scrollToBottom() {

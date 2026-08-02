@@ -797,8 +797,10 @@ const finalAnswer = answerText || "No response returned.";
 await kv.lpush(
   "tyler_ai_conversations",
   JSON.stringify({
+    id: crypto.randomUUID(),
     question,
     answer: finalAnswer,
+    page: req.body.page || null,
     firstName: req.body.firstName || null,
     timestamp: new Date().toISOString()
   })

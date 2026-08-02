@@ -1,6 +1,12 @@
 (() => {
   "use strict";
 
+  /*
+   * Tyler AI — Portfolio Chat Widget
+   * Frontend website: GitHub Pages / Vercel static hosting
+   * Backend API: Vercel serverless function
+   */
+
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     resumeUrl: "https://tylerjanczak-github-io.vercel.app/resume.pdf",
@@ -853,7 +859,8 @@
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          question: question
+          question: question,
+          page: window.location.pathname
         }),
         signal: controller.signal
       });

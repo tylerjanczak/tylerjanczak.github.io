@@ -310,7 +310,7 @@
       await signInPasskey();
     } catch (err) {
       console.error(err);
-      gateError.textContent = "Registration was cancelled or failed.";
+      gateError.textContent = "Registration failed: " + (err.message || err.name || "unknown error");
     }
   }
 
@@ -348,7 +348,7 @@
       await loadDashboard();
     } catch (err) {
       console.error(err);
-      gateError.textContent = "Sign-in was cancelled or failed.";
+      gateError.textContent = "Sign-in failed: " + (err.message || err.name || "unknown error");
     }
   }
 
@@ -420,5 +420,6 @@
   // Attempt to resume an existing session on page load.
   loadDashboard();
 </script>
+
 </body>
 </html>

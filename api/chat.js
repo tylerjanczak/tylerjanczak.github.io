@@ -1,3 +1,4 @@
+import { kv } from "@vercel/kv";
 export default async function handler(req, res) {
   // Allow requests from your website
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -791,9 +792,21 @@ if (!answerText && Array.isArray(data.output)) {
   answerText = textPart?.text;
 }
 
+const finalAnswer = answerText || "No response returned.";
+
+await kv.lpush(
+  "tyler_ai_conversations",
+  JSON.stringify({
+    question,
+    answer: finalAnswer,
+    firstName: req.body.firstName || null,
+    timestamp: new Date().toISOString()
+  })
+);
+
 return res.status(200).json({
   success: true,
-  response: answerText || "No response returned."
+  response: finalAnswer
 });
   } catch (err) {
     console.error(err);

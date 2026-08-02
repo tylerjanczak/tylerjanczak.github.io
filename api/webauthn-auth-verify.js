@@ -1,13 +1,20 @@
 import { kv } from "@vercel/kv";
-import { verifyAuthenticationResponse } from "@simplewebauthn/server";
+import { verifyRegistrationResponse } from "@simplewebauthn/server";
 
-const RP_ID = "tylerjanczak-github-io.vercel.app";
-const ORIGIN = "https://tylerjanczak-github-io.vercel.app";
-const SESSION_TTL_SECONDS = 60 * 60 * 24; // 24 hours
+const RP_ID = "tylerjanczak.com";
+const ORIGIN = "https://tylerjanczak.com";
+
+async function getStoredCredentials() {
+  const raw = await kv.get("webauthn_credentials");
+  if (!raw) return [];
+  const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+  return Array.isArray(parsed) ? parsed : [];
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -17,56 +24,51 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  try {
-    const { response } = req.body;
+  const providedPassword = req.headers.authorization?.replace("Bearer ", "");
 
-    const expectedChallenge = await kv.get("webauthn_auth_challenge");
+  if (!providedPassword || providedPassword !== process.env.DASHBOARD_PASSWORD) {
+    return res.status(401).json({ error: "Incorrect password." });
+  }
+
+  try {
+    const { response, deviceLabel } = req.body;
+
+    const expectedChallenge = await kv.get("webauthn_reg_challenge");
 
     if (!expectedChallenge) {
       return res.status(400).json({
-        error: "Sign-in session expired. Please try again."
+        error: "Registration session expired. Please try again."
       });
     }
 
-    const storedCredentialRaw = await kv.get("webauthn_credential");
-
-    if (!storedCredentialRaw) {
-      return res.status(404).json({ error: "No passkey has been registered yet." });
-    }
-
-    const storedCredential =
-      typeof storedCredentialRaw === "string"
-        ? JSON.parse(storedCredentialRaw)
-        : storedCredentialRaw;
-
-    const verification = await verifyAuthenticationResponse({
+    const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge,
       expectedOrigin: ORIGIN,
-      expectedRPID: RP_ID,
-      credential: {
-        id: storedCredential.id,
-        publicKey: Buffer.from(storedCredential.publicKey, "base64"),
-        counter: storedCredential.counter,
-        transports: storedCredential.transports
-      }
+      expectedRPID: RP_ID
     });
 
-    if (!verification.verified) {
-      return res.status(401).json({ error: "Passkey verification failed." });
+    if (!verification.verified || !verification.registrationInfo) {
+      return res.status(400).json({ error: "Passkey verification failed." });
     }
 
-    // Update the stored counter to guard against cloned authenticators.
-    storedCredential.counter = verification.authenticationInfo.newCounter;
-    await kv.set("webauthn_credential", JSON.stringify(storedCredential));
-    await kv.del("webauthn_auth_challenge");
+    const { credential } = verification.registrationInfo;
 
-    const sessionToken = crypto.randomUUID();
-    await kv.set(`webauthn_session_${sessionToken}`, "true", {
-      ex: SESSION_TTL_SECONDS
+    const existingCredentials = await getStoredCredentials();
+
+    existingCredentials.push({
+      id: credential.id,
+      publicKey: Buffer.from(credential.publicKey).toString("base64"),
+      counter: credential.counter,
+      transports: credential.transports || [],
+      label: deviceLabel || `Device ${existingCredentials.length + 1}`,
+      registeredAt: new Date().toISOString()
     });
 
-    return res.status(200).json({ verified: true, sessionToken });
+    await kv.set("webauthn_credentials", JSON.stringify(existingCredentials));
+    await kv.del("webauthn_reg_challenge");
+
+    return res.status(200).json({ verified: true });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ verified: false, error: err.message });

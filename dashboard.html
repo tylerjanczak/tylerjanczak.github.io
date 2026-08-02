@@ -231,7 +231,7 @@
 </div>
 
 <script>
-  const API_BASE = "https://tylerjanczak.com";
+  const API_BASE = "https://tylerjanczak-github-io.vercel.app";
   const SESSION_KEY = "tylerDashboardSession";
   const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
 
@@ -417,9 +417,13 @@
         `).join("")
       : `<tr><td colspan="2" class="empty-row">No resume requests yet.</td></tr>`;
   }
+
   // Attempt to resume an existing session on page load.
   loadDashboard();
 </script>
+
+</body>
+</html>
 
 </body>
 </html>

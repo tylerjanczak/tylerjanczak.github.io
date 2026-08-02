@@ -1,14 +1,15 @@
 import { kv } from "@vercel/kv";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 
-const RP_ID = "tylerjanczak.com";
-const ORIGIN = "https://tylerjanczak.com";
+const RP_ID = "tylerjanczak-github-io.vercel.app";
+const ORIGIN = "https://tylerjanczak-github-io.vercel.app";
 const SESSION_TTL_SECONDS = 60 * 60 * 24; // 24 hours
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }

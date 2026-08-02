@@ -1,22 +1,12 @@
 
 (() => {
   "use strict";
-
-  /*
-   * Heatmap / Session Recording Disclaimer
-   * Styled after clinical EHR alert banners (a nod to Tyler's healthcare background)
-   * Discloses use of Microsoft Clarity (heatmaps, session recording) to visitors.
-   */
-
   const STORAGE_KEY = "heatmapDisclaimerAcknowledged";
-
-  // Don't show it twice in the same browser once acknowledged.
   try {
     if (window.localStorage.getItem(STORAGE_KEY) === "true") {
       return;
     }
   } catch {
-    // If storage is blocked, fall through and just show it every visit.
   }
 
   if (document.getElementById("hd-overlay")) {

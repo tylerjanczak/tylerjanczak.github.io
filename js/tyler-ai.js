@@ -704,7 +704,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm Tyler AI, ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
       "",
       500,
       1100
@@ -817,7 +817,7 @@
 
       if (!emailPattern.test(question)) {
         addAssistantMessage(
-          "That doesn't look like a valid email address — could you try typing it again?",
+          "That doesn't look like a valid email address, could you try typing it again?",
           "error"
         );
         awaitingResumeEmail = true;
@@ -832,7 +832,7 @@
     // flow instead of sending this to the AI model.
     if (resumeRequestPattern.test(question)) {
       addAssistantMessage(
-        "Happy to send that over — what email address should I send Tyler's resume to?"
+        "Happy to send that over! What email address should I send Tyler's resume to?"
       );
       awaitingResumeEmail = true;
       return;
@@ -986,7 +986,7 @@
       }
 
       addAssistantMessage(
-        `Done — Tyler's resume is on its way to ${email}.`
+        `Done, Tyler's resume is on its way to ${email}.`
       );
     } catch (error) {
       typingElement.remove();
@@ -995,7 +995,7 @@
 
       if (error.name === "AbortError") {
         addAssistantMessage(
-          "That took too long — please try again in a moment.",
+          "That took too long, please try again in a moment.",
           "error"
         );
       } else {
@@ -1130,7 +1130,7 @@
       <ul class="tyler-ai-searching-list">
         <li><span class="tyler-ai-check-icon"></span>Experience</li>
         <li><span class="tyler-ai-check-icon"></span>Skills &amp; Certifications</li>
-        <li><span class="tyler-ai-check-icon"></span>Measurable Outcomes</li>
+        <li><span class="tyler-ai-check-icon"></span>Outcomes</li>
       </ul>
     `;
 

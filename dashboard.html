@@ -178,7 +178,7 @@
 
   <div id="signin-view">
     <button class="primary" id="signin-btn">Sign in with Passkey</button>
-    <div class="gate-toggle">
+    <div class="gate-toggle" id="register-toggle" style="display: none;">
       No passkey set up yet? <a id="show-register">Register one</a>
     </div>
   </div>
@@ -242,6 +242,13 @@
   const registerView = document.getElementById("register-view");
   const gateTitle = document.getElementById("gate-title");
   const gateSubtitle = document.getElementById("gate-subtitle");
+
+  // The "Register one" link stays hidden for a cleaner sign-in screen.
+  // Visit dashboard.html?setup=1 to reveal it when adding a new device.
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("setup") === "1") {
+    document.getElementById("register-toggle").style.display = "block";
+  }
 
   document.getElementById("show-register").addEventListener("click", () => {
     signinView.style.display = "none";

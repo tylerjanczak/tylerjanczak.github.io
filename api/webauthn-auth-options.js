@@ -2,7 +2,6 @@ import { kv } from "@vercel/kv";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 
 const RP_ID = "tylerjanczak.com";
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");

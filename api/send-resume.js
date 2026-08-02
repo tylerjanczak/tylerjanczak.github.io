@@ -1,3 +1,5 @@
+import { kv } from "@vercel/kv";
+
 export default async function handler(req, res) {
   // Allow requests from your website
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -44,9 +46,9 @@ export default async function handler(req, res) {
         subject: "Tyler Janczak — Resume",
         html: `
           <p>Hi,</p>
-          <p>Thanks for your interest, Tyler's resume is attached.</p>
-          <p>You can return to view his full portfolio here:
-            <a href="tylerjanczak.com">tylerjanczak.com</a>
+          <p>Thanks for your interest — Tyler's resume is attached.</p>
+          <p>You can also view his full portfolio here:
+            <a href="https://tylerjanczak-github-io.vercel.app">tylerjanczak-github-io.vercel.app</a>
           </p>
           <p>Best,<br>Tyler Janczak</p>
         `,
@@ -68,6 +70,14 @@ export default async function handler(req, res) {
         error: emailData.message || "Failed to send the email."
       });
     }
+
+    await kv.lpush(
+      "tyler_ai_resume_requests",
+      JSON.stringify({
+        email,
+        timestamp: new Date().toISOString()
+      })
+    );
 
     return res.status(200).json({ success: true });
   } catch (err) {

@@ -162,11 +162,151 @@
     font-size: 13.5px;
     text-align: center;
   }
+  #secure-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+  }
+  #secure-badge svg {
+    width: 11px;
+    height: 13px;
+    flex-shrink: 0;
+  }
   #sign-out {
-    font-size: 12px;
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+  }
+
+  #sign-out:hover {
+    opacity: 0.75;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .stat-card .stat-value {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 26px;
+    color: var(--accent);
+  }
+  .stat-card .stat-label {
+    font-size: 11.5px;
     color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+
+  /* Controls row */
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  #search-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 9px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--ink);
+  }
+  #search-input:focus { outline: none; border-color: var(--accent); }
+  #date-filter {
+    padding: 9px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .mini-btn {
+    padding: 9px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 12.5px;
+    font-weight: 600;
     cursor: pointer;
-    text-decoration: underline;
+    white-space: nowrap;
+  }
+  .mini-btn:hover { background: rgba(107,31,31,0.06); }
+  .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auto-refresh-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* Analysis panel */
+  #analysis-panel { margin-bottom: 20px; }
+  .analysis-body {
+    padding: 18px 22px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+
+  /* Row states */
+  tr.high-intent { background: #fbf3ec; }
+  tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
+  .intent-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(107,31,31,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .delete-btn {
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .delete-btn:hover { color: var(--accent); }
+  .page-tag {
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: var(--bg-subtle);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
   }
 </style>
 </head>
@@ -200,7 +340,40 @@
       <h1>Dashboard</h1>
       <p class="subtitle">Conversations and resume requests from Tyler AI.</p>
     </div>
-    <span id="sign-out">Sign out</span>
+    <span id="sign-out" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+      <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 11px; height: 13px; flex-shrink: 0;">
+        <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <rect x="2" y="7" width="10" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="7" cy="11" r="1" fill="currentColor"/>
+      </svg>
+      Secure Session
+    </span>
+  </div>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <section class="panel" id="analysis-panel">
+    <div class="panel-header">
+      <h2>Smart Analysis</h2>
+      <button class="mini-btn" id="analysis-btn">Generate Insights</button>
+    </div>
+    <div class="analysis-body" id="analysis-body">
+      <p class="empty-row">Click "Generate Insights" to have AI summarize patterns across your visitor conversations.</p>
+    </div>
+  </section>
+
+  <div class="controls-row">
+    <input type="text" id="search-input" placeholder="Search conversations..." />
+    <select id="date-filter">
+      <option value="all">All time</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+    </select>
+    <button class="mini-btn" id="export-btn">Export CSV</button>
+    <label class="auto-refresh-label">
+      <input type="checkbox" id="auto-refresh-toggle" checked />
+      Auto-refresh
+    </label>
   </div>
 
   <section class="panel">
@@ -210,7 +383,13 @@
     </div>
     <table>
       <thead>
-        <tr><th style="width:160px;">When</th><th>Question</th><th>Answer</th></tr>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">Page</th>
+          <th>Question</th>
+          <th>Answer</th>
+          <th style="width:40px;"></th>
+        </tr>
       </thead>
       <tbody id="conv-body"></tbody>
     </table>
@@ -223,12 +402,13 @@
     </div>
     <table>
       <thead>
-        <tr><th style="width:160px;">When</th><th>Email</th></tr>
+        <tr><th style="width:160px;">When</th><th>Email</th><th style="width:40px;"></th></tr>
       </thead>
       <tbody id="resume-body"></tbody>
     </table>
   </section>
 </div>
+
 
 <script>
   const API_BASE = "https://tylerjanczak-github-io.vercel.app";
@@ -378,6 +558,194 @@
       .replaceAll(">", "&gt;");
   }
 
+  let currentData = { conversations: [], resumeRequests: [] };
+  let autoRefreshTimer = null;
+
+  const INTENT_KEYWORDS = [
+    "resume", "recommend", "hire", "hiring", "interview", "salary",
+    "available", "availability", "start date", "opportunity", "position",
+    "reach out", "contact", "cv", "role", "open to", "compensation"
+  ];
+
+  function isHighIntent(text) {
+    const lower = (text || "").toLowerCase();
+    return INTENT_KEYWORDS.some((kw) => lower.includes(kw));
+  }
+
+  function withinDateFilter(timestamp, filterValue) {
+    if (filterValue === "all") return true;
+    const days = parseInt(filterValue, 10);
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return new Date(timestamp).getTime() >= cutoff;
+  }
+
+  function renderStats() {
+    const conv = currentData.conversations;
+    const resumes = currentData.resumeRequests;
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const convThisWeek = conv.filter(c => new Date(c.timestamp).getTime() >= weekAgo).length;
+    const highIntentCount = conv.filter(c => isHighIntent(c.question) || isHighIntent(c.answer)).length;
+
+    const stats = [
+      { value: conv.length, label: "Total Conversations" },
+      { value: convThisWeek, label: "This Week" },
+      { value: resumes.length, label: "Resume Requests" },
+      { value: highIntentCount, label: "High-Intent Chats" }
+    ];
+
+    document.getElementById("stats-row").innerHTML = stats.map(s => `
+      <div class="stat-card">
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderTables() {
+    const convBody = document.getElementById("conv-body");
+    const resumeBody = document.getElementById("resume-body");
+    const searchTerm = document.getElementById("search-input").value.trim().toLowerCase();
+    const dateFilterValue = document.getElementById("date-filter").value;
+
+    const filteredConv = currentData.conversations
+      .map((c, originalIndex) => ({ ...c, originalIndex }))
+      .filter(c => withinDateFilter(c.timestamp, dateFilterValue))
+      .filter(c => {
+        if (!searchTerm) return true;
+        return (c.question || "").toLowerCase().includes(searchTerm) ||
+               (c.answer || "").toLowerCase().includes(searchTerm);
+      });
+
+    const filteredResumes = currentData.resumeRequests
+      .map((r, originalIndex) => ({ ...r, originalIndex }))
+      .filter(r => withinDateFilter(r.timestamp, dateFilterValue));
+
+    document.getElementById("conv-count").textContent = filteredConv.length;
+    document.getElementById("resume-count").textContent = filteredResumes.length;
+
+    convBody.innerHTML = filteredConv.length
+      ? filteredConv.map(c => {
+          const flagged = isHighIntent(c.question) || isHighIntent(c.answer);
+          return `
+            <tr class="${flagged ? 'high-intent' : ''}">
+              <td class="timestamp">${formatDate(c.timestamp)}</td>
+              <td>${c.page ? `<span class="page-tag">${escapeHtml(c.page)}</span>` : ''}</td>
+              <td>${flagged ? '<span class="intent-tag">High Intent</span><br>' : ''}${escapeHtml(c.question || "")}</td>
+              <td>${escapeHtml(c.answer || "")}</td>
+              <td><button class="delete-btn" data-type="conversation" data-index="${c.originalIndex}" title="Delete">&times;</button></td>
+            </tr>
+          `;
+        }).join("")
+      : `<tr><td colspan="5" class="empty-row">No conversations match.</td></tr>`;
+
+    resumeBody.innerHTML = filteredResumes.length
+      ? filteredResumes.map(r => `
+          <tr>
+            <td class="timestamp">${formatDate(r.timestamp)}</td>
+            <td>${escapeHtml(r.email || "")}</td>
+            <td><button class="delete-btn" data-type="resume" data-index="${r.originalIndex}" title="Delete">&times;</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="3" class="empty-row">No resume requests match.</td></tr>`;
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", handleDelete);
+    });
+  }
+
+  async function handleDelete(event) {
+    const btn = event.currentTarget;
+    const type = btn.dataset.type;
+    const index = parseInt(btn.dataset.index, 10);
+
+    if (!confirm("Delete this entry? This can't be undone.")) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard-delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ type, index })
+      });
+
+      if (res.ok) {
+        await loadDashboard();
+      } else {
+        alert("Could not delete that entry.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not delete that entry.");
+    }
+  }
+
+  function exportToCsv() {
+    const rows = [["Timestamp", "Page", "Question", "Answer"]];
+    currentData.conversations.forEach(c => {
+      rows.push([c.timestamp, c.page || "", c.question || "", c.answer || ""]);
+    });
+
+    const csvContent = rows.map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tyler-ai-conversations-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function generateAnalysis() {
+    const btn = document.getElementById("analysis-btn");
+    const body = document.getElementById("analysis-body");
+    const token = localStorage.getItem(SESSION_KEY);
+
+    btn.disabled = true;
+    btn.textContent = "Analyzing...";
+    body.innerHTML = `<p class="empty-row">Reviewing conversations...</p>`;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard-analysis`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        body.innerHTML = `<p class="empty-row">${escapeHtml(data.error || "Could not generate analysis.")}</p>`;
+      } else {
+        body.textContent = data.analysis;
+      }
+    } catch (err) {
+      console.error(err);
+      body.innerHTML = `<p class="empty-row">Could not generate analysis. Please try again.</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Generate Insights";
+    }
+  }
+
+  document.getElementById("search-input").addEventListener("input", renderTables);
+  document.getElementById("date-filter").addEventListener("change", renderTables);
+  document.getElementById("export-btn").addEventListener("click", exportToCsv);
+  document.getElementById("analysis-btn").addEventListener("click", generateAnalysis);
+
+  document.getElementById("auto-refresh-toggle").addEventListener("change", (e) => {
+    if (e.target.checked) {
+      autoRefreshTimer = setInterval(loadDashboard, 30000);
+    } else {
+      clearInterval(autoRefreshTimer);
+    }
+  });
+
   async function loadDashboard() {
     const token = localStorage.getItem(SESSION_KEY);
     if (!token) return;
@@ -391,38 +759,25 @@
       gate.style.display = "block";
       dashboard.style.display = "none";
       gateError.textContent = "Session expired. Please sign in again.";
+      clearInterval(autoRefreshTimer);
       return;
     }
 
     const data = await res.json();
+    currentData = {
+      conversations: data.conversations || [],
+      resumeRequests: data.resumeRequests || []
+    };
 
     gate.style.display = "none";
     dashboard.style.display = "block";
 
-    const convBody = document.getElementById("conv-body");
-    const resumeBody = document.getElementById("resume-body");
+    renderStats();
+    renderTables();
 
-    document.getElementById("conv-count").textContent = data.conversations.length;
-    document.getElementById("resume-count").textContent = data.resumeRequests.length;
-
-    convBody.innerHTML = data.conversations.length
-      ? data.conversations.map(c => `
-          <tr>
-            <td class="timestamp">${formatDate(c.timestamp)}</td>
-            <td>${escapeHtml(c.question || "")}</td>
-            <td>${escapeHtml(c.answer || "")}</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="3" class="empty-row">No conversations yet.</td></tr>`;
-
-    resumeBody.innerHTML = data.resumeRequests.length
-      ? data.resumeRequests.map(r => `
-          <tr>
-            <td class="timestamp">${formatDate(r.timestamp)}</td>
-            <td>${escapeHtml(r.email || "")}</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="2" class="empty-row">No resume requests yet.</td></tr>`;
+    if (!autoRefreshTimer && document.getElementById("auto-refresh-toggle").checked) {
+      autoRefreshTimer = setInterval(loadDashboard, 30000);
+    }
   }
 
   // Attempt to resume an existing session on page load.

@@ -1,3 +1,4 @@
+
 (() => {
   "use strict";
 
@@ -106,40 +107,55 @@
     }
 
     .hd-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 22px;
-      padding: 12px 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       background: #f4f4f4;
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      border-top: 1px solid rgba(0, 0, 0, 0.15);
     }
 
     .hd-btn {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
+      gap: 8px;
+      padding: 15px 12px;
       border: 0;
       background: transparent;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 400;
       cursor: pointer;
-      padding: 6px 4px;
+    }
+
+    .hd-btn-icon {
+      font-size: 14px;
+      line-height: 1;
     }
 
     #hd-accept {
-      color: #1b5fae;
+      color: #262626;
+      border-right: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    #hd-accept .hd-btn-icon {
+      color: #2e7d32;
+      font-weight: 700;
     }
 
     #hd-accept:hover {
-      text-decoration: underline;
+      background: rgba(0, 0, 0, 0.03);
     }
 
     #hd-dismiss {
-      color: #b3261e;
+      color: #262626;
+    }
+
+    #hd-dismiss .hd-btn-icon {
+      color: #c62828;
+      font-weight: 700;
     }
 
     #hd-dismiss:hover {
-      text-decoration: underline;
+      background: rgba(0, 0, 0, 0.03);
     }
 
     @media (max-width: 520px) {
@@ -190,10 +206,10 @@
       </div>
       <div class="hd-actions">
         <button id="hd-accept" class="hd-btn" type="button">
-          &#10003; Accept
+          <span class="hd-btn-icon">&#10003;</span> Accept
         </button>
         <button id="hd-dismiss" class="hd-btn" type="button">
-          &times; Dismiss
+          <span class="hd-btn-icon">&#10005;</span> Dismiss
         </button>
       </div>
     </div>

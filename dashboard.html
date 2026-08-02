@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+<script src="https://unpkg.com/@simplewebauthn/browser@13/dist/bundle/index.umd.min.js"></script>
 <style>
   :root {
     --bg: #F7F4EE;
@@ -287,6 +287,7 @@
         return;
       }
 
+      console.log("Registration options received from server:", options);
       const attResp = await startRegistration({ optionsJSON: options });
 
       const verifyRes = await fetch(`${API_BASE}/api/webauthn-register-verify`, {

@@ -1,0 +1,10 @@
+{
+  "name": "tylerjanczak-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@vercel/kv": "^2.0.0",
+    "@simplewebauthn/server": "^13.0.0"
+  }
+}

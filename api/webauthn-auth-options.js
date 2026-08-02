@@ -1,7 +1,8 @@
 import { kv } from "@vercel/kv";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 
-const RP_ID = "tylerjanczak-github-io.vercel.app";
+const RP_ID = "tylerjanczak.com";
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -16,27 +17,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    const storedCredentialRaw = await kv.get("webauthn_credential");
+    const raw = await kv.get("webauthn_credentials");
+    const storedCredentials = raw
+      ? (typeof raw === "string" ? JSON.parse(raw) : raw)
+      : [];
 
-    if (!storedCredentialRaw) {
+    if (!Array.isArray(storedCredentials) || storedCredentials.length === 0) {
       return res.status(404).json({
         error: "No passkey has been registered yet."
       });
     }
 
-    const storedCredential =
-      typeof storedCredentialRaw === "string"
-        ? JSON.parse(storedCredentialRaw)
-        : storedCredentialRaw;
-
     const options = await generateAuthenticationOptions({
       rpID: RP_ID,
-      allowCredentials: [
-        {
-          id: storedCredential.id,
-          transports: storedCredential.transports
-        }
-      ],
+      // Any device that's been registered can be used to sign in.
+      allowCredentials: storedCredentials.map((cred) => ({
+        id: cred.id,
+        transports: cred.transports
+      })),
       userVerification: "preferred"
     });
 

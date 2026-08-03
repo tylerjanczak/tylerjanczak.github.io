@@ -1,6 +1,5 @@
 (async () => {
   "use strict";
-
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-status",

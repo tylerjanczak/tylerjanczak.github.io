@@ -183,7 +183,7 @@
       <div class="hd-body">
         <div class="hd-subtitle">Site Analytics &amp; Tracking Notice</div>
         <div class="hd-message">
-          This site uses Microsoft Clarity to see how visitors use the page —
+          This site uses Microsoft Clarity to see how visitors use the page,
           heatmaps and session behavior, for quality and improvement purposes.
           No personal or identifying information is collected. By using this
           site, you agree that Tyler Janczak and Microsoft can collect and use

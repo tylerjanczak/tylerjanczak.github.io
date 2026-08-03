@@ -268,6 +268,54 @@
 
   /* Analysis panel */
   #analysis-panel { margin-bottom: 20px; }
+
+  #kb-panel { margin-bottom: 24px; }
+  .kb-body { padding: 18px 22px; }
+  .kb-hint {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  #kb-textarea {
+    width: 100%;
+    min-height: 320px;
+    padding: 14px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+  #kb-textarea:focus { outline: none; border-color: var(--accent); }
+  .kb-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .mini-btn.primary-mini {
+    background: var(--accent);
+    color: #fff;
+  }
+  .mini-btn.primary-mini:hover { background: #551818; }
+  .kb-char-count {
+    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+  .kb-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .kb-status.saved { background: #e6f2e8; color: #2e7d32; }
+  .kb-status.custom { background: rgba(107,31,31,0.08); color: var(--accent); }
+  .kb-status.default { background: var(--bg-subtle); color: var(--ink-soft); }
   .analysis-body {
     padding: 18px 22px;
     font-size: 14px;
@@ -359,6 +407,24 @@
     </div>
     <div class="analysis-body" id="analysis-body">
       <p class="empty-row">Click "Generate Insights" to have AI summarize patterns across your visitor conversations.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="kb-panel">
+    <div class="panel-header">
+      <h2>Knowledge Base</h2>
+      <span id="kb-status" class="kb-status"></span>
+    </div>
+    <div class="kb-body">
+      <p class="kb-hint">
+        Edit what Tyler AI knows about you. Changes save directly to the live database and take effect on the next question a visitor asks &mdash; no code deploy needed.
+      </p>
+      <textarea id="kb-textarea" placeholder="Loading current knowledge base..." spellcheck="false"></textarea>
+      <div class="kb-actions">
+        <button class="mini-btn primary-mini" id="kb-save-btn">Save Changes</button>
+        <button class="mini-btn" id="kb-reset-btn">Reset to Default</button>
+        <span id="kb-char-count" class="kb-char-count"></span>
+      </div>
     </div>
   </section>
 
@@ -560,6 +626,7 @@
 
   let currentData = { conversations: [], resumeRequests: [] };
   let autoRefreshTimer = null;
+  let kbHasLoaded = false;
 
   const INTENT_KEYWORDS = [
     "resume", "recommend", "hire", "hiring", "interview", "salary",
@@ -738,6 +805,130 @@
   document.getElementById("export-btn").addEventListener("click", exportToCsv);
   document.getElementById("analysis-btn").addEventListener("click", generateAnalysis);
 
+  const kbTextarea = document.getElementById("kb-textarea");
+  const kbStatus = document.getElementById("kb-status");
+  const kbCharCount = document.getElementById("kb-char-count");
+
+  function updateKbCharCount() {
+    kbCharCount.textContent = `${kbTextarea.value.length.toLocaleString()} characters`;
+  }
+
+  function setKbStatus(text, className) {
+    kbStatus.textContent = text;
+    kbStatus.className = `kb-status ${className}`;
+  }
+
+  async function loadKnowledgeBase() {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge-base-get`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        kbTextarea.placeholder = "Could not load knowledge base.";
+        return;
+      }
+
+      if (data.usingDefault) {
+        kbTextarea.value = "";
+        kbTextarea.placeholder = "Currently using the built-in default knowledge base from api/chat.js. Type here and click Save to override it.";
+        setKbStatus("Using Default", "default");
+      } else {
+        kbTextarea.value = data.content;
+        setKbStatus("Custom Version Active", "custom");
+      }
+
+      updateKbCharCount();
+    } catch (err) {
+      console.error(err);
+      kbTextarea.placeholder = "Could not load knowledge base.";
+    }
+  }
+
+  async function saveKnowledgeBase() {
+    const token = localStorage.getItem(SESSION_KEY);
+    const btn = document.getElementById("kb-save-btn");
+    const content = kbTextarea.value.trim();
+
+    if (!content) {
+      alert("Knowledge base can't be empty. Use \"Reset to Default\" instead if you want to clear your custom version.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge-base-save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setKbStatus("Saved", "saved");
+        window.setTimeout(() => setKbStatus("Custom Version Active", "custom"), 2000);
+      } else {
+        alert(data.error || "Could not save changes.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not save changes.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Save Changes";
+    }
+  }
+
+  async function resetKnowledgeBase() {
+    if (!confirm("Reset to the default knowledge base built into api/chat.js? Your custom version will be discarded.")) {
+      return;
+    }
+
+    const token = localStorage.getItem(SESSION_KEY);
+    const btn = document.getElementById("kb-reset-btn");
+
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge-base-save`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ useDefault: true })
+      });
+
+      if (res.ok) {
+        kbTextarea.value = "";
+        kbTextarea.placeholder = "Currently using the built-in default knowledge base from api/chat.js. Type here and click Save to override it.";
+        setKbStatus("Using Default", "default");
+        updateKbCharCount();
+      } else {
+        alert("Could not reset knowledge base.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not reset knowledge base.");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  kbTextarea.addEventListener("input", updateKbCharCount);
+  document.getElementById("kb-save-btn").addEventListener("click", saveKnowledgeBase);
+  document.getElementById("kb-reset-btn").addEventListener("click", resetKnowledgeBase);
+
   document.getElementById("auto-refresh-toggle").addEventListener("change", (e) => {
     if (e.target.checked) {
       autoRefreshTimer = setInterval(loadDashboard, 30000);
@@ -774,6 +965,11 @@
 
     renderStats();
     renderTables();
+
+    if (!kbHasLoaded) {
+      kbHasLoaded = true;
+      loadKnowledgeBase();
+    }
 
     if (!autoRefreshTimer && document.getElementById("auto-refresh-toggle").checked) {
       autoRefreshTimer = setInterval(loadDashboard, 30000);

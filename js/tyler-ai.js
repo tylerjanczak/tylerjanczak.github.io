@@ -33,7 +33,6 @@
   ------------------------------------------------------------------ */
 
   const style = document.createElement("style");
-
   style.textContent = `
     #tyler-ai-widget,
     #tyler-ai-widget * {

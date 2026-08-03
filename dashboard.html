@@ -316,6 +316,46 @@
   .kb-status.saved { background: #e6f2e8; color: #2e7d32; }
   .kb-status.custom { background: rgba(107,31,31,0.08); color: var(--accent); }
   .kb-status.default { background: var(--bg-subtle); color: var(--ink-soft); }
+
+  /* Authentication overlay */
+  #auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 15, 10, 0.12);
+  }
+  #auth-overlay.visible {
+    display: flex;
+  }
+  .auth-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 34px 46px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(20, 15, 10, 0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .auth-heart {
+    width: 60px;
+    height: 60px;
+  }
+  .auth-heart .heart-fill {
+    fill: var(--accent);
+  }
+  .auth-text {
+    font-family: var(--display);
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
   .analysis-body {
     padding: 18px 22px;
     font-size: 14px;
@@ -356,6 +396,82 @@
     border-radius: 4px;
     white-space: nowrap;
   }
+  #auth-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(247, 244, 238, 0.6);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  #auth-loading-overlay.visible {
+    display: flex;
+  }
+
+  .auth-loading-box {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    padding: 40px 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 24px 60px rgba(20, 15, 10, 0.18);
+  }
+
+  .auth-heart {
+    width: 84px;
+    height: 76px;
+    display: block;
+  }
+
+  .auth-heart-shape {
+    fill: var(--accent);
+    transform-origin: 50px 45px;
+    animation: authHeartPulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes authHeartPulse {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.08); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.04); }
+  }
+
+  .auth-ecg-line {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: authEcgDraw 1.5s linear infinite;
+  }
+
+  @keyframes authEcgDraw {
+    0% { stroke-dashoffset: 100; opacity: 1; }
+    70% { stroke-dashoffset: 0; opacity: 1; }
+    85% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+
+  .auth-loading-text {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-heart-shape, .auth-ecg-line { animation: none; }
+    .auth-ecg-line { stroke-dashoffset: 0; }
+  }
 </style>
 </head>
 <body>
@@ -380,6 +496,16 @@
   </div>
 
   <div id="gate-error"></div>
+</div>
+
+<div id="auth-overlay">
+  <div class="auth-box">
+    <svg class="auth-heart" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path class="heart-fill" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+      <path class="ecg-line" d="M3 12 L7.5 12 L9.5 7 L12 17 L14.5 9 L16.5 12 L21 12" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="auth-text">Authenticating&hellip;</div>
+  </div>
 </div>
 
 <div class="container" id="dashboard">
@@ -541,7 +667,10 @@
       }
 
       console.log("Registration options received from server:", options);
+      const authOverlay = document.getElementById("auth-overlay");
+      authOverlay.classList.add("visible");
       const attResp = await startRegistration({ optionsJSON: options });
+      authOverlay.classList.remove("visible");
 
       const verifyRes = await fetch(`${API_BASE}/api/webauthn-register-verify`, {
         method: "POST",
@@ -565,11 +694,13 @@
     } catch (err) {
       console.error(err);
       gateError.textContent = "Registration failed: " + (err.message || err.name || "unknown error");
+      document.getElementById("auth-overlay").classList.remove("visible");
     }
   }
 
   async function signInPasskey() {
     gateError.textContent = "";
+    const authOverlay = document.getElementById("auth-overlay");
 
     try {
       const optionsRes = await fetch(`${API_BASE}/api/webauthn-auth-options`, {
@@ -583,6 +714,7 @@
         return;
       }
 
+      authOverlay.classList.add("visible");
       const authResp = await startAuthentication({ optionsJSON: options });
 
       const verifyRes = await fetch(`${API_BASE}/api/webauthn-auth-verify`, {
@@ -603,6 +735,8 @@
     } catch (err) {
       console.error(err);
       gateError.textContent = "Sign-in failed: " + (err.message || err.name || "unknown error");
+    } finally {
+      authOverlay.classList.remove("visible");
     }
   }
 

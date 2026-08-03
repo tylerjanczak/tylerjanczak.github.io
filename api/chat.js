@@ -20,7 +20,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No question provided." });
     }
 
-    const portfolio = `
+    const DEFAULT_PORTFOLIO = `
 TYLER JANCZAK — VERIFIED PROFESSIONAL PORTFOLIO KNOWLEDGE
 
 PURPOSE AND RESPONSE BOUNDARIES
@@ -770,6 +770,9 @@ SITE PAGES (link to these when relevant)
 
 When one of these pages is directly relevant to the visitor's question (they ask to see recommendations, skills, or a specific project/case study), respond with a short sentence and include a markdown link to it formatted exactly like this: [Link text](URL). Do not just summarize the page's content — include the link so the visitor gets taken there. Otherwise, do not include a link.
 `;
+
+    const storedPortfolio = await kv.get("tyler_ai_knowledge_base");
+    const portfolio = storedPortfolio || DEFAULT_PORTFOLIO;
 
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",

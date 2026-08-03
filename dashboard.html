@@ -356,6 +356,107 @@
     color: var(--ink-soft);
     letter-spacing: 0.02em;
   }
+
+  /* Chat toggle switch */
+  .chat-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  #chat-toggle-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 21px;
+    flex-shrink: 0;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .switch-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #c9c2b3;
+    border-radius: 999px;
+    transition: background 160ms ease;
+  }
+  .switch-slider::before {
+    content: "";
+    position: absolute;
+    height: 15px;
+    width: 15px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 160ms ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .switch-slider {
+    background: #2e7d32;
+  }
+  .switch input:checked + .switch-slider::before {
+    transform: translateX(17px);
+  }
+  .switch input:disabled + .switch-slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  /* System status panel */
+  #status-panel { margin-bottom: 24px; }
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
+  .status-row:nth-child(-n+1) { border-top: none; }
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.operational { background: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,0.15); }
+  .status-dot.down { background: #b3261e; box-shadow: 0 0 0 3px rgba(179,38,30,0.15); }
+  .status-dot.checking {
+    background: #c9c2b3;
+    animation: statusPulse 1.1s ease-in-out infinite;
+  }
+  @keyframes statusPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .status-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .status-detail {
+    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
   .analysis-body {
     padding: 18px 22px;
     font-size: 14px;
@@ -514,17 +615,60 @@
       <h1>Dashboard</h1>
       <p class="subtitle">Conversations and resume requests from Tyler AI.</p>
     </div>
-    <span id="sign-out" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-      <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 11px; height: 13px; flex-shrink: 0;">
-        <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        <rect x="2" y="7" width="10" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
-        <circle cx="7" cy="11" r="1" fill="currentColor"/>
-      </svg>
-      Secure Session
-    </span>
+    <div style="display:flex; align-items:center; gap: 20px;">
+      <div class="chat-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="chat-toggle-input" checked />
+          <span class="switch-slider"></span>
+        </label>
+        <span id="chat-toggle-label">Chat Enabled</span>
+      </div>
+      <span id="sign-out" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 11px; height: 13px; flex-shrink: 0;">
+          <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="2" y="7" width="10" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="7" cy="11" r="1" fill="currentColor"/>
+        </svg>
+        Secure Session
+      </span>
+    </div>
   </div>
 
   <div class="stats-row" id="stats-row"></div>
+
+  <section class="panel" id="status-panel">
+    <div class="panel-header">
+      <h2>System Status</h2>
+      <button class="mini-btn" id="status-refresh-btn">Refresh</button>
+    </div>
+    <div class="status-grid" id="status-grid">
+      <div class="status-row" data-check="website">
+        <span class="status-dot checking"></span>
+        <span class="status-name">Website</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="chat">
+        <span class="status-dot checking"></span>
+        <span class="status-name">Chat API</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="database">
+        <span class="status-dot checking"></span>
+        <span class="status-name">Database</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="github">
+        <span class="status-dot checking"></span>
+        <span class="status-name">GitHub</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="interface">
+        <span class="status-dot operational"></span>
+        <span class="status-name">Dashboard</span>
+        <span class="status-detail">Operational</span>
+      </div>
+    </div>
+  </section>
 
   <section class="panel" id="analysis-panel">
     <div class="panel-header">
@@ -952,6 +1096,130 @@
     kbStatus.className = `kb-status ${className}`;
   }
 
+  async function loadChatStatus() {
+    const toggleInput = document.getElementById("chat-toggle-input");
+    const toggleLabel = document.getElementById("chat-toggle-label");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-status`, { cache: "no-store" });
+      const data = await res.json();
+
+      toggleInput.checked = data.enabled !== false;
+      toggleLabel.textContent = toggleInput.checked ? "Chat Enabled" : "Chat Disabled";
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function toggleChatEnabled() {
+    const toggleInput = document.getElementById("chat-toggle-input");
+    const toggleLabel = document.getElementById("chat-toggle-label");
+    const token = localStorage.getItem(SESSION_KEY);
+    const desiredState = toggleInput.checked;
+
+    toggleInput.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-toggle`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ enabled: desiredState })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toggleInput.checked = !desiredState;
+        alert(data.error || "Could not update chat status.");
+      } else {
+        toggleLabel.textContent = desiredState ? "Chat Enabled" : "Chat Disabled";
+      }
+    } catch (err) {
+      console.error(err);
+      toggleInput.checked = !desiredState;
+      alert("Could not update chat status.");
+    } finally {
+      toggleInput.disabled = false;
+    }
+  }
+
+  document.getElementById("chat-toggle-input").addEventListener("change", toggleChatEnabled);
+
+  const GITHUB_REPO = "tylerjanczak/tylerjanczak.github.io";
+
+  function setStatusRow(checkName, state, detailText) {
+    const row = document.querySelector(`.status-row[data-check="${checkName}"]`);
+    if (!row) return;
+    row.querySelector(".status-dot").className = `status-dot ${state}`;
+    row.querySelector(".status-detail").textContent = detailText;
+  }
+
+  async function checkWebsite() {
+    try {
+      const res = await fetch(`${window.location.origin}/index.html`, { cache: "no-store" });
+      setStatusRow("website", res.ok ? "operational" : "down", res.ok ? "Operational" : `Error ${res.status}`);
+    } catch {
+      setStatusRow("website", "down", "Unreachable");
+    }
+  }
+
+  async function checkChatApi() {
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-status`, { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok) {
+        setStatusRow("chat", "operational", data.enabled ? "Operational" : "Operational (Disabled)");
+      } else {
+        setStatusRow("chat", "down", "Error");
+      }
+    } catch {
+      setStatusRow("chat", "down", "Unreachable");
+    }
+  }
+
+  async function checkDatabase() {
+    // The chat-status endpoint reads from KV, so a successful response
+    // also confirms the database connection is healthy.
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-status`, { cache: "no-store" });
+      setStatusRow("database", res.ok ? "operational" : "down", res.ok ? "Operational" : "Error");
+    } catch {
+      setStatusRow("database", "down", "Unreachable");
+    }
+  }
+
+  async function checkGitHub() {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits/main`, {
+        headers: { Accept: "application/vnd.github+json" }
+      });
+      if (!res.ok) {
+        setStatusRow("github", "down", "Unreachable");
+        return;
+      }
+      const data = await res.json();
+      const commitDate = data?.commit?.author?.date;
+      const detail = commitDate
+        ? `Last commit ${formatDate(commitDate)}`
+        : "Operational";
+      setStatusRow("github", "operational", detail);
+    } catch {
+      setStatusRow("github", "down", "Unreachable");
+    }
+  }
+
+  function runSystemStatusChecks() {
+    checkWebsite();
+    checkChatApi();
+    checkDatabase();
+    checkGitHub();
+  }
+
+  document.getElementById("status-refresh-btn").addEventListener("click", runSystemStatusChecks);
+
   async function loadKnowledgeBase() {
     const token = localStorage.getItem(SESSION_KEY);
     if (!token) return;
@@ -1103,6 +1371,8 @@
     if (!kbHasLoaded) {
       kbHasLoaded = true;
       loadKnowledgeBase();
+      loadChatStatus();
+      runSystemStatusChecks();
     }
 
     if (!autoRefreshTimer && document.getElementById("auto-refresh-toggle").checked) {

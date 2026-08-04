@@ -1,14 +1,22 @@
 (async () => {
   "use strict";
+
+  /*
+   * Tyler AI — Portfolio Chat Widget
+   * Frontend website: GitHub Pages / Vercel static hosting
+   * Backend API: Vercel serverless function
+   */
+
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
-    statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-status",
+    statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-config",
     resumeUrl: "https://tylerjanczak-github-io.vercel.app/resume.pdf",
     resumeApiUrl: "https://tylerjanczak-github-io.vercel.app/api/send-resume",
     assistantName: "Tyler AI",
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
+
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;
@@ -32,6 +40,7 @@
   ------------------------------------------------------------------ */
 
   const style = document.createElement("style");
+
   style.textContent = `
     #tyler-ai-widget,
     #tyler-ai-widget * {

@@ -572,6 +572,33 @@
   .hardstop-btn.confirm:hover { background: #8f1e17; }
   .hardstop-btn:hover { background: var(--bg-subtle); }
 
+  /* Medium-risk (amber) variant of the Hard Stop dialog */
+  .hardstop-card.risk-medium .hardstop-banner {
+    background: #c9860f;
+  }
+  .hardstop-card.risk-medium .hardstop-icon-stripes {
+    background: repeating-linear-gradient(
+      -45deg,
+      #e3aa4a,
+      #e3aa4a 4px,
+      #c9860f 4px,
+      #c9860f 8px
+    );
+  }
+  .hardstop-card.risk-medium .hardstop-risk-label {
+    background: #9c690a;
+  }
+  .hardstop-card.risk-medium .hardstop-warning-text {
+    color: #9c690a;
+  }
+  .hardstop-card.risk-medium .hardstop-btn.confirm {
+    background: #c9860f;
+    border-color: #c9860f;
+  }
+  .hardstop-card.risk-medium .hardstop-btn.confirm:hover {
+    background: #a66f0c;
+  }
+
   /* Maintenance log */
   #maintenance-log-panel { margin-bottom: 24px; }
 
@@ -1352,6 +1379,40 @@
     const token = localStorage.getItem(SESSION_KEY);
     const desiredState = toggleInput.checked;
 
+    // Revert until confirmed either way.
+    toggleInput.checked = !desiredState;
+
+    const confirmed = desiredState
+      ? await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: Enable Chat Widget",
+          detail: "This will make <strong>Tyler AI</strong> visible and answering questions for all visitors again.",
+          associated: [
+            "Tyler AI Chat Widget",
+            "Resume request flow",
+            "Conversation logging"
+          ],
+          warning: "Visitors will immediately be able to chat and request the resume again.",
+          riskLevel: "medium",
+          confirmLabel: "Override"
+        })
+      : await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: Disable Chat Widget",
+          detail: "This will hide <strong>Tyler AI</strong> from every page of your site until re-enabled.",
+          associated: [
+            "Tyler AI Chat Widget",
+            "Resume request flow",
+            "Conversation logging"
+          ],
+          warning: "Visitors will no longer be able to chat or request your resume through the widget.",
+          riskLevel: "medium",
+          confirmLabel: "Override"
+        });
+
+    if (!confirmed) return;
+
+    toggleInput.checked = desiredState;
     toggleInput.disabled = true;
 
     try {
@@ -1391,7 +1452,7 @@
   const hardstopOverlay = document.getElementById("hardstop-overlay");
   let hardstopResolver = null;
 
-  function showHardStop({ risk, title, detail, associated, warning }) {
+  function showHardStop({ risk, title, detail, associated, warning, riskLevel = "high", confirmLabel = "Proceed Anyway" }) {
     document.getElementById("hardstop-risk-label").textContent = risk;
     document.getElementById("hardstop-title").textContent = title;
     document.getElementById("hardstop-detail").innerHTML = detail;
@@ -1399,6 +1460,10 @@
       .map((item) => `<div class="hardstop-associated-item">${escapeHtml(item)}</div>`)
       .join("");
     document.getElementById("hardstop-warning-text").textContent = warning || "";
+    document.getElementById("hardstop-confirm-btn").textContent = confirmLabel;
+
+    const card = document.querySelector(".hardstop-card");
+    card.classList.toggle("risk-medium", riskLevel === "medium");
 
     hardstopOverlay.classList.add("visible");
 
@@ -1431,8 +1496,8 @@
       maintenanceInput.checked = false; // revert until confirmed
       const confirmed = await showHardStop({
         risk: "VERY HIGH",
-        title: "Hard Stop: Enable Maintenance Mode",
-        detail: "This will take <strong>the entire live site</strong> offline for all visitors, including recruiters currently browsing.",
+        title: "Hard Stop: Maintenance Mode",
+        detail: "This will take the entire live site offline for all visitors, including recruiters currently browsing.",
         associated: [
           "Website: tylerjanczak.com / tylerjanczak-github-io.vercel.app",
           "Tyler AI Chat Widget",
@@ -1642,7 +1707,7 @@
 
       if (res.ok) {
         kbTextarea.value = "";
-        kbTextarea.placeholder = "Currently using the built-in default knowledge base from api/chat.js. Type here and click Save to override it.";
+        kbTextarea.placeholder = "Currently using the built-in default knowledge. Type here and click Save to override it.";
         setKbStatus("Using Default", "default");
         updateKbCharCount();
       } else {

@@ -188,7 +188,7 @@
           No personal or identifying information is collected. By using this
           site, you agree that Tyler Janczak and Microsoft can collect and use
           this data.
-          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener noreferrer">
+          <a href="https://clarity.microsoft.com/terms" target="_blank" rel="noopener noreferrer">
             Microsoft's Privacy Statement
           </a>
           has more details.

@@ -110,15 +110,17 @@
 
     #tyler-ai-launcher {
       position: relative;
-      width: 62px;
-      height: 62px;
-      padding: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 68px;
+      padding: 8px 26px 8px 8px;
       border: 0;
-      border-radius: 50%;
+      border-radius: 999px;
       background: var(--ta-red);
+      color: #ffffff;
       cursor: pointer;
-      overflow: hidden;
-      box-shadow: 0 10px 28px rgba(30, 22, 20, 0.25);
+      box-shadow: 0 12px 30px rgba(30, 22, 20, 0.28);
       transition:
         transform 160ms ease,
         box-shadow 160ms ease;
@@ -126,9 +128,19 @@
 
     #tyler-ai-launcher img {
       display: block;
-      width: 100%;
-      height: 100%;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
       object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+    }
+
+    #tyler-ai-launcher-label {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
     }
 
     .tyler-ai-sr-only {
@@ -145,8 +157,8 @@
 
     #tyler-ai-notification-dot {
       position: absolute;
-      top: -2px;
-      right: -2px;
+      top: 2px;
+      right: 14px;
       width: 15px;
       height: 15px;
       border-radius: 50%;
@@ -584,8 +596,18 @@
       }
 
       #tyler-ai-launcher {
-        height: 44px;
-        min-width: 128px;
+        height: 56px;
+        padding: 6px 20px 6px 6px;
+        gap: 9px;
+      }
+
+      #tyler-ai-launcher img {
+        width: 42px;
+        height: 42px;
+      }
+
+      #tyler-ai-launcher-label {
+        font-size: 13px;
       }
     }
 
@@ -677,7 +699,7 @@
       aria-label="Ask Tyler AI"
     >
       <img src="${escapeHtml(CONFIG.profileImage)}" alt="" />
-      <span id="tyler-ai-launcher-label" class="tyler-ai-sr-only">Ask Tyler AI</span>
+      <span id="tyler-ai-launcher-label">Ask Tyler AI</span>
       <span
         id="tyler-ai-notification-dot"
         aria-hidden="true"

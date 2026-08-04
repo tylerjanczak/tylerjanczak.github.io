@@ -401,9 +401,6 @@
     display: none;
   }
 }
-    /* ============================================
-       Contact
-       ============================================ */
     .contact {
       padding-top: 24px;
     }
@@ -426,9 +423,6 @@
 
     .contact-grid dd { font-family: var(--display); font-size: 19px; }
 
-    /* ============================================
-       Footer
-       ============================================ */
     footer {
       border-top: 1px solid var(--rule);
       padding: 36px 0 64px;
@@ -443,9 +437,6 @@
       gap: 12px;
     }
 
-    /* ============================================
-       Responsive
-       ============================================ */
     @media (max-width: 640px) {
       .container { padding: 0 24px; }
       .masthead { margin-bottom: 60px; }
@@ -490,9 +481,7 @@
 
   <main class="container">
 
-    <!-- ============================================
-         HERO
-         ============================================ -->
+
     <section class="hero">
       <div class="hero-eyebrow">Healthcare Technology · Implementation · Operations</div>
       <h1>Tyler  Janczak</h1>
@@ -504,9 +493,6 @@
        </div>
     </section>
 
-    <!-- ============================================
-         LEAD / ABOUT
-         ============================================ -->
     <section>
       <div class="section-label">About</div>
       <p class="lead">
@@ -528,9 +514,7 @@
       </p>
     </section>
 
-    <!-- ============================================
-         NUMBERS — what the work has produced
-         ============================================ -->
+
     <section id="numbers">
       <div class="section-label">By the numbers</div>
       <div class="numbers">
@@ -558,18 +542,14 @@
       </div>
     </section>
 
-    <!-- ============================================
-         PULL QUOTE — the signature moment
-         ============================================ -->
+
     <aside class="pullquote">
       <p>
         I never wanted to become a leader who forgot what the work actually feels like. That's why I've kept one foot on the floor through every corporate role.
       </p>
     </aside>
 
-    <!-- ============================================
-         EXPERIENCE
-         ============================================ -->
+
     <section id="experience">
       <div class="section-label">Experience</div>
 
@@ -644,9 +624,7 @@
       </div>
     </section>
 
-    <!-- ============================================
-         CREDENTIALS
-         ============================================ -->
+
     <section id="credentials">
       <div class="section-label">Credentials</div>
 
@@ -675,9 +653,7 @@
 
       </div>
     </section>
-  <!-- ============================================
-         OUTSIDE OF WORK
-         ============================================ -->
+
     <section id="outside">
       <div class="section-label">Outside of work</div>
       <h2 class="section-heading">What keeps me sharp.</h2>
@@ -715,9 +691,7 @@
       </div>
     </section>
 
-    <!-- ============================================
-         CONTACT
-         ============================================ -->
+
     <section class="contact">
       <div class="section-label">Contact</div> <section id="contact" class="contact">
       <h2 class="section-heading">Reach out.</h2>
@@ -763,9 +737,7 @@
 <script src="js/tyler-ai.js"></script>
 <script src="js/heatmap-disclaimer.js"></script>
 </body>
-<!-- ============================================
-       Section ECG loaders — heart + drawing ECG
-       ============================================ -->
+
    <template id="ecg-template">
     <div class="section-ecg">
       <div class="ecg-stage">
@@ -989,7 +961,6 @@
       60%      { transform: scale(1); }
     }
 
-    /* The ECG line draws across, then repeats */
     .ecg-draw-line {
       stroke-dasharray: 500;
       stroke-dashoffset: 500;

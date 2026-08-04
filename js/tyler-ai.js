@@ -110,34 +110,48 @@
 
     #tyler-ai-launcher {
       position: relative;
-      min-width: 138px;
-      height: 46px;
-      padding: 0 21px;
+      width: 62px;
+      height: 62px;
+      padding: 0;
       border: 0;
-      border-radius: 999px;
+      border-radius: 50%;
       background: var(--ta-red);
-      color: #ffffff;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
       cursor: pointer;
-      box-shadow: 0 10px 28px rgba(30, 22, 20, 0.2);
+      overflow: hidden;
+      box-shadow: 0 10px 28px rgba(30, 22, 20, 0.25);
       transition:
         transform 160ms ease,
-        background 160ms ease,
         box-shadow 160ms ease;
+    }
+
+    #tyler-ai-launcher img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .tyler-ai-sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
 
     #tyler-ai-notification-dot {
       position: absolute;
-      top: -3px;
-      right: -3px;
-      width: 13px;
-      height: 13px;
+      top: -2px;
+      right: -2px;
+      width: 15px;
+      height: 15px;
       border-radius: 50%;
       background: #2f7de1;
-      border: 2px solid #f7f5f0;
+      border: 2.5px solid #f7f5f0;
       box-shadow: 0 0 0 2px rgba(47, 125, 225, 0.25);
       display: none;
     }
@@ -160,9 +174,8 @@
     }
 
     #tyler-ai-launcher:hover {
-      background: var(--ta-red-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 14px 32px rgba(30, 22, 20, 0.24);
+      transform: translateY(-3px) scale(1.04);
+      box-shadow: 0 16px 34px rgba(30, 22, 20, 0.3);
     }
 
     #tyler-ai-launcher:focus-visible,
@@ -661,8 +674,10 @@
       type="button"
       aria-expanded="false"
       aria-controls="tyler-ai-panel"
+      aria-label="Ask Tyler AI"
     >
-      <span id="tyler-ai-launcher-label">Ask Tyler AI</span>
+      <img src="${escapeHtml(CONFIG.profileImage)}" alt="" />
+      <span id="tyler-ai-launcher-label" class="tyler-ai-sr-only">Ask Tyler AI</span>
       <span
         id="tyler-ai-notification-dot"
         aria-hidden="true"

@@ -22,17 +22,54 @@
     return;
   }
 
-  // Check the site-wide on/off switch controlled from the dashboard
-  // before rendering anything. Fails open (shows the widget) if the
-  // check itself fails, so a network hiccup never silently hides chat.
+  // Check the site-wide on/off switches controlled from the dashboard
+  // before rendering anything. Fails open (shows the site/widget normally)
+  // if the check itself fails, so a network hiccup never silently breaks things.
   try {
     const statusRes = await fetch(CONFIG.statusUrl, { cache: "no-store" });
     const statusData = await statusRes.json();
+
+    if (statusData && statusData.maintenance === true) {
+      showMaintenanceOverlay();
+      return;
+    }
+
     if (statusData && statusData.enabled === false) {
       return;
     }
   } catch (err) {
-    console.error("Tyler AI status check failed, showing widget by default:", err);
+    console.error("Tyler AI status check failed, showing site normally by default:", err);
+  }
+
+  function showMaintenanceOverlay() {
+    document.body.innerHTML = "";
+    document.body.style.margin = "0";
+
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f7f4ee;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      text-align: center;
+      padding: 24px;
+    `;
+
+    overlay.innerHTML = `
+      <div>
+        <div style="font-family: Georgia, serif; font-size: 30px; color: #1b1b1b; margin-bottom: 12px;">
+          Down for Maintenance
+        </div>
+        <div style="font-size: 15px; color: #4a4a48; max-width: 380px; margin: 0 auto;">
+          Tyler's portfolio is temporarily unavailable while updates are made. Please check back shortly.
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
   }
 
   /* ------------------------------------------------------------------

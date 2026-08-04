@@ -185,6 +185,73 @@
       }
     }
 
+    #tyler-ai-nudge {
+      position: fixed;
+      right: 24px;
+      bottom: 98px;
+      z-index: 999998;
+      max-width: 240px;
+      padding: 13px 34px 13px 16px;
+      background: #fffefa;
+      border: 1px solid var(--ta-border);
+      border-radius: 14px;
+      box-shadow: 0 14px 34px rgba(30, 22, 20, 0.18);
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.45;
+      color: var(--ta-text);
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 220ms ease, transform 220ms ease;
+      pointer-events: none;
+    }
+
+    #tyler-ai-nudge.tyler-ai-nudge-visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    #tyler-ai-nudge::after {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      right: 30px;
+      width: 14px;
+      height: 14px;
+      background: #fffefa;
+      border-right: 1px solid var(--ta-border);
+      border-bottom: 1px solid var(--ta-border);
+      transform: rotate(45deg);
+    }
+
+    #tyler-ai-nudge-close {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      border: 0;
+      background: transparent;
+      color: var(--ta-muted);
+      font-size: 15px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    #tyler-ai-nudge-close:hover {
+      color: var(--ta-text);
+    }
+
+    @media (max-width: 520px) {
+      #tyler-ai-nudge {
+        right: 14px;
+        bottom: 82px;
+        max-width: 200px;
+        font-size: 13px;
+      }
+    }
+
     #tyler-ai-launcher:hover {
       transform: translateY(-3px) scale(1.04);
       box-shadow: 0 16px 34px rgba(30, 22, 20, 0.3);
@@ -705,6 +772,11 @@
         aria-hidden="true"
       ></span>
     </button>
+
+    <div id="tyler-ai-nudge" role="button" tabindex="0">
+      <button id="tyler-ai-nudge-close" type="button" aria-label="Dismiss">&times;</button>
+      Got a question about Tyler's background?
+    </div>
   `;
 
   document.body.appendChild(widget);
@@ -806,10 +878,66 @@
   runInitialMessages();
 
   /* ------------------------------------------------------------------
+     Nudge tooltip — a gentle, one-time prompt after 15s of inactivity,
+     instead of forcing the chat panel open.
+  ------------------------------------------------------------------ */
+
+  const NUDGE_SESSION_KEY = "tylerAiNudgeShown";
+  const nudgeEl = document.getElementById("tyler-ai-nudge");
+  const nudgeCloseBtn = document.getElementById("tyler-ai-nudge-close");
+  let nudgeAutoHideTimer = null;
+
+  function hideNudge() {
+    nudgeEl.classList.remove("tyler-ai-nudge-visible");
+    window.clearTimeout(nudgeAutoHideTimer);
+  }
+
+  function maybeShowNudge() {
+    if (conversationStarted || panel.classList.contains("tyler-ai-open")) {
+      return;
+    }
+
+    try {
+      if (window.sessionStorage.getItem(NUDGE_SESSION_KEY)) {
+        return;
+      }
+      window.sessionStorage.setItem(NUDGE_SESSION_KEY, "true");
+    } catch {
+      // If storage is blocked, still show it this one time.
+    }
+
+    nudgeEl.classList.add("tyler-ai-nudge-visible");
+
+    nudgeAutoHideTimer = window.setTimeout(hideNudge, 8000);
+  }
+
+  window.setTimeout(maybeShowNudge, 15000);
+
+  nudgeEl.addEventListener("click", (event) => {
+    if (event.target === nudgeCloseBtn) return;
+    hideNudge();
+    openChat();
+  });
+
+  nudgeEl.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      hideNudge();
+      openChat();
+    }
+  });
+
+  nudgeCloseBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    hideNudge();
+  });
+
+  /* ------------------------------------------------------------------
      Open and close behavior
   ------------------------------------------------------------------ */
 
   launcher.addEventListener("click", () => {
+    hideNudge();
     const isOpen = panel.classList.contains("tyler-ai-open");
 
     if (isOpen) {

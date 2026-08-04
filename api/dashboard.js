@@ -37,15 +37,17 @@ async function handleData(req, res) {
   if (!(await requireSession(req, res))) return;
 
   try {
-    const [rawConversations, rawResumeRequests] = await Promise.all([
+    const [rawConversations, rawResumeRequests, rawMaintenanceLog] = await Promise.all([
       kv.lrange("tyler_ai_conversations", 0, 199),
-      kv.lrange("tyler_ai_resume_requests", 0, 199)
+      kv.lrange("tyler_ai_resume_requests", 0, 199),
+      kv.lrange("site_maintenance_log", 0, 49)
     ]);
 
     return res.status(200).json({
       success: true,
       conversations: parseEntries(rawConversations),
-      resumeRequests: parseEntries(rawResumeRequests)
+      resumeRequests: parseEntries(rawResumeRequests),
+      maintenanceLog: parseEntries(rawMaintenanceLog)
     });
   } catch (err) {
     console.error(err);

@@ -1386,11 +1386,11 @@
       ? await showHardStop({
           risk: "MEDIUM",
           title: "Confirm: Enable Chat Widget",
-          detail: "This will make <strong>Tyler AI</strong> visible and answering questions for all visitors again.",
+          detail: "This will make Tyler AI visible and answering questions for all visitors again.",
           associated: [
-            "Tyler AI Chat Widget",
-            "Resume request flow",
-            "Conversation logging"
+            "Tyler AI Interface",
+            "Resume Flow",
+            "Conversation Logs"
           ],
           warning: "Visitors will immediately be able to chat and request the resume again.",
           riskLevel: "medium",
@@ -1399,11 +1399,11 @@
       : await showHardStop({
           risk: "MEDIUM",
           title: "Confirm: Disable Chat Widget",
-          detail: "This will hide <strong>Tyler AI</strong> from every page of your site until re-enabled.",
+          detail: "This will hide Tyler AI from every page of your site until re-enabled.",
           associated: [
-            "Tyler AI Chat Widget",
-            "Resume request flow",
-            "Conversation logging"
+            "Tyler AI Interface",
+            "Resume Flow",
+            "Conversation Logs"
           ],
           warning: "Visitors will no longer be able to chat or request your resume through the widget.",
           riskLevel: "medium",
@@ -1497,11 +1497,11 @@
       const confirmed = await showHardStop({
         risk: "VERY HIGH",
         title: "Hard Stop: Maintenance Mode",
-        detail: "This will take the entire live site offline for all visitors, including recruiters currently browsing.",
+        detail: "This will take the entire live site offline.",
         associated: [
-          "Website: tylerjanczak.com / tylerjanczak-github-io.vercel.app",
-          "Tyler AI Chat Widget",
-          "All portfolio pages and case studies"
+          "Website: tylerjanczak.com",
+          "Tyler AI Interface",
+          "All Portfolio Pages and Case Studies"
         ],
         warning: "Every visitor will immediately see a maintenance notice instead of your portfolio."
       });

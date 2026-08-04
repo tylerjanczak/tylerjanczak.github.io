@@ -2,40 +2,72 @@ import { kv } from "@vercel/kv";
 
 async function handleStatus(req, res) {
   try {
-    const stored = await kv.get("tyler_ai_chat_enabled");
-    const enabled = stored === null || stored === undefined ? true : stored === "true" || stored === true;
+    const [chatStored, maintenanceStored] = await Promise.all([
+      kv.get("tyler_ai_chat_enabled"),
+      kv.get("site_maintenance_enabled")
+    ]);
 
-    return res.status(200).json({ enabled });
+    const enabled =
+      chatStored === null || chatStored === undefined
+        ? true
+        : chatStored === "true" || chatStored === true;
+
+    const maintenance =
+      maintenanceStored === "true" || maintenanceStored === true;
+
+    return res.status(200).json({ enabled, maintenance });
   } catch (err) {
     console.error(err);
-    // Fail open — a broken status check shouldn't take down the widget.
-    return res.status(200).json({ enabled: true });
+    // Fail open — a broken status check shouldn't take down the widget or the site.
+    return res.status(200).json({ enabled: true, maintenance: false });
   }
 }
 
-async function handleToggle(req, res) {
+async function requireSession(req, res) {
   const sessionToken = req.headers.authorization?.replace("Bearer ", "");
 
   if (!sessionToken) {
-    return res.status(401).json({ error: "Not signed in." });
+    res.status(401).json({ error: "Not signed in." });
+    return null;
   }
 
   const sessionValid = await kv.get(`webauthn_session_${sessionToken}`);
 
   if (!sessionValid) {
-    return res.status(401).json({ error: "Session expired. Please sign in again." });
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return null;
   }
 
-  try {
-    const { enabled } = req.body;
+  return sessionToken;
+}
 
-    if (typeof enabled !== "boolean") {
-      return res.status(400).json({ error: "Invalid request." });
+async function handleToggle(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { enabled, maintenance } = req.body;
+
+    if (typeof enabled === "boolean") {
+      await kv.set("tyler_ai_chat_enabled", enabled ? "true" : "false");
+      return res.status(200).json({ success: true, enabled });
     }
 
-    await kv.set("tyler_ai_chat_enabled", enabled ? "true" : "false");
+    if (typeof maintenance === "boolean") {
+      await kv.set("site_maintenance_enabled", maintenance ? "true" : "false");
 
-    return res.status(200).json({ success: true, enabled });
+      await kv.lpush(
+        "site_maintenance_log",
+        JSON.stringify({
+          id: crypto.randomUUID(),
+          action: maintenance ? "enabled" : "disabled",
+          timestamp: new Date().toISOString()
+        })
+      );
+
+      return res.status(200).json({ success: true, maintenance });
+    }
+
+    return res.status(400).json({ error: "Invalid request." });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: err.message });

@@ -414,6 +414,167 @@
     cursor: not-allowed;
   }
 
+  .maintenance-slider { background: #c9c2b3; }
+  .switch input:checked + .maintenance-slider { background: #b3261e; }
+
+  /* Hard Stop confirmation modal */
+  #hardstop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 15, 10, 0.5);
+    padding: 20px;
+  }
+  #hardstop-overlay.visible { display: flex; }
+
+  .hardstop-card {
+    width: min(560px, 100%);
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+
+  .hardstop-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    background: #b3261e;
+    color: #fff;
+  }
+
+  .hardstop-icon-wrap {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .hardstop-icon-stripes {
+    width: 100%;
+    height: 32px;
+    background: repeating-linear-gradient(
+      -45deg,
+      #d94a40,
+      #d94a40 4px,
+      #b3261e 4px,
+      #b3261e 8px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hardstop-icon-stripes svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .hardstop-risk-label {
+    width: 100%;
+    background: #7a1a14;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.03em;
+    padding: 2px 0;
+  }
+
+  .hardstop-title-block { flex: 1; }
+
+  .hardstop-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .hardstop-detail {
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .hardstop-detail strong { font-weight: 700; }
+
+  .hardstop-body {
+    padding: 18px 20px;
+  }
+
+  .hardstop-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .hardstop-associated {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+
+  .hardstop-associated-item {
+    font-size: 13.5px;
+    padding: 4px 0;
+    color: var(--ink);
+  }
+
+  .hardstop-associated-item::before {
+    content: "•";
+    color: var(--accent);
+    margin-right: 8px;
+  }
+
+  .hardstop-warning-text {
+    font-size: 12.5px;
+    color: #b3261e;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+
+  .hardstop-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .hardstop-btn {
+    padding: 10px 18px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--rule);
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .hardstop-btn.confirm {
+    background: #b3261e;
+    border-color: #b3261e;
+    color: #fff;
+  }
+
+  .hardstop-btn.confirm:hover { background: #8f1e17; }
+  .hardstop-btn:hover { background: var(--bg-subtle); }
+
+  /* Maintenance log */
+  #maintenance-log-panel { margin-bottom: 24px; }
+
   /* System status panel */
   #status-panel { margin-bottom: 24px; }
   .status-grid {
@@ -609,6 +770,36 @@
   </div>
 </div>
 
+<div id="hardstop-overlay">
+  <div class="hardstop-card">
+    <div class="hardstop-banner">
+      <div class="hardstop-icon-wrap">
+        <div class="hardstop-icon-stripes">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2 L23 21 L1 21 Z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+            <rect x="11" y="9" width="2" height="6" fill="#ffffff"/>
+            <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="hardstop-risk-label" id="hardstop-risk-label">HIGH</div>
+      </div>
+      <div class="hardstop-title-block">
+        <div class="hardstop-title" id="hardstop-title">Hard Stop Warning</div>
+        <div class="hardstop-detail" id="hardstop-detail">This action requires confirmation.</div>
+      </div>
+    </div>
+    <div class="hardstop-body">
+      <div class="hardstop-section-label">Associated Systems</div>
+      <div class="hardstop-associated" id="hardstop-associated"></div>
+      <div class="hardstop-warning-text" id="hardstop-warning-text"></div>
+      <div class="hardstop-actions">
+        <button class="hardstop-btn" id="hardstop-cancel-btn">Cancel</button>
+        <button class="hardstop-btn confirm" id="hardstop-confirm-btn">Proceed Anyway</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container" id="dashboard">
   <div style="display:flex; justify-content:space-between; align-items:flex-start;">
     <div>
@@ -622,6 +813,13 @@
           <span class="switch-slider"></span>
         </label>
         <span id="chat-toggle-label">Chat Enabled</span>
+      </div>
+      <div class="chat-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="maintenance-toggle-input" />
+          <span class="switch-slider maintenance-slider"></span>
+        </label>
+        <span id="maintenance-toggle-label">Site Live</span>
       </div>
       <span id="sign-out" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
         <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 11px; height: 13px; flex-shrink: 0;">
@@ -668,6 +866,19 @@
         <span class="status-detail">Operational</span>
       </div>
     </div>
+  </section>
+
+  <section class="panel" id="maintenance-log-panel">
+    <div class="panel-header">
+      <h2>Maintenance Log</h2>
+      <span class="panel-count" id="maintenance-log-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th style="width:180px;">When</th><th>Action</th></tr>
+      </thead>
+      <tbody id="maintenance-log-body"></tbody>
+    </table>
   </section>
 
   <section class="panel" id="analysis-panel">
@@ -946,6 +1157,25 @@
     `).join("");
   }
 
+  function renderMaintenanceLog() {
+    const log = currentData.maintenanceLog || [];
+    const body = document.getElementById("maintenance-log-body");
+
+    document.getElementById("maintenance-log-count").textContent = log.length;
+
+    body.innerHTML = log.length
+      ? log.map((entry) => `
+          <tr>
+            <td class="timestamp">${formatDate(entry.timestamp)}</td>
+            <td>${entry.action === "enabled"
+              ? '<span class="intent-tag" style="background: rgba(179,38,30,0.1); color: #b3261e;">Maintenance Enabled</span>'
+              : '<span class="intent-tag" style="background: #e6f2e8; color: #2e7d32;">Maintenance Disabled</span>'}
+          </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No maintenance events yet.</td></tr>`;
+  }
+
   function renderTables() {
     const convBody = document.getElementById("conv-body");
     const resumeBody = document.getElementById("resume-body");
@@ -1099,6 +1329,8 @@
   async function loadChatStatus() {
     const toggleInput = document.getElementById("chat-toggle-input");
     const toggleLabel = document.getElementById("chat-toggle-label");
+    const maintenanceInput = document.getElementById("maintenance-toggle-input");
+    const maintenanceLabel = document.getElementById("maintenance-toggle-label");
 
     try {
       const res = await fetch(`${API_BASE}/api/chat-config`, { cache: "no-store" });
@@ -1106,6 +1338,9 @@
 
       toggleInput.checked = data.enabled !== false;
       toggleLabel.textContent = toggleInput.checked ? "Chat Enabled" : "Chat Disabled";
+
+      maintenanceInput.checked = data.maintenance === true;
+      maintenanceLabel.textContent = maintenanceInput.checked ? "Under Maintenance" : "Site Live";
     } catch (err) {
       console.error(err);
     }
@@ -1147,6 +1382,100 @@
   }
 
   document.getElementById("chat-toggle-input").addEventListener("change", toggleChatEnabled);
+
+  /* ------------------------------------------------------------------
+     Maintenance mode — gated behind a Hard Stop confirmation dialog
+     when turning it ON, since it takes the whole live site down.
+  ------------------------------------------------------------------ */
+
+  const hardstopOverlay = document.getElementById("hardstop-overlay");
+  let hardstopResolver = null;
+
+  function showHardStop({ risk, title, detail, associated, warning }) {
+    document.getElementById("hardstop-risk-label").textContent = risk;
+    document.getElementById("hardstop-title").textContent = title;
+    document.getElementById("hardstop-detail").innerHTML = detail;
+    document.getElementById("hardstop-associated").innerHTML = associated
+      .map((item) => `<div class="hardstop-associated-item">${escapeHtml(item)}</div>`)
+      .join("");
+    document.getElementById("hardstop-warning-text").textContent = warning || "";
+
+    hardstopOverlay.classList.add("visible");
+
+    return new Promise((resolve) => {
+      hardstopResolver = resolve;
+    });
+  }
+
+  function closeHardStop(confirmed) {
+    hardstopOverlay.classList.remove("visible");
+    if (hardstopResolver) {
+      hardstopResolver(confirmed);
+      hardstopResolver = null;
+    }
+  }
+
+  document.getElementById("hardstop-cancel-btn").addEventListener("click", () => closeHardStop(false));
+  document.getElementById("hardstop-confirm-btn").addEventListener("click", () => closeHardStop(true));
+
+  async function toggleMaintenanceMode() {
+    const maintenanceInput = document.getElementById("maintenance-toggle-input");
+    const maintenanceLabel = document.getElementById("maintenance-toggle-label");
+    const token = localStorage.getItem(SESSION_KEY);
+    const desiredState = maintenanceInput.checked;
+
+    // Turning maintenance ON is the risky, site-wide action — require a
+    // Hard Stop confirmation. Turning it back OFF (restoring the site)
+    // doesn't need the same friction.
+    if (desiredState) {
+      maintenanceInput.checked = false; // revert until confirmed
+      const confirmed = await showHardStop({
+        risk: "VERY HIGH",
+        title: "Hard Stop: Enable Maintenance Mode",
+        detail: "This will take <strong>the entire live site</strong> offline for all visitors, including recruiters currently browsing.",
+        associated: [
+          "Website: tylerjanczak.com / tylerjanczak-github-io.vercel.app",
+          "Tyler AI Chat Widget",
+          "All portfolio pages and case studies"
+        ],
+        warning: "Every visitor will immediately see a maintenance notice instead of your portfolio."
+      });
+
+      if (!confirmed) return;
+      maintenanceInput.checked = true;
+    }
+
+    maintenanceInput.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-config`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ maintenance: desiredState })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        maintenanceInput.checked = !desiredState;
+        alert(data.error || "Could not update maintenance status.");
+      } else {
+        maintenanceLabel.textContent = desiredState ? "Under Maintenance" : "Site Live";
+        loadDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+      maintenanceInput.checked = !desiredState;
+      alert("Could not update maintenance status.");
+    } finally {
+      maintenanceInput.disabled = false;
+    }
+  }
+
+  document.getElementById("maintenance-toggle-input").addEventListener("change", toggleMaintenanceMode);
 
   const GITHUB_REPO = "tylerjanczak/tylerjanczak.github.io";
 
@@ -1359,7 +1688,8 @@
     const data = await res.json();
     currentData = {
       conversations: data.conversations || [],
-      resumeRequests: data.resumeRequests || []
+      resumeRequests: data.resumeRequests || [],
+      maintenanceLog: data.maintenanceLog || []
     };
 
     gate.style.display = "none";
@@ -1367,6 +1697,7 @@
 
     renderStats();
     renderTables();
+    renderMaintenanceLog();
 
     if (!kbHasLoaded) {
       kbHasLoaded = true;

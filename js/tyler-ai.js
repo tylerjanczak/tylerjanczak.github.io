@@ -159,32 +159,41 @@
       ">
         <div style="padding: 26px 28px 4px; display: flex; justify-content: center;">${ufoSvg}</div>
         <div style="padding: 4px 30px 30px;">
-          <div style="
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(179,38,30,0.08);
-            color: #b3261e;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 5px 12px;
-            border-radius: 999px;
-            margin-bottom: 16px;
-          ">
-            &#9888; High
+          <div style="display: flex; justify-content: center; margin-bottom: 16px;">
+            <div style="width: 60px; border-radius: 5px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.12);">
+              <div style="
+                height: 40px;
+                background: repeating-linear-gradient(-45deg, #d94a40, #d94a40 5px, #b3261e 5px, #b3261e 10px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              ">
+                <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2 L23 21 L1 21 Z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+                  <rect x="11" y="9" width="2" height="6" fill="#ffffff"/>
+                  <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
+                </svg>
+              </div>
+              <div style="
+                background: #7a1a14;
+                color: #ffffff;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.03em;
+                text-align: center;
+                padding: 4px 0;
+              ">
+                HIGH
+              </div>
+            </div>
           </div>
           <div style="font-family: Georgia, serif; font-size: 25px; font-weight: 700; color: #b3261e; margin-bottom: 6px; line-height: 1.2;">
-            Hard Stop — Error
+            Hard Stop: Error
           </div>
           <div style="font-size: 18px; font-weight: 600; color: #1b1b1b; margin-bottom: 14px;">
             Access Denied
           </div>
-          <div style="font-size: 13.5px; color: #4a4a48; line-height: 1.55;">
-            You no longer have access to this site.
-          </div>
-          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2ddd0; font-size: 11px; letter-spacing: 0.06em; color: #8b857e;">
+          <div style="margin-top: 10px; padding-top: 16px; border-top: 1px solid #e2ddd0; font-size: 11px; letter-spacing: 0.06em; color: #8b857e;">
             © 2026 Tyler Janczak
           </div>
         </div>

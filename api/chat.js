@@ -26,24 +26,14 @@ export default async function handler(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
 
-    // Permanently banned IPs (confirmed from the dashboard) get an
-    // immediate, canned response — no OpenAI call, no further logging.
+    // Permanently banned IPs (confirmed automatically after strike 2, or
+    // manually from the dashboard) get an immediate, canned response —
+    // no OpenAI call, no further logging.
     const isPermanentlyBanned = await kv.sismember("banned_ips", clientIp);
     if (isPermanentlyBanned) {
       return res.status(200).json({
         success: true,
         response: "This chat has been disabled.",
-        disabled: true
-      });
-    }
-
-    // Short automatic cooldown after a flagged message — stops repeat
-    // abuse in the moment without permanently banning a shared IP.
-    const isOnCooldown = await kv.get(`ip_cooldown_${clientIp}`);
-    if (isOnCooldown) {
-      return res.status(200).json({
-        success: true,
-        response: "This chat has been temporarily disabled.",
         disabled: true
       });
     }
@@ -838,9 +828,13 @@ let disabled = false;
 if (isAbuseFlagged) {
   const reason = rawAnswer.replace("ABUSE_FLAG:", "").trim() || "Flagged content";
 
-  // One-hour automatic cooldown — stops repeat abuse immediately without
-  // permanently banning what might be a shared office or VPN IP.
-  await kv.set(`ip_cooldown_${clientIp}`, "true", { ex: 3600 });
+  const strikeKey = `ip_strikes_${clientIp}`;
+  const currentStrikes = parseInt((await kv.get(strikeKey)) || "0", 10);
+  const newStrikeCount = currentStrikes + 1;
+
+  // Strikes expire after 30 days so an old, isolated incident doesn't
+  // permanently follow a shared IP forever.
+  await kv.set(strikeKey, String(newStrikeCount), { ex: 30 * 24 * 3600 });
 
   await kv.lpush(
     "flagged_conversations",
@@ -849,13 +843,33 @@ if (isAbuseFlagged) {
       ip: clientIp,
       question,
       reason,
+      strike: newStrikeCount,
       page: req.body.page || null,
       timestamp: new Date().toISOString()
     })
   );
 
-  finalAnswer = "This conversation has been ended due to inappropriate content.";
-  disabled = true;
+  if (newStrikeCount >= 2) {
+    // Second strike — immediate permanent ban, no further warnings.
+    await kv.sadd("banned_ips", clientIp);
+
+    await kv.lpush(
+      "ip_ban_log",
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        ip: clientIp,
+        reason: "Automatic — repeated inappropriate messages",
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    finalAnswer = "This conversation has been ended due to repeated inappropriate content. Your access has been restricted.";
+    disabled = true;
+  } else {
+    // First strike — a clear warning, but access isn't restricted yet.
+    finalAnswer = "That message was flagged as inappropriate. Please keep this conversation respectful — a repeated violation will result in your access being restricted.";
+    disabled = false;
+  }
 }
 
 await kv.lpush(
@@ -867,6 +881,7 @@ await kv.lpush(
     page: req.body.page || null,
     firstName: req.body.firstName || null,
     ip: clientIp,
+    sessionId: req.body.sessionId || null,
     flagged: isAbuseFlagged,
     timestamp: new Date().toISOString()
   })

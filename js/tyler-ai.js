@@ -16,6 +16,7 @@
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
+
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;
@@ -135,42 +136,47 @@
         <circle cx="84" cy="58" r="2.4" fill="#f2c94c"/>
       </g>
 
-      <!-- Cow, suspended in the beam -->
-      <g transform="translate(75,98)">
+      <!-- Cow, suspended in the beam — original side-profile design -->
+      <g transform="translate(78,98)">
         <!-- dangling legs -->
-        <line x1="-8" y1="14" x2="-8" y2="25" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
-        <line x1="-3" y1="15" x2="-3" y2="26" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
-        <line x1="3" y1="15" x2="3" y2="26" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
-        <line x1="8" y1="14" x2="8" y2="25" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="-15" y1="9" x2="-16" y2="21" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="-4" y1="10" x2="-4" y2="22" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="5" y1="10" x2="6" y2="22" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="11" y1="9" x2="12" y2="21" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
 
         <!-- tail -->
-        <path d="M14 5 Q21 9 19 16" stroke="#1b1b1b" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M17 1 Q23 5 21 12" stroke="#1b1b1b" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 
-        <!-- body with spots -->
-        <ellipse cx="0" cy="4" rx="15" ry="10" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
-        <ellipse cx="-6" cy="1" rx="4.5" ry="3.5" fill="#1b1b1b"/>
-        <ellipse cx="7" cy="7" rx="3.5" ry="2.5" fill="#1b1b1b"/>
+        <!-- body, side profile -->
+        <path d="M -18 5
+                 Q -20 -6 -9 -8
+                 L 11 -9
+                 Q 20 -9 20 0
+                 Q 20 8 10 9
+                 L -12 9
+                 Q -18 9 -18 5 Z"
+              fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
 
-        <!-- head -->
-        <ellipse cx="0" cy="-9" rx="9" ry="7.5" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
-        <ellipse cx="4" cy="-12" rx="3" ry="2.3" fill="#1b1b1b"/>
+        <!-- neck and head, extending left -->
+        <path d="M -18 -2
+                 Q -28 -5 -30 2
+                 Q -31 8 -25 10
+                 L -18 5 Z"
+              fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
 
-        <!-- ears -->
-        <ellipse cx="-9.5" cy="-12" rx="3.2" ry="2" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.2" transform="rotate(-25 -9.5 -12)"/>
-        <ellipse cx="9.5" cy="-12" rx="3.2" ry="2" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.2" transform="rotate(25 9.5 -12)"/>
+        <!-- ear -->
+        <ellipse cx="-24" cy="-6" rx="3.4" ry="2" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.1" transform="rotate(-30 -24 -6)"/>
 
-        <!-- horns -->
-        <path d="M-4 -15.5 Q-5.5 -19 -3 -20.5" stroke="#e0c992" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-        <path d="M4 -15.5 Q5.5 -19 3 -20.5" stroke="#e0c992" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <!-- horn -->
+        <path d="M-21 -9 Q-22.5 -12 -19 -13" stroke="#e0c992" stroke-width="1.4" fill="none" stroke-linecap="round"/>
 
-        <!-- snout -->
-        <ellipse cx="0" cy="-4.5" rx="5.5" ry="3.8" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.2"/>
-        <ellipse cx="-1.6" cy="-4.5" rx="0.8" ry="1" fill="#1b1b1b"/>
-        <ellipse cx="1.6" cy="-4.5" rx="0.8" ry="1" fill="#1b1b1b"/>
+        <!-- eye -->
+        <circle cx="-25" cy="1" r="1.1" fill="#1b1b1b"/>
 
-        <!-- eyes -->
-        <circle cx="-4" cy="-10" r="1.3" fill="#1b1b1b"/>
-        <circle cx="4" cy="-10" r="1.3" fill="#1b1b1b"/>
+        <!-- irregular color patches, painted style -->
+        <path d="M -3 -8 Q 5 -9 9 -6 Q 10 -2 5 -1 Q -1 -1 -3 -4 Z" fill="#c98a4b"/>
+        <path d="M -10 1 Q -7 0 -6 3 Q -8 5 -10 4 Z" fill="#8a5a35"/>
+        <path d="M 12 -2 Q 15.5 -2 15 1.5 Q 13 2.5 11 1 Z" fill="#8a5a35"/>
       </g>
     </svg>`;
 

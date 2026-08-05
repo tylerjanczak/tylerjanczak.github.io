@@ -37,17 +37,21 @@ async function handleData(req, res) {
   if (!(await requireSession(req, res))) return;
 
   try {
-    const [rawConversations, rawResumeRequests, rawMaintenanceLog] = await Promise.all([
+    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps] = await Promise.all([
       kv.lrange("tyler_ai_conversations", 0, 199),
       kv.lrange("tyler_ai_resume_requests", 0, 199),
-      kv.lrange("site_maintenance_log", 0, 49)
+      kv.lrange("site_maintenance_log", 0, 49),
+      kv.lrange("flagged_conversations", 0, 49),
+      kv.smembers("banned_ips")
     ]);
 
     return res.status(200).json({
       success: true,
       conversations: parseEntries(rawConversations),
       resumeRequests: parseEntries(rawResumeRequests),
-      maintenanceLog: parseEntries(rawMaintenanceLog)
+      maintenanceLog: parseEntries(rawMaintenanceLog),
+      flaggedConversations: parseEntries(rawFlagged),
+      bannedIps: bannedIps || []
     });
   } catch (err) {
     console.error(err);
@@ -79,6 +83,55 @@ async function handleDelete(req, res) {
     for (const entry of remaining.slice().reverse()) {
       await kv.lpush(key, entry);
     }
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleBanIp(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { ip, reason } = req.body;
+
+    if (!ip || typeof ip !== "string") {
+      return res.status(400).json({ error: "No IP address provided." });
+    }
+
+    await kv.sadd("banned_ips", ip);
+    await kv.del(`ip_cooldown_${ip}`);
+
+    await kv.lpush(
+      "ip_ban_log",
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        ip,
+        reason: reason || "Manually banned from dashboard",
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleUnbanIp(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { ip } = req.body;
+
+    if (!ip || typeof ip !== "string") {
+      return res.status(400).json({ error: "No IP address provided." });
+    }
+
+    await kv.srem("banned_ips", ip);
 
     return res.status(200).json({ success: true });
   } catch (err) {
@@ -178,6 +231,14 @@ export default async function handler(req, res) {
 
   if (req.method === "POST" && action === "analysis") {
     return handleAnalysis(req, res);
+  }
+
+  if (req.method === "POST" && action === "ban-ip") {
+    return handleBanIp(req, res);
+  }
+
+  if (req.method === "POST" && action === "unban-ip") {
+    return handleUnbanIp(req, res);
   }
 
   return res.status(400).json({ error: "Unknown or missing action." });

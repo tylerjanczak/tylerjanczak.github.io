@@ -6,6 +6,7 @@
    * Frontend website: GitHub Pages / Vercel static hosting
    * Backend API: Vercel serverless function
    */
+
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-config",
@@ -136,12 +137,41 @@
       </g>
 
       <!-- Cow, suspended in the beam -->
-      <g transform="translate(75,100)">
-        <ellipse cx="0" cy="0" rx="16" ry="10" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
-        <ellipse cx="-6" cy="-2" rx="4" ry="3" fill="#1b1b1b"/>
-        <ellipse cx="5" cy="2" rx="3" ry="2" fill="#1b1b1b"/>
-        <circle cx="-11" cy="-3" r="5" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
-        <ellipse cx="0" cy="9" rx="3" ry="5" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.2"/>
+      <g transform="translate(75,98)">
+        <!-- dangling legs -->
+        <line x1="-8" y1="14" x2="-8" y2="25" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="-3" y1="15" x2="-3" y2="26" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3" y1="15" x2="3" y2="26" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <line x1="8" y1="14" x2="8" y2="25" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- tail -->
+        <path d="M14 5 Q21 9 19 16" stroke="#1b1b1b" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+
+        <!-- body with spots -->
+        <ellipse cx="0" cy="4" rx="15" ry="10" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
+        <ellipse cx="-6" cy="1" rx="4.5" ry="3.5" fill="#1b1b1b"/>
+        <ellipse cx="7" cy="7" rx="3.5" ry="2.5" fill="#1b1b1b"/>
+
+        <!-- head -->
+        <ellipse cx="0" cy="-9" rx="9" ry="7.5" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
+        <ellipse cx="4" cy="-12" rx="3" ry="2.3" fill="#1b1b1b"/>
+
+        <!-- ears -->
+        <ellipse cx="-9.5" cy="-12" rx="3.2" ry="2" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.2" transform="rotate(-25 -9.5 -12)"/>
+        <ellipse cx="9.5" cy="-12" rx="3.2" ry="2" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.2" transform="rotate(25 9.5 -12)"/>
+
+        <!-- horns -->
+        <path d="M-4 -15.5 Q-5.5 -19 -3 -20.5" stroke="#e0c992" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+        <path d="M4 -15.5 Q5.5 -19 3 -20.5" stroke="#e0c992" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+
+        <!-- snout -->
+        <ellipse cx="0" cy="-4.5" rx="5.5" ry="3.8" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.2"/>
+        <ellipse cx="-1.6" cy="-4.5" rx="0.8" ry="1" fill="#1b1b1b"/>
+        <ellipse cx="1.6" cy="-4.5" rx="0.8" ry="1" fill="#1b1b1b"/>
+
+        <!-- eyes -->
+        <circle cx="-4" cy="-10" r="1.3" fill="#1b1b1b"/>
+        <circle cx="4" cy="-10" r="1.3" fill="#1b1b1b"/>
       </g>
     </svg>`;
 
@@ -1012,7 +1042,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler's Virtual Assistant! Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
       "",
       500,
       1100

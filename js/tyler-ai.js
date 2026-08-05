@@ -1013,7 +1013,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm Tyler's Virtual Assistant! Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
       "",
       500,
       1100

@@ -16,6 +16,7 @@
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
+
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;
@@ -112,17 +113,31 @@
 
     const patternUrl = `data:image/svg+xml,${encodeURIComponent(patternSvg)}`;
 
-    // A small UFO abducting a cow — a nod to the site's playful side even
-    // in an otherwise serious "access denied" moment.
-    const ufoSvg = `<svg width="140" height="140" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="75,55 45,112 105,112" fill="#fdf6d8" opacity="0.85"/>
-      <ellipse cx="75" cy="52" rx="42" ry="12" fill="#3a4a63"/>
-      <ellipse cx="75" cy="42" rx="20" ry="16" fill="#7fb3d5"/>
-      <ellipse cx="75" cy="56" rx="50" ry="7" fill="#25324a"/>
-      <circle cx="55" cy="56" r="3" fill="#f2c94c"/>
-      <circle cx="75" cy="58" r="3" fill="#f2c94c"/>
-      <circle cx="95" cy="56" r="3" fill="#f2c94c"/>
-      <g transform="translate(75,97)">
+    // A small spaceship abducting a cow — a nod to the site's playful side
+    // even in an otherwise serious "access denied" moment.
+    const ufoSvg = `<svg width="140" height="150" viewBox="0 0 150 160" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="75,58 48,112 102,112" fill="#fdf6d8" opacity="0.85"/>
+
+      <!-- Ship hull: elongated capsule shape, not a saucer -->
+      <g>
+        <ellipse cx="75" cy="34" rx="17" ry="30" fill="#3a4a63"/>
+        <path d="M58 30 Q75 -2 92 30 L92 34 Q75 42 58 34 Z" fill="#2a3750"/>
+        <ellipse cx="75" cy="30" rx="9" ry="12" fill="#7fb3d5" stroke="#25324a" stroke-width="1.5"/>
+        <ellipse cx="75" cy="30" rx="5" ry="7" fill="#cfe8f7" opacity="0.7"/>
+
+        <!-- fins -->
+        <path d="M58 44 L44 58 L58 56 Z" fill="#25324a"/>
+        <path d="M92 44 L106 58 L92 56 Z" fill="#25324a"/>
+
+        <!-- engine glow / beam emitter -->
+        <ellipse cx="75" cy="58" rx="16" ry="6" fill="#25324a"/>
+        <circle cx="66" cy="58" r="2.4" fill="#f2c94c"/>
+        <circle cx="75" cy="59" r="2.4" fill="#f2c94c"/>
+        <circle cx="84" cy="58" r="2.4" fill="#f2c94c"/>
+      </g>
+
+      <!-- Cow, suspended in the beam -->
+      <g transform="translate(75,100)">
         <ellipse cx="0" cy="0" rx="16" ry="10" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
         <ellipse cx="-6" cy="-2" rx="4" ry="3" fill="#1b1b1b"/>
         <ellipse cx="5" cy="2" rx="3" ry="2" fill="#1b1b1b"/>
@@ -161,28 +176,17 @@
           <div style="display: flex; justify-content: center; margin-bottom: 16px;">
             <div style="width: 60px; border-radius: 5px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.12);">
               <div style="
-                height: 40px;
+                height: 46px;
                 background: repeating-linear-gradient(-45deg, #d94a40, #d94a40 5px, #b3261e 5px, #b3261e 10px);
                 display: flex;
                 align-items: center;
                 justify-content: center;
               ">
-                <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+                <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 2 L23 21 L1 21 Z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
                   <rect x="11" y="9" width="2" height="6" fill="#ffffff"/>
                   <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
                 </svg>
-              </div>
-              <div style="
-                background: #7a1a14;
-                color: #ffffff;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 0.03em;
-                text-align: center;
-                padding: 4px 0;
-              ">
-                HIGH
               </div>
             </div>
           </div>

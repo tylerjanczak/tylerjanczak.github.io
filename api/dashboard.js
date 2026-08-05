@@ -131,7 +131,30 @@ async function handleUnbanIp(req, res) {
       return res.status(400).json({ error: "No IP address provided." });
     }
 
+    // Clear the ban and their strike count together, so unbanning gives
+    // a genuine clean slate rather than leaving them one strike from
+    // an instant re-ban on their very next message.
     await kv.srem("banned_ips", ip);
+    await kv.del(`ip_strikes_${ip}`);
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleResetStrikes(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { ip } = req.body;
+
+    if (!ip || typeof ip !== "string") {
+      return res.status(400).json({ error: "No IP address provided." });
+    }
+
+    await kv.del(`ip_strikes_${ip}`);
 
     return res.status(200).json({ success: true });
   } catch (err) {
@@ -239,6 +262,10 @@ export default async function handler(req, res) {
 
   if (req.method === "POST" && action === "unban-ip") {
     return handleUnbanIp(req, res);
+  }
+
+  if (req.method === "POST" && action === "reset-strikes") {
+    return handleResetStrikes(req, res);
   }
 
   return res.status(400).json({ error: "Unknown or missing action." });

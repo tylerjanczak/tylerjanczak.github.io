@@ -863,11 +863,11 @@ if (isAbuseFlagged) {
       })
     );
 
-    finalAnswer = "This conversation has been ended due to repeated inappropriate content. Your access has been restricted.";
+    finalAnswer = "This conversation has been ended due to repeated inappropriate content. Access to this site has been revoked.";
     disabled = true;
   } else {
     // First strike — a clear warning, but access isn't restricted yet.
-    finalAnswer = "That message was flagged as inappropriate. Please keep this conversation respectful — a repeated violation will result in your access being restricted.";
+    finalAnswer = "That message was flagged as inappropriate. A repeated violation will result in your access being revoked.";
     disabled = false;
   }
 }

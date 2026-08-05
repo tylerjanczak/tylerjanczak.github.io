@@ -1,4 +1,5 @@
 import { kv } from "@vercel/kv";
+
 export default async function handler(req, res) {
   // Allow requests from your website
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -18,6 +19,33 @@ export default async function handler(req, res) {
 
     if (!question) {
       return res.status(400).json({ error: "No question provided." });
+    }
+
+    const clientIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      "unknown";
+
+    // Permanently banned IPs (confirmed from the dashboard) get an
+    // immediate, canned response — no OpenAI call, no further logging.
+    const isPermanentlyBanned = await kv.sismember("banned_ips", clientIp);
+    if (isPermanentlyBanned) {
+      return res.status(200).json({
+        success: true,
+        response: "This chat has been disabled.",
+        disabled: true
+      });
+    }
+
+    // Short automatic cooldown after a flagged message — stops repeat
+    // abuse in the moment without permanently banning a shared IP.
+    const isOnCooldown = await kv.get(`ip_cooldown_${clientIp}`);
+    if (isOnCooldown) {
+      return res.status(200).json({
+        success: true,
+        response: "This chat has been temporarily disabled.",
+        disabled: true
+      });
     }
 
     const DEFAULT_PORTFOLIO = `
@@ -56,6 +84,12 @@ Never invent:
 
 If the available information does not support an answer, say:
 "I don't have verified information about that in Tyler's portfolio."
+
+ABUSE AND HARASSMENT DETECTION:
+If the visitor's message is abusive, harassing, sexually inappropriate, or is clearly mocking or trolling rather than a genuine question — including insults directed at Tyler or at you, or dismissive mockery like calling this "AI slop" with hostile intent rather than genuine curiosity — do not answer normally. Respond with exactly this and nothing else:
+ABUSE_FLAG: [one short phrase describing why]
+
+Use this only for genuinely hostile or abusive messages, not for skeptical or critical questions asked in good faith. A visitor asking "is this actually AI or a script?" or "isn't this kind of gimmicky?" is a legitimate question, not abuse, and should be answered normally and directly.
 
 Do not answer questions concerning Tyler's private health, finances,
 relationships, home address, or other nonprofessional personal information.
@@ -795,7 +829,34 @@ if (!answerText && Array.isArray(data.output)) {
   answerText = textPart?.text;
 }
 
-const finalAnswer = answerText || "No response returned.";
+const rawAnswer = answerText || "No response returned.";
+const isAbuseFlagged = rawAnswer.trim().startsWith("ABUSE_FLAG:");
+
+let finalAnswer = rawAnswer;
+let disabled = false;
+
+if (isAbuseFlagged) {
+  const reason = rawAnswer.replace("ABUSE_FLAG:", "").trim() || "Flagged content";
+
+  // One-hour automatic cooldown — stops repeat abuse immediately without
+  // permanently banning what might be a shared office or VPN IP.
+  await kv.set(`ip_cooldown_${clientIp}`, "true", { ex: 3600 });
+
+  await kv.lpush(
+    "flagged_conversations",
+    JSON.stringify({
+      id: crypto.randomUUID(),
+      ip: clientIp,
+      question,
+      reason,
+      page: req.body.page || null,
+      timestamp: new Date().toISOString()
+    })
+  );
+
+  finalAnswer = "This conversation has been ended due to inappropriate content.";
+  disabled = true;
+}
 
 await kv.lpush(
   "tyler_ai_conversations",
@@ -805,13 +866,16 @@ await kv.lpush(
     answer: finalAnswer,
     page: req.body.page || null,
     firstName: req.body.firstName || null,
+    ip: clientIp,
+    flagged: isAbuseFlagged,
     timestamp: new Date().toISOString()
   })
 );
 
 return res.status(200).json({
   success: true,
-  response: finalAnswer
+  response: finalAnswer,
+  disabled
 });
   } catch (err) {
     console.error(err);

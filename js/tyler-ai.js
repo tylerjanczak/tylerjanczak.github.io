@@ -16,6 +16,7 @@
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
+
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;
@@ -28,8 +29,19 @@
     const statusRes = await fetch(CONFIG.statusUrl, { cache: "no-store" });
     const statusData = await statusRes.json();
 
+    if (statusData && statusData.ipBlocked === true) {
+      showFullPageOverlay(
+        "Access Restricted",
+        "You no longer have access to this site."
+      );
+      return;
+    }
+
     if (statusData && statusData.maintenance === true) {
-      showMaintenanceOverlay();
+      showFullPageOverlay(
+        "Down for Maintenance",
+        "Tyler's portfolio is temporarily unavailable while updates are made. Please check back shortly."
+      );
       return;
     }
 
@@ -40,7 +52,7 @@
     console.error("Tyler AI status check failed, showing site normally by default:", err);
   }
 
-  function showMaintenanceOverlay() {
+  function showFullPageOverlay(title, message) {
     document.body.innerHTML = "";
     document.body.style.margin = "0";
 
@@ -60,10 +72,10 @@
     overlay.innerHTML = `
       <div>
         <div style="font-family: Georgia, serif; font-size: 30px; color: #1b1b1b; margin-bottom: 12px;">
-          Down for Maintenance
+          ${title}
         </div>
         <div style="font-size: 15px; color: #4a4a48; max-width: 380px; margin: 0 auto;">
-          Tyler's portfolio is temporarily unavailable while updates are made. Please check back shortly.
+          ${message}
         </div>
       </div>
     `;
@@ -797,6 +809,7 @@
   let requestInProgress = false;
   let conversationStarted = false;
   let awaitingResumeEmail = false;
+  let chatDisabled = false;
 
   const resumeRequestPattern =
     /(resume|cv).*(send|email|copy|share|forward|get|see|view)|(send|email|copy|share|forward|get|see|view).*(resume|cv)/i;
@@ -863,7 +876,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler Virtual Assistant, ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
       "",
       500,
       1100
@@ -875,6 +888,11 @@
   ------------------------------------------------------------------ */
 
   runInitialMessages();
+
+  /* ------------------------------------------------------------------
+     Nudge tooltip — a gentle, one-time prompt after 15s of inactivity,
+     instead of forcing the chat panel open.
+  ------------------------------------------------------------------ */
 
   const NUDGE_SESSION_KEY = "tylerAiNudgeShown";
   const nudgeEl = document.getElementById("tyler-ai-nudge");
@@ -1121,7 +1139,15 @@
       typingElement.remove();
 
       const { displayText, navigateUrl } = parseAssistantResponse(answer);
-      addAssistantMessage(displayText);
+      addAssistantMessage(displayText, data?.disabled ? "error" : "");
+
+      if (data?.disabled) {
+        chatDisabled = true;
+        input.disabled = true;
+        sendButton.disabled = true;
+        input.placeholder = "This chat is no longer available.";
+        return;
+      }
 
       if (navigateUrl) {
         window.setTimeout(() => {
@@ -1146,9 +1172,11 @@
       }
     } finally {
       requestInProgress = false;
-      sendButton.disabled = false;
-      input.disabled = false;
-      input.focus();
+      if (!chatDisabled) {
+        sendButton.disabled = false;
+        input.disabled = false;
+        input.focus();
+      }
     }
   });
 

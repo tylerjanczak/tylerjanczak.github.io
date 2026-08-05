@@ -602,6 +602,24 @@
   /* Maintenance log */
   #maintenance-log-panel { margin-bottom: 24px; }
 
+  #flagged-panel { margin-bottom: 24px; }
+  #banned-panel { margin-bottom: 24px; }
+
+  .small-action-btn {
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .small-action-btn:hover { background: rgba(107,31,31,0.06); }
+  .small-action-btn.unban { border-color: #2e7d32; color: #2e7d32; }
+  .small-action-btn.unban:hover { background: rgba(46,125,50,0.06); }
+
   /* System status panel */
   #status-panel { margin-bottom: 24px; }
   .status-grid {
@@ -908,6 +926,38 @@
     </table>
   </section>
 
+  <section class="panel" id="flagged-panel">
+    <div class="panel-header">
+      <h2>Flagged Conversations</h2>
+      <span class="panel-count" id="flagged-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">IP</th>
+          <th>Question</th>
+          <th style="width:140px;">Reason</th>
+          <th style="width:70px;"></th>
+        </tr>
+      </thead>
+      <tbody id="flagged-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="banned-panel">
+    <div class="panel-header">
+      <h2>Banned IPs</h2>
+      <span class="panel-count" id="banned-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>IP Address</th><th style="width:90px;"></th></tr>
+      </thead>
+      <tbody id="banned-body"></tbody>
+    </table>
+  </section>
+
   <section class="panel" id="analysis-panel">
     <div class="panel-header">
       <h2>Smart Analysis</h2>
@@ -1184,6 +1234,105 @@
     `).join("");
   }
 
+  function renderFlaggedConversations() {
+    const flagged = currentData.flaggedConversations || [];
+    const body = document.getElementById("flagged-body");
+
+    document.getElementById("flagged-count").textContent = flagged.length;
+
+    body.innerHTML = flagged.length
+      ? flagged.map((entry) => `
+          <tr>
+            <td class="timestamp">${formatDate(entry.timestamp)}</td>
+            <td>${escapeHtml(entry.ip || "unknown")}</td>
+            <td>${escapeHtml(entry.question || "")}</td>
+            <td>${escapeHtml(entry.reason || "")}</td>
+            <td>
+              <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban</button>
+            </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="5" class="empty-row">No flagged conversations.</td></tr>`;
+
+    body.querySelectorAll("[data-ban-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => banIp(btn.dataset.banIp));
+    });
+  }
+
+  function renderBannedIps() {
+    const banned = currentData.bannedIps || [];
+    const body = document.getElementById("banned-body");
+
+    document.getElementById("banned-count").textContent = banned.length;
+
+    body.innerHTML = banned.length
+      ? banned.map((ip) => `
+          <tr>
+            <td>${escapeHtml(ip)}</td>
+            <td>
+              <button class="small-action-btn unban" data-unban-ip="${escapeHtml(ip)}">Unban</button>
+            </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No banned IPs.</td></tr>`;
+
+    body.querySelectorAll("[data-unban-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => unbanIp(btn.dataset.unbanIp));
+    });
+  }
+
+  async function banIp(ip) {
+    if (!ip || !confirm(`Permanently ban ${ip} from using Tyler AI?`)) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=ban-ip`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not ban that IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not ban that IP.");
+    }
+  }
+
+  async function unbanIp(ip) {
+    if (!ip) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=unban-ip`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not unban that IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not unban that IP.");
+    }
+  }
+
   function renderMaintenanceLog() {
     const log = currentData.maintenanceLog || [];
     const body = document.getElementById("maintenance-log-body");
@@ -1386,11 +1535,11 @@
       ? await showHardStop({
           risk: "MEDIUM",
           title: "Confirm: Enable Chat Widget",
-          detail: "This will make Tyler AI visible and answering questions for all visitors again.",
+          detail: "This will make <strong>Tyler AI</strong> visible and answering questions for all visitors again.",
           associated: [
-            "Tyler AI Interface",
-            "Resume Flow",
-            "Conversation Logs"
+            "Tyler AI Chat Widget",
+            "Resume request flow",
+            "Conversation logging"
           ],
           warning: "Visitors will immediately be able to chat and request the resume again.",
           riskLevel: "medium",
@@ -1399,11 +1548,11 @@
       : await showHardStop({
           risk: "MEDIUM",
           title: "Confirm: Disable Chat Widget",
-          detail: "This will hide Tyler AI from every page of your site until re-enabled.",
+          detail: "This will hide <strong>Tyler AI</strong> from every page of your site until re-enabled.",
           associated: [
-            "Tyler AI Interface",
-            "Resume Flow",
-            "Conversation Logs"
+            "Tyler AI Chat Widget",
+            "Resume request flow",
+            "Conversation logging"
           ],
           warning: "Visitors will no longer be able to chat or request your resume through the widget.",
           riskLevel: "medium",
@@ -1496,12 +1645,12 @@
       maintenanceInput.checked = false; // revert until confirmed
       const confirmed = await showHardStop({
         risk: "VERY HIGH",
-        title: "Hard Stop: Maintenance Mode",
-        detail: "This will take the entire live site offline.",
+        title: "Hard Stop: Enable Maintenance Mode",
+        detail: "This will take <strong>the entire live site</strong> offline for all visitors, including recruiters currently browsing.",
         associated: [
-          "Website: tylerjanczak.com",
-          "Tyler AI Interface",
-          "All Portfolio Pages and Case Studies"
+          "Website: tylerjanczak.com / tylerjanczak-github-io.vercel.app",
+          "Tyler AI Chat Widget",
+          "All portfolio pages and case studies"
         ],
         warning: "Every visitor will immediately see a maintenance notice instead of your portfolio."
       });
@@ -1707,7 +1856,7 @@
 
       if (res.ok) {
         kbTextarea.value = "";
-        kbTextarea.placeholder = "Currently using the built-in default knowledge. Type here and click Save to override it.";
+        kbTextarea.placeholder = "Currently using the built-in default knowledge base from api/chat.js. Type here and click Save to override it.";
         setKbStatus("Using Default", "default");
         updateKbCharCount();
       } else {
@@ -1754,7 +1903,9 @@
     currentData = {
       conversations: data.conversations || [],
       resumeRequests: data.resumeRequests || [],
-      maintenanceLog: data.maintenanceLog || []
+      maintenanceLog: data.maintenanceLog || [],
+      flaggedConversations: data.flaggedConversations || [],
+      bannedIps: data.bannedIps || []
     };
 
     gate.style.display = "none";
@@ -1763,6 +1914,8 @@
     renderStats();
     renderTables();
     renderMaintenanceLog();
+    renderFlaggedConversations();
+    renderBannedIps();
 
     if (!kbHasLoaded) {
       kbHasLoaded = true;

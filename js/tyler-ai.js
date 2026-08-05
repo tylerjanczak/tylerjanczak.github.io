@@ -811,6 +811,20 @@
   let awaitingResumeEmail = false;
   let chatDisabled = false;
 
+  // A stable ID for this browser tab's visit, so every message sent
+  // during one visit groups together as one conversation on the dashboard.
+  const SESSION_ID_KEY = "tylerAiConversationSessionId";
+  let conversationSessionId;
+  try {
+    conversationSessionId = window.sessionStorage.getItem(SESSION_ID_KEY);
+    if (!conversationSessionId) {
+      conversationSessionId = crypto.randomUUID();
+      window.sessionStorage.setItem(SESSION_ID_KEY, conversationSessionId);
+    }
+  } catch {
+    conversationSessionId = crypto.randomUUID();
+  }
+
   const resumeRequestPattern =
     /(resume|cv).*(send|email|copy|share|forward|get|see|view)|(send|email|copy|share|forward|get|see|view).*(resume|cv)/i;
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1088,7 +1102,8 @@
         },
         body: JSON.stringify({
           question: question,
-          page: window.location.pathname
+          page: window.location.pathname,
+          sessionId: conversationSessionId
         }),
         signal: controller.signal
       });

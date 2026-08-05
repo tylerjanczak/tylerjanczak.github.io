@@ -30,10 +30,7 @@
     const statusData = await statusRes.json();
 
     if (statusData && statusData.ipBlocked === true) {
-      showFullPageOverlay(
-        "Access Restricted",
-        "You no longer have access to this site."
-      );
+      showBlockedOverlay();
       return;
     }
 
@@ -76,6 +73,120 @@
         </div>
         <div style="font-size: 15px; color: #4a4a48; max-width: 380px; margin: 0 auto;">
           ${message}
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+  }
+
+  function showBlockedOverlay() {
+    document.body.innerHTML = "";
+    document.body.style.margin = "0";
+
+    // A scattered space-doodle pattern — rockets, ringed planets, stars —
+    // built as an inline SVG and tiled as the page background.
+    const patternSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260">
+      <g stroke="#d9d2c4" stroke-width="1.5" fill="none" opacity="0.9">
+        <g transform="translate(28,36)">
+          <path d="M10 50 L10 15 Q10 0 20 0 Q30 0 30 15 L30 50 L20 62 Z"/>
+          <circle cx="20" cy="18" r="5"/>
+          <path d="M10 40 L0 55 L10 50 Z"/>
+          <path d="M30 40 L40 55 L30 50 Z"/>
+        </g>
+        <g transform="translate(190,34)">
+          <circle cx="0" cy="0" r="13"/>
+          <ellipse cx="0" cy="0" rx="25" ry="7" transform="rotate(-20)"/>
+        </g>
+        <path d="M92,96 L96,106 L106,106 L98,112 L101,122 L92,116 L83,122 L86,112 L78,106 L88,106 Z"/>
+        <g transform="translate(205,155) rotate(25) scale(0.65)">
+          <path d="M10 50 L10 15 Q10 0 20 0 Q30 0 30 15 L30 50 L20 62 Z"/>
+          <circle cx="20" cy="18" r="5"/>
+        </g>
+        <g transform="translate(55,195)">
+          <circle cx="0" cy="0" r="9"/>
+          <ellipse cx="0" cy="0" rx="18" ry="5" transform="rotate(15)"/>
+        </g>
+        <path d="M225,222 l3,7 l7,0 l-5,5 l2,7 l-7,-4 l-7,4 l2,-7 l-5,-5 l7,0 Z"/>
+      </g>
+    </svg>`;
+
+    const patternUrl = `data:image/svg+xml,${encodeURIComponent(patternSvg)}`;
+
+    // A small UFO abducting a cow — a nod to the site's playful side even
+    // in an otherwise serious "access denied" moment.
+    const ufoSvg = `<svg width="140" height="140" viewBox="0 0 150 150" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="75,55 45,112 105,112" fill="#fdf6d8" opacity="0.85"/>
+      <ellipse cx="75" cy="52" rx="42" ry="12" fill="#3a4a63"/>
+      <ellipse cx="75" cy="42" rx="20" ry="16" fill="#7fb3d5"/>
+      <ellipse cx="75" cy="56" rx="50" ry="7" fill="#25324a"/>
+      <circle cx="55" cy="56" r="3" fill="#f2c94c"/>
+      <circle cx="75" cy="58" r="3" fill="#f2c94c"/>
+      <circle cx="95" cy="56" r="3" fill="#f2c94c"/>
+      <g transform="translate(75,97)">
+        <ellipse cx="0" cy="0" rx="16" ry="10" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
+        <ellipse cx="-6" cy="-2" rx="4" ry="3" fill="#1b1b1b"/>
+        <ellipse cx="5" cy="2" rx="3" ry="2" fill="#1b1b1b"/>
+        <circle cx="-11" cy="-3" r="5" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
+        <ellipse cx="0" cy="9" rx="3" ry="5" fill="#ffffff" stroke="#1b1b1b" stroke-width="1.2"/>
+      </g>
+    </svg>`;
+
+    const overlay = document.createElement("div");
+    overlay.style.cssText = `
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f7f4ee;
+      background-image: url("${patternUrl}");
+      background-size: 260px 260px;
+      background-repeat: repeat;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      padding: 24px;
+    `;
+
+    overlay.innerHTML = `
+      <div style="
+        background: #ffffff;
+        border-radius: 14px;
+        box-shadow: 0 30px 70px rgba(0,0,0,0.22);
+        max-width: 420px;
+        width: 100%;
+        overflow: hidden;
+        text-align: center;
+      ">
+        <div style="padding: 26px 28px 4px; display: flex; justify-content: center;">${ufoSvg}</div>
+        <div style="padding: 4px 30px 30px;">
+          <div style="
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(179,38,30,0.08);
+            color: #b3261e;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 999px;
+            margin-bottom: 16px;
+          ">
+            &#9888; High
+          </div>
+          <div style="font-family: Georgia, serif; font-size: 25px; font-weight: 700; color: #b3261e; margin-bottom: 6px; line-height: 1.2;">
+            Hard Stop — Error
+          </div>
+          <div style="font-size: 18px; font-weight: 600; color: #1b1b1b; margin-bottom: 14px;">
+            Access Denied
+          </div>
+          <div style="font-size: 13.5px; color: #4a4a48; line-height: 1.55;">
+            You no longer have access to this site.
+          </div>
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e2ddd0; font-size: 11px; letter-spacing: 0.06em; color: #8b857e;">
+            © 2026 Tyler Janczak
+          </div>
         </div>
       </div>
     `;

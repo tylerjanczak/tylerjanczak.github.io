@@ -603,6 +603,105 @@
   #maintenance-log-panel { margin-bottom: 24px; }
 
   #flagged-panel { margin-bottom: 24px; }
+
+  /* Conversation detail modal */
+  #conversation-detail-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999997;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 15, 10, 0.5);
+    padding: 20px;
+  }
+  #conversation-detail-overlay.visible { display: flex; }
+
+  .conversation-detail-card {
+    width: min(640px, 100%);
+    height: min(640px, 85vh);
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+  }
+
+  .conversation-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg-subtle);
+  }
+
+  .conversation-detail-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  .conversation-detail-meta {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  #conversation-detail-close {
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  #conversation-detail-close:hover { color: var(--ink); }
+
+  .conversation-detail-thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px;
+    background: var(--bg);
+  }
+
+  .conv-bubble-row {
+    display: flex;
+    margin-bottom: 14px;
+  }
+  .conv-bubble-row.user { justify-content: flex-end; }
+
+  .conv-bubble {
+    max-width: 78%;
+    padding: 11px 14px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .conv-bubble.question {
+    background: var(--accent);
+    color: #fff;
+  }
+  .conv-bubble.answer {
+    background: #fff;
+    border: 1px solid var(--rule);
+    color: var(--ink);
+  }
+  .conv-bubble-timestamp {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+
+  .conversation-row {
+    cursor: pointer;
+  }
+  .conversation-row:hover {
+    background: var(--bg-subtle);
+  }
   #banned-panel { margin-bottom: 24px; }
 
   .small-action-btn {
@@ -845,6 +944,19 @@
   </div>
 </div>
 
+<div id="conversation-detail-overlay">
+  <div class="conversation-detail-card">
+    <div class="conversation-detail-header">
+      <div>
+        <div class="conversation-detail-title">Conversation</div>
+        <div class="conversation-detail-meta" id="conversation-detail-meta"></div>
+      </div>
+      <button id="conversation-detail-close" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="conversation-detail-thread" id="conversation-detail-thread"></div>
+  </div>
+</div>
+
 <div class="container" id="dashboard">
   <div style="display:flex; justify-content:space-between; align-items:flex-start;">
     <div>
@@ -935,10 +1047,11 @@
       <thead>
         <tr>
           <th style="width:150px;">When</th>
-          <th style="width:110px;">IP</th>
+          <th style="width:100px;">IP</th>
+          <th style="width:60px;">Strike</th>
           <th>Question</th>
           <th style="width:140px;">Reason</th>
-          <th style="width:70px;"></th>
+          <th style="width:140px;"></th>
         </tr>
       </thead>
       <tbody id="flagged-body"></tbody>
@@ -1010,9 +1123,9 @@
         <tr>
           <th style="width:150px;">When</th>
           <th style="width:110px;">Page</th>
-          <th>Question</th>
-          <th>Answer</th>
-          <th style="width:40px;"></th>
+          <th style="width:80px;">Messages</th>
+          <th>Preview</th>
+          <th style="width:70px;"></th>
         </tr>
       </thead>
       <tbody id="conv-body"></tbody>
@@ -1245,18 +1358,50 @@
           <tr>
             <td class="timestamp">${formatDate(entry.timestamp)}</td>
             <td>${escapeHtml(entry.ip || "unknown")}</td>
+            <td>${entry.strike ? `<span class="intent-tag" style="background: rgba(179,38,30,0.08); color: #b3261e;">${entry.strike}${entry.strike >= 2 ? " (banned)" : ""}</span>` : "—"}</td>
             <td>${escapeHtml(entry.question || "")}</td>
             <td>${escapeHtml(entry.reason || "")}</td>
-            <td>
+            <td style="display:flex; gap:6px; flex-wrap:wrap;">
               <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban</button>
+              <button class="small-action-btn unban" data-reset-ip="${escapeHtml(entry.ip || "")}">Reset</button>
             </td>
           </tr>
         `).join("")
-      : `<tr><td colspan="5" class="empty-row">No flagged conversations.</td></tr>`;
+      : `<tr><td colspan="6" class="empty-row">No flagged conversations.</td></tr>`;
 
     body.querySelectorAll("[data-ban-ip]").forEach((btn) => {
       btn.addEventListener("click", () => banIp(btn.dataset.banIp));
     });
+
+    body.querySelectorAll("[data-reset-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => resetStrikes(btn.dataset.resetIp));
+    });
+  }
+
+  async function resetStrikes(ip) {
+    if (!ip || !confirm(`Reset the strike count for ${ip}? Their next violation will be treated as a first offense again.`)) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=reset-strikes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not reset strikes for that IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not reset strikes for that IP.");
+    }
   }
 
   function renderBannedIps() {
@@ -1352,41 +1497,104 @@
       : `<tr><td colspan="2" class="empty-row">No maintenance events yet.</td></tr>`;
   }
 
+  function groupConversationsBySession(conversations) {
+    const groups = new Map();
+
+    conversations.forEach((c, originalIndex) => {
+      const key = c.sessionId || `legacy-${c.id || originalIndex}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push({ ...c, originalIndex });
+    });
+
+    const sessions = Array.from(groups.entries()).map(([sessionId, messages]) => {
+      // Entries come newest-first from the backend. Sort ascending for
+      // display as a natural reading-order thread.
+      const sorted = messages.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const newestFirst = messages.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      return {
+        sessionId,
+        messages: sorted,
+        count: sorted.length,
+        lastTimestamp: newestFirst[0]?.timestamp,
+        firstQuestion: sorted[0]?.question || "",
+        page: newestFirst[0]?.page || sorted[0]?.page || null,
+        anyFlagged: messages.some(m => isHighIntent(m.question) || isHighIntent(m.answer)),
+        indices: messages.map(m => m.originalIndex)
+      };
+    });
+
+    return sessions.sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
+  }
+
+  function openConversationDetail(session) {
+    const overlay = document.getElementById("conversation-detail-overlay");
+    const thread = document.getElementById("conversation-detail-thread");
+    const meta = document.getElementById("conversation-detail-meta");
+
+    meta.textContent = `${session.count} message${session.count === 1 ? "" : "s"}${session.page ? " · " + session.page : ""}`;
+
+    thread.innerHTML = session.messages.map(m => `
+      <div class="conv-bubble-row user">
+        <div class="conv-bubble question">
+          ${escapeHtml(m.question || "")}
+          <span class="conv-bubble-timestamp">${formatDate(m.timestamp)}</span>
+        </div>
+      </div>
+      <div class="conv-bubble-row">
+        <div class="conv-bubble answer">${formatMessageHtmlForDashboard(m.answer || "")}</div>
+      </div>
+    `).join("");
+
+    overlay.classList.add("visible");
+  }
+
+  function formatMessageHtmlForDashboard(text) {
+    return escapeHtml(text).replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">$1</a>'
+    );
+  }
+
+  document.getElementById("conversation-detail-close").addEventListener("click", () => {
+    document.getElementById("conversation-detail-overlay").classList.remove("visible");
+  });
+
   function renderTables() {
     const convBody = document.getElementById("conv-body");
     const resumeBody = document.getElementById("resume-body");
     const searchTerm = document.getElementById("search-input").value.trim().toLowerCase();
     const dateFilterValue = document.getElementById("date-filter").value;
 
-    const filteredConv = currentData.conversations
-      .map((c, originalIndex) => ({ ...c, originalIndex }))
-      .filter(c => withinDateFilter(c.timestamp, dateFilterValue))
-      .filter(c => {
+    const allSessions = groupConversationsBySession(currentData.conversations);
+
+    const filteredSessions = allSessions
+      .filter(s => withinDateFilter(s.lastTimestamp, dateFilterValue))
+      .filter(s => {
         if (!searchTerm) return true;
-        return (c.question || "").toLowerCase().includes(searchTerm) ||
-               (c.answer || "").toLowerCase().includes(searchTerm);
+        return s.messages.some(m =>
+          (m.question || "").toLowerCase().includes(searchTerm) ||
+          (m.answer || "").toLowerCase().includes(searchTerm)
+        );
       });
 
     const filteredResumes = currentData.resumeRequests
       .map((r, originalIndex) => ({ ...r, originalIndex }))
       .filter(r => withinDateFilter(r.timestamp, dateFilterValue));
 
-    document.getElementById("conv-count").textContent = filteredConv.length;
+    document.getElementById("conv-count").textContent = filteredSessions.length;
     document.getElementById("resume-count").textContent = filteredResumes.length;
 
-    convBody.innerHTML = filteredConv.length
-      ? filteredConv.map(c => {
-          const flagged = isHighIntent(c.question) || isHighIntent(c.answer);
-          return `
-            <tr class="${flagged ? 'high-intent' : ''}">
-              <td class="timestamp">${formatDate(c.timestamp)}</td>
-              <td>${c.page ? `<span class="page-tag">${escapeHtml(c.page)}</span>` : ''}</td>
-              <td>${flagged ? '<span class="intent-tag">High Intent</span><br>' : ''}${escapeHtml(c.question || "")}</td>
-              <td>${escapeHtml(c.answer || "")}</td>
-              <td><button class="delete-btn" data-type="conversation" data-index="${c.originalIndex}" title="Delete">&times;</button></td>
-            </tr>
-          `;
-        }).join("")
+    convBody.innerHTML = filteredSessions.length
+      ? filteredSessions.map((s, sessionIndex) => `
+          <tr class="conversation-row ${s.anyFlagged ? 'high-intent' : ''}" data-session-index="${sessionIndex}">
+            <td class="timestamp">${formatDate(s.lastTimestamp)}</td>
+            <td>${s.page ? `<span class="page-tag">${escapeHtml(s.page)}</span>` : ''}</td>
+            <td>${s.count}</td>
+            <td>${s.anyFlagged ? '<span class="intent-tag">High Intent</span><br>' : ''}${escapeHtml(s.firstQuestion)}</td>
+            <td><button class="delete-btn" data-session-delete-index="${sessionIndex}" title="Delete conversation">&times;</button></td>
+          </tr>
+        `).join("")
       : `<tr><td colspan="5" class="empty-row">No conversations match.</td></tr>`;
 
     resumeBody.innerHTML = filteredResumes.length
@@ -1399,9 +1607,52 @@
         `).join("")
       : `<tr><td colspan="3" class="empty-row">No resume requests match.</td></tr>`;
 
-    document.querySelectorAll(".delete-btn").forEach(btn => {
+    convBody.querySelectorAll(".conversation-row").forEach(row => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest(".delete-btn")) return;
+        const session = filteredSessions[parseInt(row.dataset.sessionIndex, 10)];
+        openConversationDetail(session);
+      });
+    });
+
+    convBody.querySelectorAll("[data-session-delete-index]").forEach(btn => {
+      btn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        const session = filteredSessions[parseInt(btn.dataset.sessionDeleteIndex, 10)];
+        await deleteConversationSession(session);
+      });
+    });
+
+    document.querySelectorAll('[data-type="resume"].delete-btn').forEach(btn => {
       btn.addEventListener("click", handleDelete);
     });
+  }
+
+  async function deleteConversationSession(session) {
+    const label = session.count > 1 ? `all ${session.count} messages in this conversation` : "this entry";
+    if (!confirm(`Delete ${label}? This can't be undone.`)) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+    // Delete from highest index to lowest so earlier indices stay valid
+    // as later ones are removed.
+    const descendingIndices = session.indices.slice().sort((a, b) => b - a);
+
+    try {
+      for (const index of descendingIndices) {
+        await fetch(`${API_BASE}/api/dashboard?action=delete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: "conversation", index })
+        });
+      }
+      await loadDashboard();
+    } catch (err) {
+      console.error(err);
+      alert("Could not delete that conversation.");
+    }
   }
 
   async function handleDelete(event) {

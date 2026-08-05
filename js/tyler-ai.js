@@ -1,12 +1,6 @@
 (async () => {
   "use strict";
 
-  /*
-   * Tyler AI — Portfolio Chat Widget
-   * Frontend website: GitHub Pages / Vercel static hosting
-   * Backend API: Vercel serverless function
-   */
-
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-config",

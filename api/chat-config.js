@@ -7,11 +7,10 @@ async function handleStatus(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
 
-    const [chatStored, maintenanceStored, isBanned, isOnCooldown] = await Promise.all([
+    const [chatStored, maintenanceStored, isBanned] = await Promise.all([
       kv.get("tyler_ai_chat_enabled"),
       kv.get("site_maintenance_enabled"),
-      kv.sismember("banned_ips", clientIp),
-      kv.get(`ip_cooldown_${clientIp}`)
+      kv.sismember("banned_ips", clientIp)
     ]);
 
     const enabled =
@@ -22,7 +21,7 @@ async function handleStatus(req, res) {
     const maintenance =
       maintenanceStored === "true" || maintenanceStored === true;
 
-    const ipBlocked = Boolean(isBanned) || Boolean(isOnCooldown);
+    const ipBlocked = Boolean(isBanned);
 
     return res.status(200).json({ enabled, maintenance, ipBlocked });
   } catch (err) {

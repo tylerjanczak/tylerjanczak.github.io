@@ -2,9 +2,16 @@ import { kv } from "@vercel/kv";
 
 async function handleStatus(req, res) {
   try {
-    const [chatStored, maintenanceStored] = await Promise.all([
+    const clientIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      "unknown";
+
+    const [chatStored, maintenanceStored, isBanned, isOnCooldown] = await Promise.all([
       kv.get("tyler_ai_chat_enabled"),
-      kv.get("site_maintenance_enabled")
+      kv.get("site_maintenance_enabled"),
+      kv.sismember("banned_ips", clientIp),
+      kv.get(`ip_cooldown_${clientIp}`)
     ]);
 
     const enabled =
@@ -15,11 +22,13 @@ async function handleStatus(req, res) {
     const maintenance =
       maintenanceStored === "true" || maintenanceStored === true;
 
-    return res.status(200).json({ enabled, maintenance });
+    const ipBlocked = Boolean(isBanned) || Boolean(isOnCooldown);
+
+    return res.status(200).json({ enabled, maintenance, ipBlocked });
   } catch (err) {
     console.error(err);
     // Fail open — a broken status check shouldn't take down the widget or the site.
-    return res.status(200).json({ enabled: true, maintenance: false });
+    return res.status(200).json({ enabled: true, maintenance: false, ipBlocked: false });
   }
 }
 

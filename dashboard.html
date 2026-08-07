@@ -1312,6 +1312,47 @@
 
   document.getElementById("sign-out").addEventListener("click", () => {
     localStorage.removeItem(SESSION_KEY);
+
+    // Wipe every table, panel, and cached value — not just hide the
+    // container — so no residual data from this session lingers in the
+    // DOM after signing out, even if this device is shared or inspected.
+    currentData = {
+      conversations: [],
+      resumeRequests: [],
+      maintenanceLog: [],
+      flaggedConversations: [],
+      bannedIps: [],
+      bannedRanges: [],
+      bannedFingerprints: []
+    };
+
+    document.getElementById("stats-row").innerHTML = "";
+    document.getElementById("conv-body").innerHTML = "";
+    document.getElementById("resume-body").innerHTML = "";
+    document.getElementById("maintenance-log-body").innerHTML = "";
+    document.getElementById("flagged-body").innerHTML = "";
+    document.getElementById("banned-body").innerHTML = "";
+    document.getElementById("banned-ranges-body").innerHTML = "";
+    document.getElementById("banned-fingerprints-body").innerHTML = "";
+    document.getElementById("analysis-body").innerHTML = `<p class="empty-row">Click "Generate Insights" to have AI summarize patterns across your visitor conversations.</p>`;
+    document.getElementById("kb-textarea").value = "";
+    document.getElementById("kb-textarea").placeholder = "Loading current knowledge base...";
+    document.getElementById("search-input").value = "";
+
+    // Reset counters shown in panel headers.
+    ["conv-count", "resume-count", "maintenance-log-count", "flagged-count",
+     "banned-count", "banned-ranges-count", "banned-fingerprints-count", "map-count"]
+      .forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = "0";
+      });
+
+    // Stop auto-refresh and clear the flag so it starts fresh after the
+    // next successful sign-in instead of silently reusing old timers.
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+    kbHasLoaded = false;
+
     dashboard.style.display = "none";
     gate.style.display = "block";
     signinView.style.display = "none";

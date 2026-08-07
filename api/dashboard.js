@@ -37,12 +37,14 @@ async function handleData(req, res) {
   if (!(await requireSession(req, res))) return;
 
   try {
-    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps] = await Promise.all([
+    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps, bannedRanges, bannedFingerprints] = await Promise.all([
       kv.lrange("tyler_ai_conversations", 0, 199),
       kv.lrange("tyler_ai_resume_requests", 0, 199),
       kv.lrange("site_maintenance_log", 0, 49),
       kv.lrange("flagged_conversations", 0, 49),
-      kv.smembers("banned_ips")
+      kv.smembers("banned_ips"),
+      kv.smembers("banned_ranges"),
+      kv.smembers("banned_fingerprints")
     ]);
 
     return res.status(200).json({
@@ -51,7 +53,9 @@ async function handleData(req, res) {
       resumeRequests: parseEntries(rawResumeRequests),
       maintenanceLog: parseEntries(rawMaintenanceLog),
       flaggedConversations: parseEntries(rawFlagged),
-      bannedIps: bannedIps || []
+      bannedIps: bannedIps || [],
+      bannedRanges: bannedRanges || [],
+      bannedFingerprints: bannedFingerprints || []
     });
   } catch (err) {
     console.error(err);
@@ -113,6 +117,114 @@ async function handleBanIp(req, res) {
         timestamp: new Date().toISOString()
       })
     );
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+function getSlash24(ip) {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return null;
+  return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+}
+
+async function handleBanRange(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { ip, reason } = req.body;
+
+    if (!ip || typeof ip !== "string") {
+      return res.status(400).json({ error: "No IP address provided." });
+    }
+
+    const range = getSlash24(ip);
+
+    if (!range) {
+      return res.status(400).json({ error: "Could not determine a subnet for that IP." });
+    }
+
+    await kv.sadd("banned_ranges", range);
+
+    await kv.lpush(
+      "ip_ban_log",
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        ip: range,
+        reason: reason || `Subnet ban from dashboard (based on ${ip})`,
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    return res.status(200).json({ success: true, range });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleUnbanRange(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { range } = req.body;
+
+    if (!range || typeof range !== "string") {
+      return res.status(400).json({ error: "No range provided." });
+    }
+
+    await kv.srem("banned_ranges", range);
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleBanFingerprint(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { fingerprint, reason } = req.body;
+
+    if (!fingerprint || typeof fingerprint !== "string") {
+      return res.status(400).json({ error: "No fingerprint provided." });
+    }
+
+    await kv.sadd("banned_fingerprints", fingerprint);
+
+    await kv.lpush(
+      "ip_ban_log",
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        ip: `fingerprint:${fingerprint.slice(0, 12)}...`,
+        reason: reason || "Manually banned from dashboard (device fingerprint)",
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleUnbanFingerprint(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { fingerprint } = req.body;
+
+    if (!fingerprint || typeof fingerprint !== "string") {
+      return res.status(400).json({ error: "No fingerprint provided." });
+    }
+
+    await kv.srem("banned_fingerprints", fingerprint);
 
     return res.status(200).json({ success: true });
   } catch (err) {
@@ -262,6 +374,22 @@ export default async function handler(req, res) {
 
   if (req.method === "POST" && action === "unban-ip") {
     return handleUnbanIp(req, res);
+  }
+
+  if (req.method === "POST" && action === "ban-range") {
+    return handleBanRange(req, res);
+  }
+
+  if (req.method === "POST" && action === "unban-range") {
+    return handleUnbanRange(req, res);
+  }
+
+  if (req.method === "POST" && action === "ban-fingerprint") {
+    return handleBanFingerprint(req, res);
+  }
+
+  if (req.method === "POST" && action === "unban-fingerprint") {
+    return handleUnbanFingerprint(req, res);
   }
 
   if (req.method === "POST" && action === "reset-strikes") {

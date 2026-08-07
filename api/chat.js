@@ -1,5 +1,35 @@
 import { kv } from "@vercel/kv";
 
+// Checks whether an IPv4 address falls within a CIDR range, e.g.
+// ipInCidr("203.0.113.42", "203.0.113.0/24") -> true
+function ipInCidr(ip, cidr) {
+  try {
+    const [rangeIp, prefixStr] = cidr.split("/");
+    const prefix = parseInt(prefixStr, 10);
+
+    const toInt = (addr) =>
+      addr.split(".").reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+
+    const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
+
+    return (toInt(ip) & mask) === (toInt(rangeIp) & mask);
+  } catch {
+    return false;
+  }
+}
+
+async function isVisitorBlocked(ip, fingerprint) {
+  const [isDirectlyBanned, bannedRanges, isFingerprintBanned] = await Promise.all([
+    kv.sismember("banned_ips", ip),
+    kv.smembers("banned_ranges"),
+    fingerprint ? kv.sismember("banned_fingerprints", fingerprint) : Promise.resolve(false)
+  ]);
+
+  if (isDirectlyBanned || isFingerprintBanned) return true;
+
+  return (bannedRanges || []).some((range) => ipInCidr(ip, range));
+}
+
 export default async function handler(req, res) {
   // Allow requests from your website
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -26,10 +56,12 @@ export default async function handler(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
 
-    // Permanently banned IPs (confirmed automatically after strike 2, or
-    // manually from the dashboard) get an immediate, canned response —
-    // no OpenAI call, no further logging.
-    const isPermanentlyBanned = await kv.sismember("banned_ips", clientIp);
+    const deviceFingerprint = req.body.fingerprint || null;
+
+    // Permanently banned IPs, subnets, or device fingerprints (confirmed
+    // automatically after strike 2, or manually from the dashboard) get an
+    // immediate, canned response — no OpenAI call, no further logging.
+    const isPermanentlyBanned = await isVisitorBlocked(clientIp, deviceFingerprint);
     if (isPermanentlyBanned) {
       return res.status(200).json({
         success: true,
@@ -828,19 +860,29 @@ let disabled = false;
 if (isAbuseFlagged) {
   const reason = rawAnswer.replace("ABUSE_FLAG:", "").trim() || "Flagged content";
 
-  const strikeKey = `ip_strikes_${clientIp}`;
-  const currentStrikes = parseInt((await kv.get(strikeKey)) || "0", 10);
-  const newStrikeCount = currentStrikes + 1;
+  const ipStrikeKey = `ip_strikes_${clientIp}`;
+  const fpStrikeKey = deviceFingerprint ? `fp_strikes_${deviceFingerprint}` : null;
+
+  const ipStrikes = parseInt((await kv.get(ipStrikeKey)) || "0", 10);
+  const fpStrikes = fpStrikeKey ? parseInt((await kv.get(fpStrikeKey)) || "0", 10) : 0;
+
+  // Use whichever identity already has more strikes — this way switching
+  // networks (new IP, same device) doesn't reset the count back to zero.
+  const newStrikeCount = Math.max(ipStrikes, fpStrikes) + 1;
 
   // Strikes expire after 30 days so an old, isolated incident doesn't
-  // permanently follow a shared IP forever.
-  await kv.set(strikeKey, String(newStrikeCount), { ex: 30 * 24 * 3600 });
+  // permanently follow a shared IP or device forever.
+  await kv.set(ipStrikeKey, String(newStrikeCount), { ex: 30 * 24 * 3600 });
+  if (fpStrikeKey) {
+    await kv.set(fpStrikeKey, String(newStrikeCount), { ex: 30 * 24 * 3600 });
+  }
 
   await kv.lpush(
     "flagged_conversations",
     JSON.stringify({
       id: crypto.randomUUID(),
       ip: clientIp,
+      fingerprint: deviceFingerprint,
       question,
       reason,
       strike: newStrikeCount,
@@ -850,24 +892,29 @@ if (isAbuseFlagged) {
   );
 
   if (newStrikeCount >= 2) {
-    // Second strike — immediate permanent ban, no further warnings.
+    // Second strike — immediate permanent ban on both identities we have,
+    // no further warnings.
     await kv.sadd("banned_ips", clientIp);
+    if (deviceFingerprint) {
+      await kv.sadd("banned_fingerprints", deviceFingerprint);
+    }
 
     await kv.lpush(
       "ip_ban_log",
       JSON.stringify({
         id: crypto.randomUUID(),
         ip: clientIp,
+        fingerprint: deviceFingerprint,
         reason: "Automatic — repeated inappropriate messages",
         timestamp: new Date().toISOString()
       })
     );
 
-    finalAnswer = "This conversation has been ended due to repeated inappropriate content. Access to this site has been revoked.";
+    finalAnswer = "This conversation has been ended due to repeated inappropriate content. Your access has been restricted.";
     disabled = true;
   } else {
     // First strike — a clear warning, but access isn't restricted yet.
-    finalAnswer = "That message was flagged as inappropriate. A repeated violation will result in your access being revoked.";
+    finalAnswer = "That message was flagged as inappropriate. Please keep this conversation respectful — a repeated violation will result in your access being restricted.";
     disabled = false;
   }
 }
@@ -881,6 +928,7 @@ await kv.lpush(
     page: req.body.page || null,
     firstName: req.body.firstName || null,
     ip: clientIp,
+    fingerprint: deviceFingerprint,
     sessionId: req.body.sessionId || null,
     flagged: isAbuseFlagged,
     timestamp: new Date().toISOString()

@@ -4,7 +4,6 @@ const KEYS = {
   conversation: "tyler_ai_conversations",
   resume: "tyler_ai_resume_requests"
 };
-
 async function requireSession(req, res) {
   const sessionToken = req.headers.authorization?.replace("Bearer ", "");
 

@@ -1,6 +1,12 @@
 (async () => {
   "use strict";
 
+  /*
+   * Tyler AI — Portfolio Chat Widget
+   * Frontend website: GitHub Pages / Vercel static hosting
+   * Backend API: Vercel serverless function
+   */
+
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-config",
@@ -16,11 +22,53 @@
     return;
   }
 
+  // A semi-stable browser fingerprint — a secondary identity signal
+  // alongside IP address, since IP alone can be rotated via a VPN or
+  // Private Relay. Not a guaranteed unique ID, just an additional signal.
+  async function generateFingerprint() {
+    try {
+      const signals = [
+        navigator.userAgent || "",
+        navigator.language || "",
+        String(screen.width) + "x" + String(screen.height),
+        String(screen.colorDepth || ""),
+        Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        String(navigator.hardwareConcurrency || ""),
+        navigator.platform || ""
+      ];
+
+      try {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.textBaseline = "top";
+        ctx.font = "14px Arial";
+        ctx.fillText("tyler-ai-fp", 2, 2);
+        signals.push(canvas.toDataURL());
+      } catch {
+        // Canvas fingerprinting blocked — fine, remaining signals still apply.
+      }
+
+      const combined = signals.join("||");
+      const encoded = new TextEncoder().encode(combined);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+    } catch {
+      return null;
+    }
+  }
+
+  const deviceFingerprint = await generateFingerprint();
+
   // Check the site-wide on/off switches controlled from the dashboard
   // before rendering anything. Fails open (shows the site/widget normally)
   // if the check itself fails, so a network hiccup never silently breaks things.
   try {
-    const statusRes = await fetch(CONFIG.statusUrl, { cache: "no-store" });
+    const statusUrlWithFp = deviceFingerprint
+      ? `${CONFIG.statusUrl}?fp=${encodeURIComponent(deviceFingerprint)}`
+      : CONFIG.statusUrl;
+
+    const statusRes = await fetch(statusUrlWithFp, { cache: "no-store" });
     const statusData = await statusRes.json();
 
     if (statusData && statusData.ipBlocked === true) {
@@ -1254,7 +1302,8 @@
         body: JSON.stringify({
           question: question,
           page: window.location.pathname,
-          sessionId: conversationSessionId
+          sessionId: conversationSessionId,
+          fingerprint: deviceFingerprint
         }),
         signal: controller.signal
       });

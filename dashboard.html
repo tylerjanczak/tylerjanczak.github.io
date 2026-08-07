@@ -76,6 +76,49 @@
     outline: none;
     border-color: var(--accent);
   }
+
+  .username-input-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .username-input-row input[type="text"] {
+    flex: 1;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .username-input-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .username-warning-icon {
+    flex: 0 0 auto;
+    width: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(122, 46, 46, 0.08);
+    border: 1px solid rgba(122, 46, 46, 0.25);
+    border-radius: 6px;
+    transition: opacity 150ms ease;
+  }
+
+  .username-warning-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .username-warning-icon.hidden {
+    display: none;
+  }
   button.primary {
     width: 100%;
     padding: 13px;
@@ -884,12 +927,29 @@
 
 <div id="gate">
   <h2 id="gate-title">Sign In</h2>
-  <p id="gate-subtitle">Use your passkey to access the dashboard.</p>
+  <p id="gate-subtitle">Enter your username to continue.</p>
 
-  <div id="signin-view">
+  <div id="username-view">
+    <div class="username-input-row">
+      <span id="username-warning-icon" class="username-warning-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2 L23 21 L1 21 Z" fill="#7a2e2e"/>
+          <rect x="11" y="8.5" width="2" height="6.5" fill="#ffffff"/>
+          <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
+        </svg>
+      </span>
+      <input type="text" id="username-input" placeholder="Username" autocomplete="username" autocapitalize="off" spellcheck="false" />
+    </div>
+    <button class="primary" id="username-continue-btn">Continue</button>
+  </div>
+
+  <div id="signin-view" style="display: none;">
     <button class="primary" id="signin-btn">Sign in with Passkey</button>
     <div class="gate-toggle" id="register-toggle" style="display: none;">
       No passkey set up yet? <a id="show-register">Register one</a>
+    </div>
+    <div class="gate-toggle">
+      <a id="username-back-signin">&larr; Back</a>
     </div>
   </div>
 
@@ -1071,6 +1131,32 @@
     </table>
   </section>
 
+  <section class="panel" id="banned-ranges-panel">
+    <div class="panel-header">
+      <h2>Banned Subnets</h2>
+      <span class="panel-count" id="banned-ranges-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Subnet</th><th style="width:90px;"></th></tr>
+      </thead>
+      <tbody id="banned-ranges-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="banned-fingerprints-panel">
+    <div class="panel-header">
+      <h2>Banned Devices</h2>
+      <span class="panel-count" id="banned-fingerprints-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Device Fingerprint</th><th style="width:90px;"></th></tr>
+      </thead>
+      <tbody id="banned-fingerprints-body"></tbody>
+    </table>
+  </section>
+
   <section class="panel" id="analysis-panel">
     <div class="panel-header">
       <h2>Smart Analysis</h2>
@@ -1155,10 +1241,51 @@
   const gate = document.getElementById("gate");
   const dashboard = document.getElementById("dashboard");
   const gateError = document.getElementById("gate-error");
+  const usernameView = document.getElementById("username-view");
   const signinView = document.getElementById("signin-view");
   const registerView = document.getElementById("register-view");
   const gateTitle = document.getElementById("gate-title");
   const gateSubtitle = document.getElementById("gate-subtitle");
+
+  // Cosmetic username step before the passkey prompt — this is a single-admin
+  // dashboard, so this isn't a real access boundary (the passkey itself is);
+  // it just makes the login flow feel like a familiar two-step sign-in.
+  const EXPECTED_USERNAME = "tyler";
+
+  const usernameInputEl = document.getElementById("username-input");
+  const usernameWarningIcon = document.getElementById("username-warning-icon");
+
+  usernameInputEl.addEventListener("input", () => {
+    usernameWarningIcon.classList.toggle("hidden", usernameInputEl.value.length > 0);
+  });
+
+  document.getElementById("username-continue-btn").addEventListener("click", () => {
+    const entered = document.getElementById("username-input").value.trim().toLowerCase();
+
+    if (entered !== EXPECTED_USERNAME) {
+      gateError.textContent = "Username not found.";
+      return;
+    }
+
+    gateError.textContent = "";
+    usernameView.style.display = "none";
+    signinView.style.display = "block";
+    gateSubtitle.textContent = "Use your passkey to access the dashboard.";
+  });
+
+  document.getElementById("username-input").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("username-continue-btn").click();
+    }
+  });
+
+  document.getElementById("username-back-signin").addEventListener("click", () => {
+    signinView.style.display = "none";
+    usernameView.style.display = "block";
+    gateSubtitle.textContent = "Enter your username to continue.";
+    gateError.textContent = "";
+  });
 
   // The "Register one" link stays hidden for a cleaner sign-in screen.
   // Visit dashboard.html?setup=1 to reveal it when adding a new device.
@@ -1187,6 +1314,13 @@
     localStorage.removeItem(SESSION_KEY);
     dashboard.style.display = "none";
     gate.style.display = "block";
+    signinView.style.display = "none";
+    registerView.style.display = "none";
+    usernameView.style.display = "block";
+    document.getElementById("username-input").value = "";
+    document.getElementById("username-warning-icon").classList.remove("hidden");
+    gateTitle.textContent = "Sign In";
+    gateSubtitle.textContent = "Enter your username to continue.";
   });
 
   async function registerPasskey() {
@@ -1362,7 +1496,9 @@
             <td>${escapeHtml(entry.question || "")}</td>
             <td>${escapeHtml(entry.reason || "")}</td>
             <td style="display:flex; gap:6px; flex-wrap:wrap;">
-              <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban</button>
+              <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban IP</button>
+              <button class="small-action-btn" data-ban-range="${escapeHtml(entry.ip || "")}">Ban Subnet</button>
+              ${entry.fingerprint ? `<button class="small-action-btn" data-ban-fp="${escapeHtml(entry.fingerprint)}">Ban Device</button>` : ""}
               <button class="small-action-btn unban" data-reset-ip="${escapeHtml(entry.ip || "")}">Reset</button>
             </td>
           </tr>
@@ -1373,8 +1509,161 @@
       btn.addEventListener("click", () => banIp(btn.dataset.banIp));
     });
 
+    body.querySelectorAll("[data-ban-range]").forEach((btn) => {
+      btn.addEventListener("click", () => banRange(btn.dataset.banRange));
+    });
+
+    body.querySelectorAll("[data-ban-fp]").forEach((btn) => {
+      btn.addEventListener("click", () => banFingerprint(btn.dataset.banFp));
+    });
+
     body.querySelectorAll("[data-reset-ip]").forEach((btn) => {
       btn.addEventListener("click", () => resetStrikes(btn.dataset.resetIp));
+    });
+  }
+
+  async function banRange(ip) {
+    if (!ip) return;
+
+    const parts = ip.split(".");
+    const previewRange = parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.0/24` : ip;
+
+    const confirmed = await showHardStop({
+      risk: "HIGH",
+      riskLevel: "medium",
+      title: "Ban Entire Subnet",
+      detail: `This will block <strong>every visitor</strong> whose IP falls within <strong>${escapeHtml(previewRange)}</strong> (up to 256 addresses) — not just this one person.`,
+      associated: [
+        `Subnet: ${previewRange}`,
+        "Anyone sharing this IP block (e.g. same office, building, or ISP node)",
+        "This is broader than a single-IP ban — use only if needed"
+      ],
+      warning: "This may block unrelated, legitimate visitors who happen to share this network block.",
+      confirmLabel: "Ban Subnet"
+    });
+
+    if (!confirmed) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=ban-range`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not ban that subnet.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not ban that subnet.");
+    }
+  }
+
+  async function banFingerprint(fingerprint) {
+    if (!fingerprint || !confirm("Ban this specific device/browser? This persists even if they change networks or use a VPN.")) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=ban-fingerprint`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ fingerprint })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not ban that device.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not ban that device.");
+    }
+  }
+
+  function renderBannedRanges() {
+    const ranges = currentData.bannedRanges || [];
+    const body = document.getElementById("banned-ranges-body");
+
+    document.getElementById("banned-ranges-count").textContent = ranges.length;
+
+    body.innerHTML = ranges.length
+      ? ranges.map((range) => `
+          <tr>
+            <td>${escapeHtml(range)}</td>
+            <td><button class="small-action-btn unban" data-unban-range="${escapeHtml(range)}">Unban</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No banned subnets.</td></tr>`;
+
+    body.querySelectorAll("[data-unban-range]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const token = localStorage.getItem(SESSION_KEY);
+        try {
+          const res = await fetch(`${API_BASE}/api/dashboard?action=unban-range`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ range: btn.dataset.unbanRange })
+          });
+          if (res.ok) loadDashboard();
+          else alert("Could not unban that subnet.");
+        } catch (err) {
+          console.error(err);
+          alert("Could not unban that subnet.");
+        }
+      });
+    });
+  }
+
+  function renderBannedFingerprints() {
+    const fingerprints = currentData.bannedFingerprints || [];
+    const body = document.getElementById("banned-fingerprints-body");
+
+    document.getElementById("banned-fingerprints-count").textContent = fingerprints.length;
+
+    body.innerHTML = fingerprints.length
+      ? fingerprints.map((fp) => `
+          <tr>
+            <td style="font-family: monospace; font-size: 11px;">${escapeHtml(fp.slice(0, 20))}...</td>
+            <td><button class="small-action-btn unban" data-unban-fp="${escapeHtml(fp)}">Unban</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No banned devices.</td></tr>`;
+
+    body.querySelectorAll("[data-unban-fp]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const token = localStorage.getItem(SESSION_KEY);
+        try {
+          const res = await fetch(`${API_BASE}/api/dashboard?action=unban-fingerprint`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ fingerprint: btn.dataset.unbanFp })
+          });
+          if (res.ok) loadDashboard();
+          else alert("Could not unban that device.");
+        } catch (err) {
+          console.error(err);
+          alert("Could not unban that device.");
+        }
+      });
     });
   }
 
@@ -2156,7 +2445,9 @@
       resumeRequests: data.resumeRequests || [],
       maintenanceLog: data.maintenanceLog || [],
       flaggedConversations: data.flaggedConversations || [],
-      bannedIps: data.bannedIps || []
+      bannedIps: data.bannedIps || [],
+      bannedRanges: data.bannedRanges || [],
+      bannedFingerprints: data.bannedFingerprints || []
     };
 
     gate.style.display = "none";
@@ -2167,6 +2458,8 @@
     renderMaintenanceLog();
     renderFlaggedConversations();
     renderBannedIps();
+    renderBannedRanges();
+    renderBannedFingerprints();
 
     if (!kbHasLoaded) {
       kbHasLoaded = true;

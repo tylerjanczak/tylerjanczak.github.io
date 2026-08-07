@@ -1,5 +1,21 @@
 import { kv } from "@vercel/kv";
 
+function ipInCidr(ip, cidr) {
+  try {
+    const [rangeIp, prefixStr] = cidr.split("/");
+    const prefix = parseInt(prefixStr, 10);
+
+    const toInt = (addr) =>
+      addr.split(".").reduce((acc, octet) => (acc << 8) + parseInt(octet, 10), 0) >>> 0;
+
+    const mask = prefix === 0 ? 0 : (~0 << (32 - prefix)) >>> 0;
+
+    return (toInt(ip) & mask) === (toInt(rangeIp) & mask);
+  } catch {
+    return false;
+  }
+}
+
 async function handleStatus(req, res) {
   try {
     const clientIp =
@@ -7,10 +23,14 @@ async function handleStatus(req, res) {
       req.socket?.remoteAddress ||
       "unknown";
 
-    const [chatStored, maintenanceStored, isBanned] = await Promise.all([
+    const deviceFingerprint = req.query.fp || null;
+
+    const [chatStored, maintenanceStored, isBanned, bannedRanges, isFingerprintBanned] = await Promise.all([
       kv.get("tyler_ai_chat_enabled"),
       kv.get("site_maintenance_enabled"),
-      kv.sismember("banned_ips", clientIp)
+      kv.sismember("banned_ips", clientIp),
+      kv.smembers("banned_ranges"),
+      deviceFingerprint ? kv.sismember("banned_fingerprints", deviceFingerprint) : Promise.resolve(false)
     ]);
 
     const enabled =
@@ -21,7 +41,8 @@ async function handleStatus(req, res) {
     const maintenance =
       maintenanceStored === "true" || maintenanceStored === true;
 
-    const ipBlocked = Boolean(isBanned);
+    const isInBannedRange = (bannedRanges || []).some((range) => ipInCidr(clientIp, range));
+    const ipBlocked = Boolean(isBanned) || isInBannedRange || Boolean(isFingerprintBanned);
 
     return res.status(200).json({ enabled, maintenance, ipBlocked });
   } catch (err) {

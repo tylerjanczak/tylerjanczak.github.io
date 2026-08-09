@@ -16,7 +16,6 @@
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
-
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;

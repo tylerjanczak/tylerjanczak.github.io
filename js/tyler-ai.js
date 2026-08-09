@@ -1345,7 +1345,7 @@
     // flow instead of sending this to the AI model.
     if (resumeRequestPattern.test(question)) {
       addAssistantMessage(
-        "Happy to send that over — what email address should I send Tyler's resume to?"
+        "Happy to send that over! What email address should I send it to?"
       );
       awaitingResumeEmail = true;
       return;

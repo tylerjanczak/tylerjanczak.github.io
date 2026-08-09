@@ -726,18 +726,22 @@
 
     .tyler-ai-searching {
       min-width: 190px;
+      max-width: 82%;
     }
 
     .tyler-ai-searching-title {
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
       font-weight: 700;
-      font-size: 11px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+      font-size: 11.5px;
       color: var(--ta-muted);
       margin-bottom: 9px;
+      line-height: 1.35;
+    }
+
+    .tyler-ai-searching-title-text {
+      padding-top: 1px;
     }
 
     .tyler-ai-searching-title svg {
@@ -745,6 +749,7 @@
       width: 30px;
       height: 14px;
       flex: 0 0 auto;
+      margin-top: 1px;
     }
 
     .tyler-ai-searching-list {
@@ -796,6 +801,33 @@
       border-right: 2px solid #ffffff;
       border-bottom: 2px solid #ffffff;
       transform: rotate(40deg);
+    }
+
+    .tyler-ai-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 4px 0 14px 37px;
+      max-width: calc(82% + 37px);
+    }
+
+    .tyler-ai-suggestion-chip {
+      border: 1px solid var(--ta-border);
+      background: #fffefa;
+      color: var(--ta-red);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 8px 13px;
+      border-radius: 999px;
+      cursor: pointer;
+      text-align: left;
+      line-height: 1.3;
+      transition: background 140ms ease, border-color 140ms ease;
+    }
+
+    .tyler-ai-suggestion-chip:hover {
+      background: rgba(123, 31, 42, 0.06);
+      border-color: rgba(123, 31, 42, 0.35);
     }
 
     .tyler-ai-footer {
@@ -957,7 +989,7 @@
             id="tyler-ai-input"
             rows="1"
             maxlength="1500"
-            placeholder="Ask Anything"
+            placeholder="Ask Anything!"
             aria-label="Ask Tyler AI a question"
           ></textarea>
 
@@ -1089,11 +1121,51 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm an Artifificel Intelligence designed to answer questions about Tyler's background, point you to the right part of the site or send his resume.`,
       "",
       500,
       1100
     );
+
+    addSuggestionChips();
+  }
+
+  const SUGGESTED_QUESTIONS = [
+    "Send me Tyler's resume",
+    "How is Tyler perceived by his former employers?",
+    "What's Tyler's most impressive project?",
+    "What AI or automation work has Tyler done?"
+  ];
+
+  function removeSuggestionChips() {
+    const existing = document.getElementById("tyler-ai-suggestions");
+    if (existing) existing.remove();
+  }
+
+  function addSuggestionChips() {
+    // Don't show these if the visitor already started typing or asking
+    // something on their own while the greeting was still playing out.
+    if (conversationStarted) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = "tyler-ai-suggestions";
+    wrap.id = "tyler-ai-suggestions";
+
+    SUGGESTED_QUESTIONS.forEach((suggestion) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "tyler-ai-suggestion-chip";
+      chip.textContent = suggestion;
+      chip.addEventListener("click", () => {
+        removeSuggestionChips();
+        input.value = suggestion;
+        form.requestSubmit();
+      });
+      wrap.appendChild(chip);
+    });
+
+    messages.appendChild(wrap);
+    scrollToBottom();
   }
 
   /* ------------------------------------------------------------------
@@ -1246,6 +1318,7 @@
     }
 
     conversationStarted = true;
+    removeSuggestionChips();
     addUserMessage(question);
 
     input.value = "";
@@ -1283,7 +1356,7 @@
     sendButton.disabled = true;
     input.disabled = true;
 
-    const typingElement = addSearchingIndicator();
+    const typingElement = addSearchingIndicator(question);
 
     try {
       const controller = new AbortController();
@@ -1551,7 +1624,7 @@
     return row;
   }
 
-  function addSearchingIndicator() {
+  function addSearchingIndicator(questionText) {
     const row = document.createElement("div");
     row.className = "tyler-ai-row assistant";
 
@@ -1567,9 +1640,20 @@
       avatar.textContent = "TJ";
     }
 
+    const MAX_TITLE_LENGTH = 48;
+    const trimmedQuestion = (questionText || "").trim();
+    const displayQuestion =
+      trimmedQuestion.length > MAX_TITLE_LENGTH
+        ? `${trimmedQuestion.slice(0, MAX_TITLE_LENGTH).trim()}…`
+        : trimmedQuestion;
+
+    const titleText = displayQuestion
+      ? `Searching "${displayQuestion}"...`
+      : "Searching Portfolio...";
+
     const bubble = document.createElement("div");
     bubble.className = "tyler-ai-message tyler-ai-searching";
-    bubble.setAttribute("aria-label", "Searching Tyler's portfolio");
+    bubble.setAttribute("aria-label", `Searching for: ${displayQuestion || "Tyler's portfolio"}`);
     bubble.innerHTML = `
       <div class="tyler-ai-searching-title">
         <svg viewBox="0 0 130 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1579,7 +1663,7 @@
             d="M0 20 L20 20 Q26 16 32 20 Q38 24 42 20 L54 20 L60 6 L66 34 L72 20 L84 20 Q90 12 96 20 Q102 28 108 20 L130 20"
           />
         </svg>
-        Searching Portfolio...
+        <span class="tyler-ai-searching-title-text">${escapeHtml(titleText)}</span>
       </div>
       <ul class="tyler-ai-searching-list">
         <li><span class="tyler-ai-check-icon"></span>Experience</li>

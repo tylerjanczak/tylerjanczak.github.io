@@ -957,7 +957,7 @@
             id="tyler-ai-input"
             rows="1"
             maxlength="1500"
-            placeholder="Ask about Tyler's experience..."
+            placeholder="Ask Anything"
             aria-label="Ask Tyler AI a question"
           ></textarea>
 

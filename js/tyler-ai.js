@@ -16,6 +16,7 @@
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
+
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;
@@ -126,9 +127,9 @@
     document.body.style.margin = "0";
 
     // A scattered space-doodle pattern — rockets, ringed planets, stars —
-    // built as an inline SVG and tiled as the page background.
+    // glowing softly against a dark navy night sky.
     const patternSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260">
-      <g stroke="#d9d2c4" stroke-width="1.5" fill="none" opacity="0.9">
+      <g stroke="#3d5a80" stroke-width="1.5" fill="none" opacity="0.55">
         <g transform="translate(28,36)">
           <path d="M10 50 L10 15 Q10 0 20 0 Q30 0 30 15 L30 50 L20 62 Z"/>
           <circle cx="20" cy="18" r="5"/>
@@ -139,7 +140,7 @@
           <circle cx="0" cy="0" r="13"/>
           <ellipse cx="0" cy="0" rx="25" ry="7" transform="rotate(-20)"/>
         </g>
-        <path d="M92,96 L96,106 L106,106 L98,112 L101,122 L92,116 L83,122 L86,112 L78,106 L88,106 Z"/>
+        <path d="M92,96 L96,106 L106,106 L98,112 L101,122 L92,116 L83,122 L86,112 L78,106 L88,106 Z" fill="#8fd4f5" stroke="none" opacity="0.6"/>
         <g transform="translate(205,155) rotate(25) scale(0.65)">
           <path d="M10 50 L10 15 Q10 0 20 0 Q30 0 30 15 L30 50 L20 62 Z"/>
           <circle cx="20" cy="18" r="5"/>
@@ -148,76 +149,79 @@
           <circle cx="0" cy="0" r="9"/>
           <ellipse cx="0" cy="0" rx="18" ry="5" transform="rotate(15)"/>
         </g>
-        <path d="M225,222 l3,7 l7,0 l-5,5 l2,7 l-7,-4 l-7,4 l2,-7 l-5,-5 l7,0 Z"/>
+        <path d="M225,222 l3,7 l7,0 l-5,5 l2,7 l-7,-4 l-7,4 l2,-7 l-5,-5 l7,0 Z" fill="#8fd4f5" stroke="none" opacity="0.6"/>
       </g>
     </svg>`;
 
     const patternUrl = `data:image/svg+xml,${encodeURIComponent(patternSvg)}`;
 
-    // A small spaceship abducting a cow — a nod to the site's playful side
+    // A small spaceship abducting Nugget — a nod to the site's playful side
     // even in an otherwise serious "access denied" moment.
     const ufoSvg = `<svg width="140" height="150" viewBox="0 0 150 160" xmlns="http://www.w3.org/2000/svg">
-      <polygon points="75,58 48,112 102,112" fill="#fdf6d8" opacity="0.85"/>
+      <defs>
+        <radialGradient id="beamGlow" cx="50%" cy="20%" r="75%">
+          <stop offset="0%" stop-color="#bdeaff" stop-opacity="0.95"/>
+          <stop offset="100%" stop-color="#4fc3f7" stop-opacity="0.35"/>
+        </radialGradient>
+      </defs>
+
+      <polygon points="75,58 48,112 102,112" fill="url(#beamGlow)"/>
 
       <!-- Ship hull: elongated capsule shape, not a saucer -->
       <g>
-        <ellipse cx="75" cy="34" rx="17" ry="30" fill="#3a4a63"/>
-        <path d="M58 30 Q75 -2 92 30 L92 34 Q75 42 58 34 Z" fill="#2a3750"/>
-        <ellipse cx="75" cy="30" rx="9" ry="12" fill="#7fb3d5" stroke="#25324a" stroke-width="1.5"/>
-        <ellipse cx="75" cy="30" rx="5" ry="7" fill="#cfe8f7" opacity="0.7"/>
+        <ellipse cx="75" cy="34" rx="17" ry="30" fill="#22304a"/>
+        <path d="M58 30 Q75 -2 92 30 L92 34 Q75 42 58 34 Z" fill="#16213a"/>
+        <ellipse cx="75" cy="30" rx="9" ry="12" fill="#7fd4f5" stroke="#16213a" stroke-width="1.5"/>
+        <ellipse cx="75" cy="30" rx="5" ry="7" fill="#d9f5ff" opacity="0.8"/>
 
         <!-- fins -->
-        <path d="M58 44 L44 58 L58 56 Z" fill="#25324a"/>
-        <path d="M92 44 L106 58 L92 56 Z" fill="#25324a"/>
+        <path d="M58 44 L44 58 L58 56 Z" fill="#16213a"/>
+        <path d="M92 44 L106 58 L92 56 Z" fill="#16213a"/>
 
         <!-- engine glow / beam emitter -->
-        <ellipse cx="75" cy="58" rx="16" ry="6" fill="#25324a"/>
-        <circle cx="66" cy="58" r="2.4" fill="#f2c94c"/>
-        <circle cx="75" cy="59" r="2.4" fill="#f2c94c"/>
-        <circle cx="84" cy="58" r="2.4" fill="#f2c94c"/>
+        <ellipse cx="75" cy="58" rx="16" ry="6" fill="#16213a"/>
+        <circle cx="66" cy="58" r="2.4" fill="#8fe3ff"/>
+        <circle cx="75" cy="59" r="2.4" fill="#8fe3ff"/>
+        <circle cx="84" cy="58" r="2.4" fill="#8fe3ff"/>
       </g>
 
-      <!-- Cow, suspended in the beam — original side-profile design -->
+      <!-- Nugget, mid-run in the beam — original golden Maltese Shih Tzu design -->
       <g transform="translate(78,98)">
-        <!-- dangling legs -->
-        <line x1="-15" y1="9" x2="-16" y2="21" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
-        <line x1="-4" y1="10" x2="-4" y2="22" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
-        <line x1="5" y1="10" x2="6" y2="22" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
-        <line x1="11" y1="9" x2="12" y2="21" stroke="#1b1b1b" stroke-width="2" stroke-linecap="round"/>
+        <!-- legs, kicked out mid-stride rather than dangling -->
+        <path d="M -13 8 Q -18 12 -20 19" stroke="#1b1b1b" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M -3 9 Q -4 15 -8 20" stroke="#1b1b1b" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M 5 9 Q 7 15 4 21" stroke="#1b1b1b" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M 12 7 Q 17 11 18 18" stroke="#1b1b1b" stroke-width="2" fill="none" stroke-linecap="round"/>
 
-        <!-- tail -->
-        <path d="M17 1 Q23 5 21 12" stroke="#1b1b1b" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <!-- fluffy curled tail, up and alert -->
+        <path d="M 15 -3 Q 22 -8 20 -15 Q 18 -19 13 -16" stroke="#1b1b1b" stroke-width="1.6" fill="#e8cf8a" stroke-linecap="round"/>
 
-        <!-- body, side profile -->
-        <path d="M -18 5
-                 Q -20 -6 -9 -8
-                 L 11 -9
-                 Q 20 -9 20 0
-                 Q 20 8 10 9
-                 L -12 9
-                 Q -18 9 -18 5 Z"
-              fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
+        <!-- body, fluffy golden coat -->
+        <path d="M -16 4
+                 Q -18 -7 -7 -9
+                 L 10 -9
+                 Q 18 -8 18 1
+                 Q 18 8 9 9
+                 L -10 9
+                 Q -16 9 -16 4 Z"
+              fill="#e8cf8a" stroke="#1b1b1b" stroke-width="1.5"/>
 
-        <!-- neck and head, extending left -->
-        <path d="M -18 -2
-                 Q -28 -5 -30 2
-                 Q -31 8 -25 10
-                 L -18 5 Z"
-              fill="#ffffff" stroke="#1b1b1b" stroke-width="1.5"/>
+        <!-- head, round -->
+        <circle cx="-19" cy="-4" r="10" fill="#f0dfa8" stroke="#1b1b1b" stroke-width="1.5"/>
 
-        <!-- ear -->
-        <ellipse cx="-24" cy="-6" rx="3.4" ry="2" fill="#f4c9c9" stroke="#1b1b1b" stroke-width="1.1" transform="rotate(-30 -24 -6)"/>
+        <!-- floppy ears -->
+        <path d="M -26 -10 Q -33 -8 -32 0 Q -31 5 -26 3 Z" fill="#d8b96a" stroke="#1b1b1b" stroke-width="1.3"/>
+        <path d="M -13 -11 Q -8 -7 -10 0 Q -12 4 -16 1 Z" fill="#d8b96a" stroke="#1b1b1b" stroke-width="1.3"/>
 
-        <!-- horn -->
-        <path d="M-21 -9 Q-22.5 -12 -19 -13" stroke="#e0c992" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+        <!-- snout -->
+        <ellipse cx="-25" cy="-1" rx="4.5" ry="3.5" fill="#fbf3dc" stroke="#1b1b1b" stroke-width="1.2"/>
+        <circle cx="-28" cy="-1.5" r="1" fill="#1b1b1b"/>
 
         <!-- eye -->
-        <circle cx="-25" cy="1" r="1.1" fill="#1b1b1b"/>
+        <circle cx="-18" cy="-6" r="1.3" fill="#1b1b1b"/>
 
-        <!-- irregular color patches, painted style -->
-        <path d="M -3 -8 Q 5 -9 9 -6 Q 10 -2 5 -1 Q -1 -1 -3 -4 Z" fill="#c98a4b"/>
-        <path d="M -10 1 Q -7 0 -6 3 Q -8 5 -10 4 Z" fill="#8a5a35"/>
-        <path d="M 12 -2 Q 15.5 -2 15 1.5 Q 13 2.5 11 1 Z" fill="#8a5a35"/>
+        <!-- eyebrow tuft, a little personality -->
+        <path d="M -21 -10 Q -19 -12 -16 -10.5" stroke="#1b1b1b" stroke-width="1" fill="none" stroke-linecap="round"/>
       </g>
     </svg>`;
 
@@ -228,19 +232,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: #f7f4ee;
-      background-image: url("${patternUrl}");
-      background-size: 260px 260px;
-      background-repeat: repeat;
+      background-color: #0f1c33;
+      background-image: url("${patternUrl}"), radial-gradient(circle at 50% 35%, #1c3559 0%, #0f1c33 70%);
+      background-size: 260px 260px, cover;
+      background-repeat: repeat, no-repeat;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
       padding: 24px;
     `;
 
     overlay.innerHTML = `
       <div style="
-        background: #ffffff;
+        background: #fffefa;
         border-radius: 14px;
-        box-shadow: 0 30px 70px rgba(0,0,0,0.22);
+        box-shadow: 0 0 0 1px rgba(143,212,245,0.25), 0 30px 80px rgba(0,0,0,0.5), 0 0 60px rgba(79,195,247,0.15);
         max-width: 420px;
         width: 100%;
         overflow: hidden;
@@ -988,7 +992,7 @@
             id="tyler-ai-input"
             rows="1"
             maxlength="1500"
-            placeholder="Ask Anything!"
+            placeholder="Ask about Tyler's experience..."
             aria-label="Ask Tyler AI a question"
           ></textarea>
 
@@ -1120,7 +1124,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm an Artifificel Intelligence designed to answer questions about Tyler's background, point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
       "",
       500,
       1100
@@ -1345,7 +1349,7 @@
     // flow instead of sending this to the AI model.
     if (resumeRequestPattern.test(question)) {
       addAssistantMessage(
-        "Happy to send that over! What email address should I send it to?"
+        "Happy to send that over — what email address should I send Tyler's resume to?"
       );
       awaitingResumeEmail = true;
       return;

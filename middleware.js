@@ -9,7 +9,6 @@ import { kv } from "@vercel/kv";
 export const config = {
   matcher: ["/((?!api/|.*\\.(css|js|jpg|jpeg|png|gif|svg|ico|pdf|woff|woff2|ttf|json|webp)$).*)"]
 };
-
 function ipInCidr(ip, cidr) {
   try {
     const [rangeIp, prefixStr] = cidr.split("/");

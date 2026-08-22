@@ -72,22 +72,20 @@ async function handleAvailabilityRequest(req, res) {
     const calendlyData = await calendlyRes.json();
     const rawSlots = Array.isArray(calendlyData.collection) ? calendlyData.collection : [];
 
-    const slots = rawSlots.slice(0, 5).map((slot) => {
-      const date = new Date(slot.start_time);
-      const label = date.toLocaleString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        timeZoneName: "short"
-      });
+    // Pick one slot per distinct day, rather than the first 5
+    // chronologically (which tends to cluster on a single day).
+    const seenDates = new Set();
+    const spreadSlots = [];
 
-      return {
-        label,
-        startTime: slot.start_time
-      };
-    });
+    for (const slot of rawSlots) {
+      const dateKey = new Date(slot.start_time).toISOString().split("T")[0];
+      if (seenDates.has(dateKey)) continue;
+      seenDates.add(dateKey);
+      spreadSlots.push({ startTime: slot.start_time });
+      if (spreadSlots.length >= 5) break;
+    }
+
+    const slots = spreadSlots;
 
     return res.status(200).json({
       success: slots.length > 0,

@@ -124,7 +124,7 @@ async function handleBookingRequest(req, res) {
       body: JSON.stringify({
         from: "Tyler AI <onboarding@resend.dev>",
         to: notifyEmail,
-        subject: `Call request: ${name} — ${label || startTime}`,
+        subject: `Call request: ${name}, ${label || startTime}`,
         html: `
           <p><strong>${name}</strong> requested a call via Tyler AI.</p>
           <p><strong>Requested time:</strong> ${label || startTime}</p>
@@ -286,6 +286,8 @@ Do not answer questions concerning Tyler's private health, finances,
 relationships, home address, or other nonprofessional personal information.
 
 Speak about Tyler in the third person. Do not pretend to be Tyler.
+
+Never use em dashes (—) anywhere in your responses. Use commas, periods, or separate sentences instead.
 
 INTENT CLASSIFICATION:
 For every normal answer (not an ABUSE_FLAG or INJECTION_FLAG response), begin your response with exactly one line identifying the visitor's intent, then a blank line, then your actual answer. Use this exact format:
@@ -1079,7 +1081,7 @@ if (isInjectionFlagged) {
     })
   );
 
-  finalAnswer = "I'm only able to help with questions about Tyler's professional background — I can't take on other instructions or tasks.";
+  finalAnswer = "I'm only able to help with questions about Tyler's professional background. I can't take on other instructions or tasks.";
 }
 
 if (isAbuseFlagged) {
@@ -1139,7 +1141,7 @@ if (isAbuseFlagged) {
     disabled = true;
   } else {
     // First strike — a clear warning, but access isn't restricted yet.
-    finalAnswer = "That message was flagged as inappropriate. Please keep this conversation respectful — a repeated violation will result in your access being restricted.";
+    finalAnswer = "That message was flagged as inappropriate. Please keep this conversation respectful. A repeated violation will result in your access being restricted.";
     disabled = false;
   }
 }

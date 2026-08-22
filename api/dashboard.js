@@ -4,6 +4,7 @@ const KEYS = {
   conversation: "tyler_ai_conversations",
   resume: "tyler_ai_resume_requests"
 };
+
 async function requireSession(req, res) {
   const sessionToken = req.headers.authorization?.replace("Bearer ", "");
 
@@ -36,14 +37,16 @@ async function handleData(req, res) {
   if (!(await requireSession(req, res))) return;
 
   try {
-    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps, bannedRanges, bannedFingerprints] = await Promise.all([
+    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps, bannedRanges, bannedFingerprints, rawInjectionAttempts, rawCallRequests] = await Promise.all([
       kv.lrange("tyler_ai_conversations", 0, 199),
       kv.lrange("tyler_ai_resume_requests", 0, 199),
       kv.lrange("site_maintenance_log", 0, 49),
       kv.lrange("flagged_conversations", 0, 49),
       kv.smembers("banned_ips"),
       kv.smembers("banned_ranges"),
-      kv.smembers("banned_fingerprints")
+      kv.smembers("banned_fingerprints"),
+      kv.lrange("injection_attempts", 0, 49),
+      kv.lrange("tyler_ai_call_requests", 0, 99)
     ]);
 
     return res.status(200).json({
@@ -54,7 +57,9 @@ async function handleData(req, res) {
       flaggedConversations: parseEntries(rawFlagged),
       bannedIps: bannedIps || [],
       bannedRanges: bannedRanges || [],
-      bannedFingerprints: bannedFingerprints || []
+      bannedFingerprints: bannedFingerprints || [],
+      injectionAttempts: parseEntries(rawInjectionAttempts),
+      callRequests: parseEntries(rawCallRequests)
     });
   } catch (err) {
     console.error(err);

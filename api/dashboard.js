@@ -14,7 +14,6 @@ async function requireSession(req, res) {
   }
 
   const sessionValid = await kv.get(`webauthn_session_${sessionToken}`);
-
   if (!sessionValid) {
     res.status(401).json({ error: "Session expired. Please sign in again." });
     return null;

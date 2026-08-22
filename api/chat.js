@@ -43,7 +43,12 @@ async function handleAvailabilityRequest(req, res) {
 
   try {
     const now = new Date();
-    const startTime = now.toISOString();
+    // Calendly requires start_time to be strictly in the future — using
+    // the literal current moment can get rejected due to request latency,
+    // so we pad it forward by a few minutes.
+    // Padded a full day ahead — Calendly rejects start_time if it's
+    // sooner than your event type's configured minimum scheduling notice.
+    const startTime = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
     const endTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
     const calendlyRes = await fetch(

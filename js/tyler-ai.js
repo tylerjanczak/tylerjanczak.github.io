@@ -1043,7 +1043,19 @@
   let requestInProgress = false;
   let conversationStarted = false;
   let awaitingResumeEmail = false;
+  let awaitingScheduleName = false;
+  let awaitingSchedulePhone = false;
+  let awaitingScheduleEmail = false;
+  let scheduleName = null;
+  let schedulePhone = null;
+  let scheduleEmail = null;
   let chatDisabled = false;
+
+  // Recent question/answer pairs from this chat session, sent with each
+  // new request so follow-up questions have context. Resets on a full
+  // page reload — persists only for the current active conversation.
+  const conversationHistory = [];
+  const MAX_HISTORY_TURNS = 6;
 
   // A stable ID for this browser tab's visit, so every message sent
   // during one visit groups together as one conversation on the dashboard.
@@ -1061,6 +1073,8 @@
 
   const resumeRequestPattern =
     /(resume|cv).*(send|email|copy|share|forward|get|see|view)|(send|email|copy|share|forward|get|see|view).*(resume|cv)/i;
+  const scheduleCallPattern =
+    /(schedule|book|set up|setup|arrange).*(call|meeting|chat|time)|(talk|meet|speak).*(with tyler|to tyler)|interview.*tyler|tyler.*(available|availability)/i;
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   /* ------------------------------------------------------------------
@@ -1345,6 +1359,59 @@
       return;
     }
 
+    // Scheduling flow: name, then phone, then email, in sequence.
+    if (awaitingScheduleName) {
+      awaitingScheduleName = false;
+
+      if (question.length < 1 || question.length > 100) {
+        addAssistantMessage("Could you tell me your name?", "error");
+        awaitingScheduleName = true;
+        return;
+      }
+
+      scheduleName = question;
+      addAssistantMessage("Thanks — and a phone number I can pass along to Tyler?");
+      awaitingSchedulePhone = true;
+      return;
+    }
+
+    if (awaitingSchedulePhone) {
+      awaitingSchedulePhone = false;
+
+      const digitCount = question.replace(/\D/g, "").length;
+      if (digitCount < 7) {
+        addAssistantMessage(
+          "That doesn't look like a valid phone number — could you try again?",
+          "error"
+        );
+        awaitingSchedulePhone = true;
+        return;
+      }
+
+      schedulePhone = question;
+      addAssistantMessage("Last thing — what email should I use to confirm the booking?");
+      awaitingScheduleEmail = true;
+      return;
+    }
+
+    if (awaitingScheduleEmail) {
+      awaitingScheduleEmail = false;
+
+      if (!emailPattern.test(question)) {
+        addAssistantMessage(
+          "That doesn't look like a valid email address — could you try typing it again?",
+          "error"
+        );
+        awaitingScheduleEmail = true;
+        return;
+      }
+
+      scheduleEmail = question;
+      await logCallRequest();
+      await handleScheduleRequest();
+      return;
+    }
+
     // If the question is asking for the resume, start the email-collection
     // flow instead of sending this to the AI model.
     if (resumeRequestPattern.test(question)) {
@@ -1352,6 +1419,14 @@
         "Happy to send that over — what email address should I send Tyler's resume to?"
       );
       awaitingResumeEmail = true;
+      return;
+    }
+
+    // If the question is about scheduling a call, first collect contact
+    // details before showing real availability.
+    if (scheduleCallPattern.test(question)) {
+      addAssistantMessage("Happy to help — first, what's your name?");
+      awaitingScheduleName = true;
       return;
     }
 
@@ -1379,7 +1454,8 @@
           question: question,
           page: window.location.pathname,
           sessionId: conversationSessionId,
-          fingerprint: deviceFingerprint
+          fingerprint: deviceFingerprint,
+          history: conversationHistory
         }),
         signal: controller.signal
       });
@@ -1432,6 +1508,13 @@
       const { displayText, navigateUrl } = parseAssistantResponse(answer);
       addAssistantMessage(displayText, data?.disabled ? "error" : "");
 
+      if (!data?.disabled) {
+        conversationHistory.push({ question, answer: displayText });
+        if (conversationHistory.length > MAX_HISTORY_TURNS) {
+          conversationHistory.shift();
+        }
+      }
+
       if (data?.disabled) {
         chatDisabled = true;
         input.disabled = true;
@@ -1474,6 +1557,245 @@
   /* ------------------------------------------------------------------
      Message helpers
   ------------------------------------------------------------------ */
+
+  async function logCallRequest() {
+    try {
+      await fetch(CONFIG.apiUrl, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "log-call-request",
+          name: scheduleName,
+          phone: schedulePhone,
+          email: scheduleEmail,
+          page: window.location.pathname
+        })
+      });
+    } catch (error) {
+      // Non-critical — don't block the scheduling flow if logging fails.
+      console.error("Failed to log call request:", error);
+    }
+  }
+
+  async function handleScheduleRequest() {
+    requestInProgress = true;
+    sendButton.disabled = true;
+    input.disabled = true;
+
+    const thinkingRow = addTypingIndicator();
+    await wait(700);
+    thinkingRow.remove();
+    addAssistantMessage("Hmm, okay... looking at Tyler's calendar real quick.", "notice");
+
+    const checkingRow = addTypingIndicator();
+
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), CONFIG.requestTimeoutMs);
+
+      const response = await fetch(CONFIG.apiUrl, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get-availability" }),
+        signal: controller.signal
+      });
+
+      window.clearTimeout(timeout);
+
+      const data = await response.json().catch(() => ({}));
+
+      checkingRow.remove();
+
+      if (!data.success || !Array.isArray(data.slots) || data.slots.length === 0) {
+        addAssistantMessage(
+          "I wasn't able to pull open times just now. You can reach Tyler directly to set up a call.",
+          "error"
+        );
+        return;
+      }
+
+      addAssistantMessage(`I've got some openings — here are ${data.slots.length}:`);
+      addScheduleOptions(data.slots);
+    } catch (error) {
+      checkingRow.remove();
+      console.error("Availability lookup failed:", error);
+      addAssistantMessage(
+        "I wasn't able to pull open times just now. Please try again in a moment.",
+        "error"
+      );
+    } finally {
+      requestInProgress = false;
+      if (!chatDisabled) {
+        sendButton.disabled = false;
+        input.disabled = false;
+        input.focus();
+      }
+    }
+  }
+
+  function addScheduleOptions(slots) {
+    const wrap = document.createElement("div");
+    wrap.className = "tyler-ai-suggestions";
+
+    slots.forEach((slot) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "tyler-ai-suggestion-chip";
+      chip.textContent = slot.label;
+      chip.addEventListener("click", async () => {
+        chip.disabled = true;
+        await requestBooking(slot);
+      });
+      wrap.appendChild(chip);
+    });
+
+    messages.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  async function requestBooking(slot) {
+    const sendingRow = addTypingIndicator();
+
+    try {
+      const response = await fetch(CONFIG.apiUrl, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "request-booking",
+          name: scheduleName,
+          phone: schedulePhone,
+          email: scheduleEmail,
+          startTime: slot.startTime,
+          label: slot.label
+        })
+      });
+
+      const data = await response.json().catch(() => ({}));
+      sendingRow.remove();
+
+      if (data.success) {
+        addAssistantMessage(
+          `Done — I've let Tyler know you'd like to meet ${slot.label}. He'll follow up to confirm.`
+        );
+        offerCalendarInvite(slot);
+      } else {
+        addAssistantMessage(
+          "I wasn't able to send that request just now. Please try again in a moment.",
+          "error"
+        );
+      }
+    } catch (error) {
+      sendingRow.remove();
+      console.error("Booking request failed:", error);
+      addAssistantMessage(
+        "I wasn't able to send that request just now. Please try again in a moment.",
+        "error"
+      );
+    }
+  }
+
+  // Escapes characters that have special meaning in the ICS format,
+  // per RFC 5545 — commas, semicolons, backslashes, and newlines.
+  function escapeIcsText(value) {
+    return String(value || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      .replace(/\n/g, "\\n");
+  }
+
+  function formatIcsDate(date) {
+    return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  }
+
+  function getFirstName(fullName) {
+    return String(fullName || "").trim().split(/\s+/)[0] || "Guest";
+  }
+
+  function formatPhoneNumber(phone) {
+    const digits = String(phone || "").replace(/\D/g, "");
+
+    if (digits.length === 10) {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+
+    if (digits.length === 11 && digits[0] === "1") {
+      return `${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+    }
+
+    // Not a standard 10-digit US number — fall back to what was entered.
+    return phone || "";
+  }
+
+  function generateIcsContent(slot) {
+    const start = new Date(slot.startTime);
+    const end = new Date(start.getTime() + 30 * 60 * 1000); // 30-minute default
+    const now = new Date();
+
+    const requesterName = scheduleName || "Guest";
+    const firstName = getFirstName(scheduleName);
+    const formattedPhone = formatPhoneNumber(schedulePhone);
+
+    const eventTitle = `${requesterName}/Tyler Janczak Intro - 30 min`;
+    const eventDescription = `Tyler to call ${firstName} at ${formattedPhone}`;
+
+    const lines = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Tyler Janczak Portfolio//Tyler AI Scheduling//EN",
+      "CALSCALE:GREGORIAN",
+      "METHOD:PUBLISH",
+      "BEGIN:VEVENT",
+      `UID:${crypto.randomUUID()}@tylerjanczak.com`,
+      `DTSTAMP:${formatIcsDate(now)}`,
+      `DTSTART:${formatIcsDate(start)}`,
+      `DTEND:${formatIcsDate(end)}`,
+      `SUMMARY:${escapeIcsText(eventTitle)}`,
+      `DESCRIPTION:${escapeIcsText(eventDescription)}`,
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ];
+
+    return lines.join("\r\n");
+  }
+
+  function offerCalendarInvite(slot) {
+    const wrap = document.createElement("div");
+    wrap.className = "tyler-ai-suggestions";
+
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "tyler-ai-suggestion-chip";
+    chip.textContent = "Download calendar invite (.ics)";
+    chip.addEventListener("click", () => {
+      const icsContent = generateIcsContent(slot);
+      const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      const safeName = (scheduleName || "guest")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${safeName}-tyler-intro-30min.ics`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    });
+
+    wrap.appendChild(chip);
+    messages.appendChild(wrap);
+    scrollToBottom();
+  }
 
   async function sendResumeToEmail(email) {
     requestInProgress = true;

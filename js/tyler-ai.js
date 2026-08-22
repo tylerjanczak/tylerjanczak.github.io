@@ -16,6 +16,7 @@
     profileImage: "tyler-ai-avatar.jpg",
     requestTimeoutMs: 45000
   };
+
   // Prevent the widget from being loaded more than once.
   if (document.getElementById("tyler-ai-widget")) {
     return;
@@ -1636,18 +1637,32 @@
     }
   }
 
+  function formatSlotLabel(startTime) {
+    // No timeZone specified — this naturally uses the visitor's own
+    // browser/local timezone, not the server's (which defaults to UTC).
+    return new Date(startTime).toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short"
+    });
+  }
+
   function addScheduleOptions(slots) {
     const wrap = document.createElement("div");
     wrap.className = "tyler-ai-suggestions";
 
     slots.forEach((slot) => {
+      const label = formatSlotLabel(slot.startTime);
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "tyler-ai-suggestion-chip";
-      chip.textContent = slot.label;
+      chip.textContent = label;
       chip.addEventListener("click", async () => {
         chip.disabled = true;
-        await requestBooking(slot);
+        await requestBooking({ ...slot, label });
       });
       wrap.appendChild(chip);
     });

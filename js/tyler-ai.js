@@ -1049,6 +1049,7 @@
   let scheduleName = null;
   let schedulePhone = null;
   let scheduleEmail = null;
+  let selectedScheduleSlot = null;
   let chatDisabled = false;
 
   // Recent question/answer pairs from this chat session, sent with each
@@ -1138,7 +1139,7 @@
     );
 
     await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler AI — ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
+      `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
       "",
       500,
       1100
@@ -1149,6 +1150,7 @@
 
   const SUGGESTED_QUESTIONS = [
     "Send me Tyler's resume",
+    "Arrange Intro Meeting",
     "How is Tyler perceived by his former employers?",
     "What's Tyler's most impressive project?",
     "What AI or automation work has Tyler done?"
@@ -1348,7 +1350,7 @@
 
       if (!emailPattern.test(question)) {
         addAssistantMessage(
-          "That doesn't look like a valid email address — could you try typing it again?",
+          "That doesn't look like a valid email address. Could you try typing it again?",
           "error"
         );
         awaitingResumeEmail = true;
@@ -1359,19 +1361,19 @@
       return;
     }
 
-    // Scheduling flow: name, then phone, then email, in sequence.
+    // Scheduling flow: after a time is picked, collect name, then phone,
+    // then email, in sequence, with a natural pause before each question.
     if (awaitingScheduleName) {
       awaitingScheduleName = false;
 
       if (question.length < 1 || question.length > 100) {
-        addAssistantMessage("Could you tell me your name?", "error");
+        addAssistantMessage("I didn't quite catch that. What's your name?", "error");
         awaitingScheduleName = true;
         return;
       }
 
       scheduleName = question;
-      addAssistantMessage("Thanks — and a phone number I can pass along to Tyler?");
-      awaitingSchedulePhone = true;
+      await promptForSchedulePhone();
       return;
     }
 
@@ -1381,7 +1383,7 @@
       const digitCount = question.replace(/\D/g, "").length;
       if (digitCount < 7) {
         addAssistantMessage(
-          "That doesn't look like a valid phone number — could you try again?",
+          "That doesn't look like a valid phone number. Could you try again?",
           "error"
         );
         awaitingSchedulePhone = true;
@@ -1389,8 +1391,7 @@
       }
 
       schedulePhone = question;
-      addAssistantMessage("Last thing — what email should I use to confirm the booking?");
-      awaitingScheduleEmail = true;
+      await promptForScheduleEmail();
       return;
     }
 
@@ -1399,7 +1400,7 @@
 
       if (!emailPattern.test(question)) {
         addAssistantMessage(
-          "That doesn't look like a valid email address — could you try typing it again?",
+          "That doesn't look like a valid email address. Could you try typing it again?",
           "error"
         );
         awaitingScheduleEmail = true;
@@ -1408,7 +1409,7 @@
 
       scheduleEmail = question;
       await logCallRequest();
-      await handleScheduleRequest();
+      await requestBooking(selectedScheduleSlot);
       return;
     }
 
@@ -1416,17 +1417,16 @@
     // flow instead of sending this to the AI model.
     if (resumeRequestPattern.test(question)) {
       addAssistantMessage(
-        "Happy to send that over — what email address should I send Tyler's resume to?"
+        "Happy to send that over. What email address should I send Tyler's resume to?"
       );
       awaitingResumeEmail = true;
       return;
     }
 
-    // If the question is about scheduling a call, first collect contact
-    // details before showing real availability.
+    // If the question is about scheduling a call, show real availability
+    // first. Contact details are only collected once a time is picked.
     if (scheduleCallPattern.test(question)) {
-      addAssistantMessage("Happy to help — first, what's your name?");
-      awaitingScheduleName = true;
+      await handleScheduleRequest();
       return;
     }
 
@@ -1618,7 +1618,7 @@
         return;
       }
 
-      addAssistantMessage(`I've got some openings — here are ${data.slots.length}:`);
+      addAssistantMessage(`I've got some openings. Here are a few:`);
       addScheduleOptions(data.slots);
     } catch (error) {
       checkingRow.remove();
@@ -1662,13 +1662,53 @@
       chip.textContent = label;
       chip.addEventListener("click", async () => {
         chip.disabled = true;
-        await requestBooking({ ...slot, label });
+        selectedScheduleSlot = { ...slot, label };
+        await promptForScheduleName();
       });
       wrap.appendChild(chip);
     });
 
     messages.appendChild(wrap);
     scrollToBottom();
+  }
+
+  // A brief, slightly randomized pause before each follow-up question,
+  // so the exchange reads as composed rather than instant and canned.
+  async function composedPrompt(text) {
+    requestInProgress = true;
+    sendButton.disabled = true;
+    input.disabled = true;
+
+    const thinkingRow = addTypingIndicator();
+    await wait(1100 + Math.random() * 700);
+    thinkingRow.remove();
+    addAssistantMessage(text);
+
+    requestInProgress = false;
+    sendButton.disabled = false;
+    input.disabled = false;
+    input.focus();
+  }
+
+  async function promptForScheduleName() {
+    await composedPrompt(
+      "Ok, I see. In order to continue with your meeting request, I need to know your name."
+    );
+    awaitingScheduleName = true;
+  }
+
+  async function promptForSchedulePhone() {
+    await composedPrompt(
+      `Thanks, ${getFirstName(scheduleName)}. What's a good phone number for Tyler to reach you at?`
+    );
+    awaitingSchedulePhone = true;
+  }
+
+  async function promptForScheduleEmail() {
+    await composedPrompt(
+      "Last thing, what email should I use to confirm everything?"
+    );
+    awaitingScheduleEmail = true;
   }
 
   async function requestBooking(slot) {
@@ -1695,7 +1735,7 @@
 
       if (data.success) {
         addAssistantMessage(
-          `Done — I've let Tyler know you'd like to meet ${slot.label}. He'll follow up to confirm.`
+          `Perfect, I've let Tyler know you'd like to meet ${slot.label}. He'll follow up to confirm.`
         );
         offerCalendarInvite(slot);
       } else {
@@ -1852,7 +1892,7 @@
       }
 
       addAssistantMessage(
-        `Done — Tyler's resume is on its way to ${email}.`
+        `Done. Tyler's resume is on its way to ${email}.`
       );
     } catch (error) {
       typingElement.remove();
@@ -1861,7 +1901,7 @@
 
       if (error.name === "AbortError") {
         addAssistantMessage(
-          "That took too long — please try again in a moment.",
+          "That took too long. Please try again in a moment.",
           "error"
         );
       } else {

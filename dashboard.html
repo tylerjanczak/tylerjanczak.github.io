@@ -40,6 +40,7 @@
     font-size: 14px;
     margin-bottom: 40px;
   }
+
   /* Gate screens */
   #gate {
     max-width: 420px;
@@ -1097,6 +1098,25 @@
     </table>
   </section>
 
+  <section class="panel" id="injection-panel">
+    <div class="panel-header">
+      <h2>Prompt Injection Attempts</h2>
+      <span class="panel-count" id="injection-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">IP</th>
+          <th>Question</th>
+          <th style="width:180px;">What Was Attempted</th>
+          <th style="width:70px;"></th>
+        </tr>
+      </thead>
+      <tbody id="injection-body"></tbody>
+    </table>
+  </section>
+
   <section class="panel" id="flagged-panel">
     <div class="panel-header">
       <h2>Flagged Conversations</h2>
@@ -1229,6 +1249,24 @@
       <tbody id="resume-body"></tbody>
     </table>
   </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Call Requests</h2>
+      <span class="panel-count" id="call-request-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:140px;">When</th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="call-request-body"></tbody>
+    </table>
+  </section>
 </div>
 
 
@@ -1322,13 +1360,17 @@
       flaggedConversations: [],
       bannedIps: [],
       bannedRanges: [],
-      bannedFingerprints: []
+      bannedFingerprints: [],
+      injectionAttempts: [],
+      callRequests: []
     };
 
     document.getElementById("stats-row").innerHTML = "";
     document.getElementById("conv-body").innerHTML = "";
     document.getElementById("resume-body").innerHTML = "";
+    document.getElementById("call-request-body").innerHTML = "";
     document.getElementById("maintenance-log-body").innerHTML = "";
+    document.getElementById("injection-body").innerHTML = "";
     document.getElementById("flagged-body").innerHTML = "";
     document.getElementById("banned-body").innerHTML = "";
     document.getElementById("banned-ranges-body").innerHTML = "";
@@ -1339,7 +1381,7 @@
     document.getElementById("search-input").value = "";
 
     // Reset counters shown in panel headers.
-    ["conv-count", "resume-count", "maintenance-log-count", "flagged-count",
+    ["conv-count", "resume-count", "call-request-count", "maintenance-log-count", "injection-count", "flagged-count",
      "banned-count", "banned-ranges-count", "banned-fingerprints-count", "map-count"]
       .forEach((id) => {
         const el = document.getElementById(id);
@@ -1807,6 +1849,49 @@
     }
   }
 
+  function renderInjectionAttempts() {
+    const attempts = currentData.injectionAttempts || [];
+    const body = document.getElementById("injection-body");
+
+    document.getElementById("injection-count").textContent = attempts.length;
+
+    body.innerHTML = attempts.length
+      ? attempts.map((entry) => `
+          <tr>
+            <td class="timestamp">${formatDate(entry.timestamp)}</td>
+            <td>${escapeHtml(entry.ip || "unknown")}</td>
+            <td>${escapeHtml(entry.question || "")}</td>
+            <td>${escapeHtml(entry.reason || "")}</td>
+            <td>
+              <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban IP</button>
+            </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="5" class="empty-row">No injection attempts detected.</td></tr>`;
+
+    body.querySelectorAll("[data-ban-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => banIp(btn.dataset.banIp));
+    });
+  }
+
+  function renderCallRequests() {
+    const requests = currentData.callRequests || [];
+    const body = document.getElementById("call-request-body");
+
+    document.getElementById("call-request-count").textContent = requests.length;
+
+    body.innerHTML = requests.length
+      ? requests.map((r) => `
+          <tr>
+            <td class="timestamp">${formatDate(r.timestamp)}</td>
+            <td>${escapeHtml(r.name || "")}</td>
+            <td>${escapeHtml(r.phone || "")}</td>
+            <td>${escapeHtml(r.email || "")}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="4" class="empty-row">No call requests yet.</td></tr>`;
+  }
+
   function renderMaintenanceLog() {
     const log = currentData.maintenanceLog || [];
     const body = document.getElementById("maintenance-log-body");
@@ -1847,6 +1932,7 @@
         count: sorted.length,
         lastTimestamp: newestFirst[0]?.timestamp,
         firstQuestion: sorted[0]?.question || "",
+        primaryIntent: sorted.find(m => m.intent)?.intent || null,
         page: newestFirst[0]?.page || sorted[0]?.page || null,
         anyFlagged: messages.some(m => isHighIntent(m.question) || isHighIntent(m.answer)),
         indices: messages.map(m => m.originalIndex)
@@ -1855,6 +1941,14 @@
 
     return sessions.sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
   }
+
+  const INTENT_LABELS = {
+    recruiter_question: "Recruiter Question",
+    project_question: "Project Question",
+    contact_request: "Contact Request",
+    general_conversation: "General",
+    other: "Other"
+  };
 
   function openConversationDetail(session) {
     const overlay = document.getElementById("conversation-detail-overlay");
@@ -1867,7 +1961,9 @@
       <div class="conv-bubble-row user">
         <div class="conv-bubble question">
           ${escapeHtml(m.question || "")}
-          <span class="conv-bubble-timestamp">${formatDate(m.timestamp)}</span>
+          <span class="conv-bubble-timestamp">
+            ${formatDate(m.timestamp)}${m.intent ? ` · ${escapeHtml(INTENT_LABELS[m.intent] || m.intent)}` : ""}
+          </span>
         </div>
       </div>
       <div class="conv-bubble-row">
@@ -1920,7 +2016,7 @@
             <td class="timestamp">${formatDate(s.lastTimestamp)}</td>
             <td>${s.page ? `<span class="page-tag">${escapeHtml(s.page)}</span>` : ''}</td>
             <td>${s.count}</td>
-            <td>${s.anyFlagged ? '<span class="intent-tag">High Intent</span><br>' : ''}${escapeHtml(s.firstQuestion)}</td>
+            <td>${s.anyFlagged ? '<span class="intent-tag">High Intent</span><br>' : ''}${s.primaryIntent ? `<span class="intent-tag" style="background: rgba(74,74,72,0.08); color: var(--ink-soft);">${escapeHtml(INTENT_LABELS[s.primaryIntent] || s.primaryIntent)}</span><br>` : ''}${escapeHtml(s.firstQuestion)}</td>
             <td><button class="delete-btn" data-session-delete-index="${sessionIndex}" title="Delete conversation">&times;</button></td>
           </tr>
         `).join("")
@@ -2487,7 +2583,9 @@
       flaggedConversations: data.flaggedConversations || [],
       bannedIps: data.bannedIps || [],
       bannedRanges: data.bannedRanges || [],
-      bannedFingerprints: data.bannedFingerprints || []
+      bannedFingerprints: data.bannedFingerprints || [],
+      injectionAttempts: data.injectionAttempts || [],
+      callRequests: data.callRequests || []
     };
 
     gate.style.display = "none";
@@ -2496,10 +2594,12 @@
     renderStats();
     renderTables();
     renderMaintenanceLog();
+    renderInjectionAttempts();
     renderFlaggedConversations();
     renderBannedIps();
     renderBannedRanges();
     renderBannedFingerprints();
+    renderCallRequests();
 
     if (!kbHasLoaded) {
       kbHasLoaded = true;

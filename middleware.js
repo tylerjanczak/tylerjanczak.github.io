@@ -1,10 +1,14 @@
 import { kv } from "@vercel/kv";
+import { rewrite } from "@vercel/functions";
 
 // Runs on Vercel's Edge Network before any page is sent to the browser —
 // a banned visitor never receives the real page content at all, not even
 // for a flash. Only checks IP and subnet bans; device fingerprint bans
 // still rely on the client-side check in tyler-ai.js, since a fingerprint
 // requires JavaScript to run in an already-loaded page first.
+//
+// Also handles hostname-based routing: bridges.tylerjanczak.com serves
+// a dedicated full-screen chat page instead of the normal portfolio.
 
 export const config = {
   matcher: ["/((?!api/|.*\\.(?:css|js|jpg|jpeg|png|gif|svg|ico|pdf|woff|woff2|ttf|json|webp)$).*)"]
@@ -158,6 +162,8 @@ function buildBlockedPage() {
 }
 
 export default async function middleware(request) {
+  const hostname = request.headers.get("host") || "";
+
   const clientIp =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
@@ -182,5 +188,11 @@ export default async function middleware(request) {
     console.error("Middleware ban check failed:", err);
   }
 
-  // Not blocked — let the request through untouched.
+  // Not banned — check if this is the bridges subdomain, and if so,
+  // serve the dedicated full-screen chat page instead of the normal site.
+  if (hostname === "bridges.tylerjanczak.com") {
+    return rewrite(new URL("/bridges.html", request.url));
+  }
+
+  // Not blocked, not a special subdomain — let the request through untouched.
 }

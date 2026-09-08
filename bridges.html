@@ -1,13 +1,6 @@
 <!DOCTYPE html>
 <!--
   © 2026 Tyler Janczak. All rights reserved.
-  bridges.tylerjanczak.com — full-screen Tyler AI
-
-  This page intentionally has no chat logic of its own. It loads the
-  exact same js/tyler-ai.js used everywhere else on the main site, then
-  restyles the widget to fill the screen and auto-opens it, so this page
-  always has 100% feature parity with the normal chat widget (resume
-  delivery, scheduling, moderation, everything) with zero duplicated code.
 -->
 <html lang="en">
 <head>
@@ -29,8 +22,6 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
 
-    /* Restyle the floating widget to fill the entire viewport instead
-       of sitting as a small panel in the corner. */
     #tyler-ai-widget {
       position: fixed !important;
       inset: 0 !important;
@@ -53,33 +44,331 @@
       border: none !important;
     }
 
-    /* A small loading state shown before the widget finishes initializing
-       (its status check, ban check, etc.) — replaced automatically once
-       the panel opens. */
     #bridges-loading {
       position: fixed;
       inset: 0;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 18px;
       color: #55697D;
       font-size: 14px;
       letter-spacing: 0.02em;
+      overflow: hidden;
+    }
+
+    #bridges-loading-walker {
+      width: 72px;
+      height: 72px;
+      animation: bridgesWalkSideToSide 4.5s ease-in-out infinite;
+    }
+
+    #bridges-loading-bob {
+      width: 100%;
+      height: 100%;
+      animation: bridgesBob 0.7s ease-in-out infinite;
+    }
+
+    #bridges-loading-walker svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    @keyframes bridgesWalkSideToSide {
+      0%   { transform: translateX(-130px) scaleX(1); }
+      48%  { transform: translateX(130px) scaleX(1); }
+      50%  { transform: translateX(130px) scaleX(-1); }
+      98%  { transform: translateX(-130px) scaleX(-1); }
+      100% { transform: translateX(-130px) scaleX(1); }
+    }
+
+    @keyframes bridgesBob {
+      0%, 50%, 100% { transform: translateY(0); }
+      25%, 75% { transform: translateY(-2.5px); }
+    }
+
+    .bridges-arm-l, .bridges-arm-r,
+    .bridges-leg-l, .bridges-leg-r,
+    .bridges-dog-leg-front, .bridges-dog-leg-back,
+    .bridges-dog-tail {
+      animation-duration: 0.7s;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+    }
+
+    .bridges-arm-l   { transform-origin: 62px 38px; animation-name: bridgesSwingA; }
+    .bridges-arm-r   { transform-origin: 62px 38px; animation-name: bridgesSwingB; }
+    .bridges-leg-l   { transform-origin: 62px 58px; animation-name: bridgesSwingB; }
+    .bridges-leg-r   { transform-origin: 62px 58px; animation-name: bridgesSwingA; }
+
+    .bridges-dog-leg-front { transform-origin: 24px 66px; animation-name: bridgesSwingA; }
+    .bridges-dog-leg-back  { transform-origin: 8px 65px;  animation-name: bridgesSwingB; }
+    .bridges-dog-tail      { transform-origin: 27px 55px; animation-name: bridgesWag; animation-duration: 0.35s; }
+
+    @keyframes bridgesSwingA {
+      0%, 100% { transform: rotate(-20deg); }
+      50% { transform: rotate(20deg); }
+    }
+
+    @keyframes bridgesSwingB {
+      0%, 100% { transform: rotate(20deg); }
+      50% { transform: rotate(-20deg); }
+    }
+
+    @keyframes bridgesWag {
+      0%, 100% { transform: rotate(-12deg); }
+      50% { transform: rotate(12deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #bridges-loading-walker,
+      #bridges-loading-bob,
+      .bridges-arm-l, .bridges-arm-r,
+      .bridges-leg-l, .bridges-leg-r,
+      .bridges-dog-leg-front, .bridges-dog-leg-back,
+      .bridges-dog-tail {
+        animation: none;
+      }
+    }
+
+
+    #bridges-loading-warning {
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bridges-warning-icon-wrap {
+      width: 60px;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+
+    .bridges-warning-icon-stripes {
+      height: 46px;
+      background: repeating-linear-gradient(-45deg, #d94a40, #d94a40 5px, #b3261e 5px, #b3261e 10px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #bridges-loading-diagnostics {
+      max-width: 420px;
+      width: 90%;
+      font-size: 12.5px;
+      color: #55697D;
+    }
+
+    #bridges-loading-diagnostics summary {
+      cursor: pointer;
+      text-align: center;
+      font-weight: 600;
+      color: #2563EB;
+      letter-spacing: 0.02em;
+      list-style: none;
+    }
+
+    #bridges-loading-diagnostics summary::-webkit-details-marker {
+      display: none;
+    }
+
+    #bridges-loading-diagnostics summary::after {
+      content: " ▾";
+    }
+
+    #bridges-loading-diagnostics[open] summary::after {
+      content: " ▴";
+    }
+
+    #bridges-diagnostic-content {
+      margin-top: 12px;
+      padding: 14px 16px;
+      background: #ffffff;
+      border: 1px solid #D6E3EF;
+      border-radius: 8px;
+      line-height: 1.7;
+      word-break: break-word;
+    }
+
+    #bridges-diagnostic-content strong {
+      color: #1A2B3C;
+    }
+
+    #tyler-ai-close {
+      display: none !important;
+    }
+
+    #bridges-back-home {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000000;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 20px 8px 8px;
+      background: #ffffff;
+      border: 1.5px solid #c0392b;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #c0392b;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      transition: box-shadow 140ms ease;
+    }
+
+    #bridges-back-home:hover {
+      box-shadow: 0 8px 22px rgba(0,0,0,0.13);
+    }
+
+    #bridges-back-home-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #c0392b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    #bridges-back-home-icon svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    #bridges-back-home-spinner {
+      display: none;
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: bridgesSpin 0.7s linear infinite;
+    }
+
+    #bridges-back-home.loading #bridges-back-home-arrow {
+      display: none;
+    }
+
+    #bridges-back-home.loading #bridges-back-home-spinner {
+      display: block;
+    }
+
+    @keyframes bridgesSpin {
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
 
-  <div id="bridges-loading">Loading Tyler AI…</div>
+  <button id="bridges-back-home" type="button" aria-label="Back to Home">
+    <span id="bridges-back-home-icon">
+      <svg id="bridges-back-home-arrow" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19 12H5M5 12L11 6M5 12L11 18" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="bridges-back-home-spinner"></span>
+    </span>
+    Back to Home
+  </button>
+
+  <div id="bridges-loading">
+    <div id="bridges-loading-walker">
+      <div id="bridges-loading-bob">
+      <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Leash -->
+        <path d="M52 46 Q38 52 26 58" stroke="#8b857e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+
+        <!-- Dog -->
+        <g stroke="#c0392b" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="16" cy="62" rx="11" ry="7" />
+          <path d="M8 56 L4 48" />
+          <path d="M12 55 L10 47" />
+          <g class="bridges-dog-tail">
+            <path d="M27 60 L34 55" />
+          </g>
+          <g class="bridges-dog-leg-front">
+            <path d="M24 66 L27 78" />
+          </g>
+          <g class="bridges-dog-leg-back">
+            <path d="M8 65 L5 77" />
+          </g>
+        </g>
+
+        <!-- Person -->
+        <g stroke="#1a2b3c" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="62" cy="22" r="11" />
+          <path d="M62 33 L62 58" />
+          <g class="bridges-arm-l">
+            <path d="M62 38 L50 47" />
+          </g>
+          <g class="bridges-arm-r">
+            <path d="M62 38 L74 30" />
+          </g>
+          <g class="bridges-leg-l">
+            <path d="M62 58 L50 84" />
+          </g>
+          <g class="bridges-leg-r">
+            <path d="M62 58 L74 84" />
+          </g>
+        </g>
+      </svg>
+      </div>
+    </div>
+
+    <div id="bridges-loading-warning" style="display: none;">
+      <div class="bridges-warning-icon-wrap">
+        <div class="bridges-warning-icon-stripes">
+          <svg viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2 L23 21 L1 21 Z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+            <rect x="11" y="9" width="2" height="6" fill="#ffffff"/>
+            <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div id="bridges-loading-text">Loading Tyler AI…</div>
+
+    <details id="bridges-loading-diagnostics" style="display: none;">
+      <summary>Diagnostic details</summary>
+      <div id="bridges-diagnostic-content"></div>
+    </details>
+  </div>
 
   <script src="js/tyler-ai.js" defer></script>
 
   <script>
-    // Wait for the widget to finish initializing (it does its own async
-    // status/ban check before building anything), then open it and
-    // remove the loading state. If the site is blocked or under
-    // maintenance, tyler-ai.js will have already replaced the page
-    // content itself, so this simply won't find anything to open.
+    document.getElementById("bridges-back-home").addEventListener("click", function (event) {
+      var btn = event.currentTarget;
+      if (btn.classList.contains("loading")) return;
+      btn.classList.add("loading");
+      window.setTimeout(function () {
+        window.location.href = "https://tylerjanczak.com";
+      }, 500);
+    });
+  </script>
+
+  <script>
+    var bridgesScriptLoaded = false;
+    var bridgesScriptError = null;
+
+    var bridgesScriptEl = document.querySelector('script[src="js/tyler-ai.js"]');
+    if (bridgesScriptEl) {
+      bridgesScriptEl.addEventListener("load", function () {
+        bridgesScriptLoaded = true;
+      });
+      bridgesScriptEl.addEventListener("error", function () {
+        bridgesScriptError = "The script file itself failed to load (network error or 404).";
+      });
+    }
+
     (function waitForWidget() {
       var attempts = 0;
       var interval = setInterval(function () {
@@ -93,16 +382,118 @@
           return;
         }
 
-        // Give up after ~8 seconds so a broken load doesn't hang forever.
-        if (attempts > 80) {
+        if (attempts > 50) {
           clearInterval(interval);
-          var loadingEl = document.getElementById("bridges-loading");
-          if (loadingEl) {
-            loadingEl.textContent = "Tyler AI couldn't load right now. Please refresh the page.";
-          }
+          showBridgesFailureState();
         }
       }, 100);
     })();
+
+    async function runBridgesDiagnostics() {
+      var diagnostics = {
+        secureConnection: window.location.protocol === "https:",
+        online: typeof navigator.onLine === "boolean" ? navigator.onLine : null,
+        sessionStorageAvailable: false,
+        apiReachable: null,
+        apiResponseTime: null,
+        apiError: null
+      };
+
+      try {
+        sessionStorage.setItem("__bridges_diag_test__", "1");
+        sessionStorage.removeItem("__bridges_diag_test__");
+        diagnostics.sessionStorageAvailable = true;
+      } catch (e) {
+        diagnostics.sessionStorageAvailable = false;
+      }
+
+      var apiStart = (window.performance && performance.now) ? performance.now() : Date.now();
+      try {
+        var controller = new AbortController();
+        var timeoutId = window.setTimeout(function () { controller.abort(); }, 3000);
+
+        var res = await fetch("https://tylerjanczak-github-io.vercel.app/api/chat-config", {
+          cache: "no-store",
+          signal: controller.signal
+        });
+
+        window.clearTimeout(timeoutId);
+        diagnostics.apiResponseTime = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - apiStart);
+        diagnostics.apiReachable = res.ok;
+        if (!res.ok) {
+          diagnostics.apiError = "Server responded with HTTP " + res.status;
+        }
+      } catch (err) {
+        diagnostics.apiResponseTime = Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - apiStart);
+        diagnostics.apiReachable = false;
+        diagnostics.apiError = err.name === "AbortError"
+          ? "Request timed out after 3 seconds"
+          : (err.message || "Unknown network error");
+      }
+
+      return diagnostics;
+    }
+
+    async function showBridgesFailureState() {
+      var loadingTextEl = document.getElementById("bridges-loading-text");
+      var walkerEl = document.getElementById("bridges-loading-walker");
+      var warningEl = document.getElementById("bridges-loading-warning");
+      var diagnosticsEl = document.getElementById("bridges-loading-diagnostics");
+      var diagnosticContentEl = document.getElementById("bridges-diagnostic-content");
+
+      if (loadingTextEl) {
+        loadingTextEl.textContent = "Tyler AI couldn't load right now. Please refresh the page.";
+      }
+
+      if (walkerEl) {
+        // Stop the outer traverse and every nested limb/bob animation
+        // so the figure freezes cleanly instead of walking in place.
+        var allAnimated = walkerEl.querySelectorAll("*");
+        walkerEl.style.animation = "none";
+        for (var i = 0; i < allAnimated.length; i++) {
+          allAnimated[i].style.animation = "none";
+        }
+        walkerEl.style.display = "none";
+      }
+
+      if (warningEl) {
+        warningEl.style.display = "flex";
+      }
+
+      if (!diagnosticsEl || !diagnosticContentEl) return;
+
+      diagnosticsEl.style.display = "block";
+      diagnosticContentEl.innerHTML = "<div>Running diagnostic checks…</div>";
+
+      var d = await runBridgesDiagnostics();
+
+      var likelyCause;
+      if (bridgesScriptError) {
+        likelyCause = bridgesScriptError;
+      } else if (!d.secureConnection) {
+        likelyCause = "This page isn't loading over a secure (HTTPS) connection, which browsers block API requests from by default.";
+      } else if (d.online === false) {
+        likelyCause = "This device appears to be offline.";
+      } else if (d.apiReachable === false) {
+        likelyCause = "The chat API didn't respond successfully (" + (d.apiError || "unknown error") + "). The backend service may be down or misconfigured.";
+      } else if (bridgesScriptLoaded) {
+        likelyCause = "The script loaded and the API is reachable, but initialization still didn't complete in time. This may indicate a JavaScript error partway through execution.";
+      } else {
+        likelyCause = "The script tag never reported loading successfully or failing, which is unusual.";
+      }
+
+      diagnosticContentEl.innerHTML =
+        "<div><strong>Time:</strong> " + new Date().toString() + "</div>" +
+        "<div><strong>Script loaded:</strong> " + (bridgesScriptLoaded ? "Yes" : "No") + "</div>" +
+        "<div><strong>Secure connection (HTTPS):</strong> " + (d.secureConnection ? "Yes" : "No") + "</div>" +
+        "<div><strong>Device online:</strong> " + (d.online === null ? "Unknown" : (d.online ? "Yes" : "No")) + "</div>" +
+        "<div><strong>Session storage available:</strong> " + (d.sessionStorageAvailable ? "Yes" : "No") + "</div>" +
+        "<div><strong>Chat API reachable:</strong> " + (d.apiReachable === null ? "Unknown" : (d.apiReachable ? "Yes" : "No")) +
+          (d.apiResponseTime !== null ? " (" + d.apiResponseTime + "ms)" : "") + "</div>" +
+        (d.apiError ? "<div><strong>API error:</strong> " + d.apiError + "</div>" : "") +
+        "<div><strong>Likely cause:</strong> " + likelyCause + "</div>" +
+        "<div><strong>Browser:</strong> " + navigator.userAgent + "</div>";
+    }
   </script>
 
 </body>

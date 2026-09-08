@@ -1229,17 +1229,19 @@
 
   window.setTimeout(maybeShowNudge, 15000);
 
+  const BRIDGES_URL = "https://bridges.tylerjanczak.com";
+
   nudgeEl.addEventListener("click", (event) => {
     if (event.target === nudgeCloseBtn) return;
     hideNudge();
-    openChat();
+    window.location.href = BRIDGES_URL;
   });
 
   nudgeEl.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       hideNudge();
-      openChat();
+      window.location.href = BRIDGES_URL;
     }
   });
 
@@ -1249,18 +1251,13 @@
   });
 
   /* ------------------------------------------------------------------
-     Open and close behavior
+     Launcher behavior — navigates to the full-screen chat experience
+     at bridges.tylerjanczak.com instead of opening an in-page popup.
   ------------------------------------------------------------------ */
 
   launcher.addEventListener("click", () => {
     hideNudge();
-    const isOpen = panel.classList.contains("tyler-ai-open");
-
-    if (isOpen) {
-      closeChat();
-    } else {
-      openChat();
-    }
+    window.location.href = BRIDGES_URL;
   });
 
   closeButton.addEventListener("click", closeChat);

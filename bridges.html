@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <!--
   © 2026 Tyler Janczak. All rights reserved.
+  bridges.tylerjanczak.com — full-screen Tyler AI
+
+  This page intentionally has no chat logic of its own. It loads the
+  exact same js/tyler-ai.js used everywhere else on the main site, then
+  restyles the widget to fill the screen and auto-opens it, so this page
+  always has 100% feature parity with the normal chat widget (resume
+  delivery, scheduling, moderation, everything) with zero duplicated code.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tyler AI Interface</title>
+  <title>Ask Tyler AI</title>
   <meta name="robots" content="noindex, nofollow" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,6 +29,8 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
     }
 
+    /* Restyle the floating widget to fill the entire viewport instead
+       of sitting as a small panel in the corner. */
     #tyler-ai-widget {
       position: fixed !important;
       inset: 0 !important;
@@ -44,6 +53,9 @@
       border: none !important;
     }
 
+    /* A small loading state shown before the widget finishes initializing
+       (its status check, ban check, etc.) — replaced automatically once
+       the panel opens. */
     #bridges-loading {
       position: fixed;
       inset: 0;
@@ -89,6 +101,9 @@
       25%, 75% { transform: translateY(-2.5px); }
     }
 
+    /* Limbs pivot from their joint (shoulder/hip/leg attachment) and
+       swing in alternating pairs to simulate an actual walking stride,
+       independent of and faster than the slow side-to-side traverse. */
     .bridges-arm-l, .bridges-arm-r,
     .bridges-leg-l, .bridges-leg-r,
     .bridges-dog-leg-front, .bridges-dog-leg-back,
@@ -133,7 +148,8 @@
       }
     }
 
-
+    /* Failure-state warning icon, matching the site's existing
+       hard-stop striped-triangle icon used elsewhere. */
     #bridges-loading-warning {
       align-items: center;
       justify-content: center;
@@ -154,6 +170,7 @@
       justify-content: center;
     }
 
+    /* Expandable diagnostic details, shown only on failure. */
     #bridges-loading-diagnostics {
       max-width: 420px;
       width: 90%;
@@ -196,6 +213,9 @@
       color: #1A2B3C;
     }
 
+    /* Replace the widget's own small "×" close button with our own
+       "Back to Home" pill, since closing this page should mean leaving
+       the subdomain entirely, not just collapsing a popup. */
     #tyler-ai-close {
       display: none !important;
     }
@@ -282,8 +302,10 @@
     <div id="bridges-loading-walker">
       <div id="bridges-loading-bob">
       <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Leash -->
         <path d="M52 46 Q38 52 26 58" stroke="#8b857e" stroke-width="1.6" fill="none" stroke-linecap="round"/>
 
+        <!-- Dog -->
         <g stroke="#c0392b" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round">
           <ellipse cx="16" cy="62" rx="11" ry="7" />
           <path d="M8 56 L4 48" />
@@ -320,6 +342,8 @@
       </div>
     </div>
 
+    <!-- Shown only if loading fails, matching the site's existing
+         hard-stop warning icon style. -->
     <div id="bridges-loading-warning" style="display: none;">
       <div class="bridges-warning-icon-wrap">
         <div class="bridges-warning-icon-stripes">
@@ -340,7 +364,58 @@
     </details>
   </div>
 
-  <script src="js/tyler-ai.js" defer></script>
+  <script>
+    // The only legitimate way into this page: a valid, server-issued,
+    // single-use session token from getdetails.do. Checked before
+    // anything else runs — tyler-ai.js itself is never even loaded
+    // unless this passes.
+    (function checkBridgesSession() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("sid");
+
+      if (!sessionId) {
+        showInvalidSession();
+        return;
+      }
+
+      fetch("https://tylerjanczak-github-io.vercel.app/api/chat", {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "validate-session", sessionId: sessionId })
+      })
+        .then(function (res) { return res.json(); })
+        .catch(function () { return { valid: false }; })
+        .then(function (data) {
+          if (data && data.valid) {
+            loadTylerAiScript();
+          } else {
+            showInvalidSession();
+          }
+        });
+    })();
+
+    function loadTylerAiScript() {
+      const script = document.createElement("script");
+      script.src = "js/tyler-ai.js";
+      script.defer = true;
+      document.body.appendChild(script);
+      initBridgesLoadingWatchers(script);
+    }
+
+    function showInvalidSession() {
+      const walkerEl = document.getElementById("bridges-loading-walker");
+      const warningEl = document.getElementById("bridges-loading-warning");
+      const textEl = document.getElementById("bridges-loading-text");
+
+      if (walkerEl) walkerEl.style.display = "none";
+      if (warningEl) warningEl.style.display = "flex";
+      if (textEl) {
+        textEl.textContent = "Invalid session. Please start from the main site.";
+      }
+    }
+  </script>
 
   <script>
     document.getElementById("bridges-back-home").addEventListener("click", function (event) {
@@ -354,20 +429,27 @@
   </script>
 
   <script>
+    // Tracks whether the script tag itself ever loaded, distinct from
+    // whether it loaded but failed to initialize — genuinely different
+    // failure modes, shown separately in the diagnostic details below.
     var bridgesScriptLoaded = false;
     var bridgesScriptError = null;
 
-    var bridgesScriptEl = document.querySelector('script[src="js/tyler-ai.js"]');
-    if (bridgesScriptEl) {
-      bridgesScriptEl.addEventListener("load", function () {
-        bridgesScriptLoaded = true;
-      });
-      bridgesScriptEl.addEventListener("error", function () {
-        bridgesScriptError = "The script file itself failed to load (network error or 404).";
-      });
-    }
+    function initBridgesLoadingWatchers(scriptEl) {
+      if (scriptEl) {
+        scriptEl.addEventListener("load", function () {
+          bridgesScriptLoaded = true;
+        });
+        scriptEl.addEventListener("error", function () {
+          bridgesScriptError = "The script file itself failed to load (network error or 404).";
+        });
+      }
 
-    (function waitForWidget() {
+      // Wait for the widget to finish initializing (it does its own async
+      // status/ban check before building anything), then open it and
+      // remove the loading state. If the site is blocked or under
+      // maintenance, tyler-ai.js will have already replaced the page
+      // content itself, so this simply won't find anything to open.
       var attempts = 0;
       var interval = setInterval(function () {
         attempts++;
@@ -380,12 +462,14 @@
           return;
         }
 
-        if (attempts > 50) {
+        // Give up after ~8 seconds so a broken load doesn't hang forever.
+        if (attempts > 80) {
           clearInterval(interval);
           showBridgesFailureState();
         }
       }, 100);
-    })();
+    }
+
 
     async function runBridgesDiagnostics() {
       var diagnostics = {
@@ -405,6 +489,8 @@
         diagnostics.sessionStorageAvailable = false;
       }
 
+      // A real, live fetch to the same status API tyler-ai.js depends on —
+      // not an assumption, an actual test of reachability right now.
       var apiStart = (window.performance && performance.now) ? performance.now() : Date.now();
       try {
         var controller = new AbortController();

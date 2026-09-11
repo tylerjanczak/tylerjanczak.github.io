@@ -1,0 +1,10 @@
+{
+  "headers": [
+    {
+      "source": "/getdetails.do",
+      "headers": [
+        { "key": "Content-Type", "value": "text/html; charset=utf-8" }
+      ]
+    }
+  ]
+}

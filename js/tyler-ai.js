@@ -1224,7 +1224,6 @@
     if (conversationStarted || panel.classList.contains("tyler-ai-open")) {
       return;
     }
-
     try {
       if (window.sessionStorage.getItem(NUDGE_SESSION_KEY)) {
         return;

@@ -173,6 +173,66 @@ async function handleLogCallRequest(req, res) {
   }
 }
 
+async function handleLogIntake(req, res) {
+  try {
+    const clientIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      "unknown";
+
+    const { fingerprint, isRecruiter } = req.body;
+
+    await kv.lpush(
+      "visitor_intake_log",
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        ip: clientIp,
+        fingerprint: fingerprint || null,
+        isRecruiter: typeof isRecruiter === "boolean" ? isRecruiter : null,
+        timestamp: new Date().toISOString()
+      })
+    );
+
+    // A real, server-issued session token — the only valid way into the
+    // full-screen chat. Short-lived (10 minutes) and single-use (deleted
+    // the moment it's validated), so it can't be shared, bookmarked, or
+    // reused after the fact.
+    const sessionToken = crypto.randomUUID();
+    await kv.set(`bridges_session_${sessionToken}`, "true", { ex: 600 });
+
+    return res.status(200).json({ success: true, sessionId: sessionToken });
+  } catch (err) {
+    console.error("Failed to log intake:", err);
+    return res.status(200).json({ success: false });
+  }
+}
+
+async function handleValidateSession(req, res) {
+  try {
+    const { sessionId } = req.body;
+
+    if (!sessionId) {
+      return res.status(200).json({ valid: false });
+    }
+
+    const key = `bridges_session_${sessionId}`;
+    const exists = await kv.get(key);
+
+    if (!exists) {
+      return res.status(200).json({ valid: false });
+    }
+
+    // Single-use — delete immediately so this exact link can't be
+    // reused, bookmarked, or shared after the first successful entry.
+    await kv.del(key);
+
+    return res.status(200).json({ valid: true });
+  } catch (err) {
+    console.error("Session validation failed:", err);
+    return res.status(200).json({ valid: false });
+  }
+}
+
 export default async function handler(req, res) {
   // Allow requests from your website
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -206,6 +266,18 @@ export default async function handler(req, res) {
     // the actual booking.
     if (req.body.action === "log-call-request") {
       return handleLogCallRequest(req, res);
+    }
+
+    // Logs the IP/fingerprint/recruiter-status captured on the
+    // getdetails.do intake gate, before the visitor ever reaches chat.
+    if (req.body.action === "log-intake") {
+      return handleLogIntake(req, res);
+    }
+
+    // Validates the single-use session token minted by getdetails.do —
+    // the only legitimate way into the full-screen chat.
+    if (req.body.action === "validate-session") {
+      return handleValidateSession(req, res);
     }
 
     const { question } = req.body;

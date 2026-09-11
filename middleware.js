@@ -1,15 +1,5 @@
 import { kv } from "@vercel/kv";
 import { rewrite } from "@vercel/functions";
-
-// Runs on Vercel's Edge Network before any page is sent to the browser —
-// a banned visitor never receives the real page content at all, not even
-// for a flash. Only checks IP and subnet bans; device fingerprint bans
-// still rely on the client-side check in tyler-ai.js, since a fingerprint
-// requires JavaScript to run in an already-loaded page first.
-//
-// Also handles hostname-based routing: bridges.tylerjanczak.com serves
-// a dedicated full-screen chat page instead of the normal portfolio.
-
 export const config = {
   matcher: ["/((?!api/|.*\\.(?:css|js|jpg|jpeg|png|gif|svg|ico|pdf|woff|woff2|ttf|json|webp)$).*)"]
 };
@@ -191,6 +181,17 @@ export default async function middleware(request) {
   // Not banned — check if this is the bridges subdomain, and if so,
   // serve the dedicated full-screen chat page instead of the normal site.
   if (hostname === "bridges.tylerjanczak.com") {
+    const pathname = new URL(request.url).pathname;
+
+    // A dedicated intake gate — captures IP/fingerprint and asks a
+    // qualifying question before handing off into the actual chat.
+    // The file is now genuinely named getdetails.do, so no rewrite is
+    // needed here — just let it serve normally, and skip the catch-all
+    // bridges.html rewrite below.
+    if (pathname === "/getdetails.do") {
+      return;
+    }
+
     return rewrite(new URL("/bridges.html", request.url));
   }
 

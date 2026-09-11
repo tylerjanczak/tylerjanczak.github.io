@@ -1141,6 +1141,14 @@
     addAssistantMessage(text, type);
   }
 
+  function isSelfIdentifiedRecruiter() {
+    try {
+      return sessionStorage.getItem("tylerAiIsRecruiter") === "true";
+    } catch {
+      return false;
+    }
+  }
+
   async function runInitialMessages() {
     await showInitialMessage(
       "We and our partners may monitor and record conversations for quality, systems training, and personalization.",
@@ -1149,15 +1157,22 @@
       1100
     );
 
-    await showInitialMessage(
-      `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`,
-      "",
-      500,
-      1100
-    );
+    const greetingText = isSelfIdentifiedRecruiter()
+      ? `${getTimeBasedGreeting()}, I'm Tyler AI. Since you're a recruiter, I can quickly share what makes Tyler a strong fit, send over his resume, or help set up time to talk directly.`
+      : `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
+
+    await showInitialMessage(greetingText, "", 500, 1100);
 
     addSuggestionChips();
   }
+
+  const SUGGESTED_QUESTIONS_RECRUITER = [
+    "Send me Tyler's resume",
+    "Arrange Intro Meeting",
+    "How is Tyler perceived by his former employers?",
+    "What's Tyler's most impressive project?",
+    "Take a Guided Tour"
+  ];
 
   const SUGGESTED_QUESTIONS = [
     "Take a Guided Tour",
@@ -1182,7 +1197,11 @@
     wrap.className = "tyler-ai-suggestions";
     wrap.id = "tyler-ai-suggestions";
 
-    SUGGESTED_QUESTIONS.forEach((suggestion) => {
+    const questionsToShow = isSelfIdentifiedRecruiter()
+      ? SUGGESTED_QUESTIONS_RECRUITER
+      : SUGGESTED_QUESTIONS;
+
+    questionsToShow.forEach((suggestion) => {
       const chip = document.createElement("button");
       chip.type = "button";
       chip.className = "tyler-ai-suggestion-chip";
@@ -1224,6 +1243,7 @@
     if (conversationStarted || panel.classList.contains("tyler-ai-open")) {
       return;
     }
+
     try {
       if (window.sessionStorage.getItem(NUDGE_SESSION_KEY)) {
         return;

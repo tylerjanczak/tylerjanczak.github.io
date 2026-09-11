@@ -1076,7 +1076,18 @@
     /(resume|cv).*(send|email|copy|share|forward|get|see|view)|(send|email|copy|share|forward|get|see|view).*(resume|cv)/i;
   const scheduleCallPattern =
     /(schedule|book|set up|setup|arrange).*(call|meeting|chat|time)|(talk|meet|speak).*(with tyler|to tyler)|interview.*tyler|tyler.*(available|availability)/i;
+  const guidedTourPattern =
+    /guided (tour|review)|take a tour|walk me through|show me around|give me a (tour|rundown|overview)/i;
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const TOUR_STEPS = [
+    "Give a warm, brief introduction to Tyler's professional background and what makes him stand out, in 2-3 sentences.",
+    "Describe Tyler's most impressive project and its measurable impact, in 2-3 sentences.",
+    "Summarize how Tyler is perceived by his former employers and colleagues, in 2-3 sentences.",
+    "Summarize Tyler's key skills and certifications, in 2-3 sentences.",
+    "Describe the AI and automation work Tyler has done, in 2-3 sentences."
+  ];
+  let tourStepIndex = 0;
 
   /* ------------------------------------------------------------------
      Link handling — the AI is instructed to output markdown-style
@@ -1149,6 +1160,7 @@
   }
 
   const SUGGESTED_QUESTIONS = [
+    "Take a Guided Tour",
     "Send me Tyler's resume",
     "Arrange Intro Meeting",
     "How is Tyler perceived by his former employers?",
@@ -1229,7 +1241,7 @@
 
   window.setTimeout(maybeShowNudge, 15000);
 
-  const BRIDGES_URL = "https://bridges.tylerjanczak.com";
+  const BRIDGES_URL = "https://bridges.tylerjanczak.com/getdetails.do";
 
   nudgeEl.addEventListener("click", (event) => {
     if (event.target === nudgeCloseBtn) return;
@@ -1427,6 +1439,13 @@
       return;
     }
 
+    // If the visitor wants a guided walkthrough, start the step-by-step
+    // tour instead of answering as a single normal question.
+    if (guidedTourPattern.test(question)) {
+      await startGuidedTour();
+      return;
+    }
+
     requestInProgress = true;
     sendButton.disabled = true;
     input.disabled = true;
@@ -1574,6 +1593,129 @@
       // Non-critical — don't block the scheduling flow if logging fails.
       console.error("Failed to log call request:", error);
     }
+  }
+
+  async function startGuidedTour() {
+    tourStepIndex = 0;
+    addAssistantMessage("Sure, let's take a quick tour of Tyler's background.");
+    await runTourStep();
+  }
+
+  async function runTourStep() {
+    if (tourStepIndex >= TOUR_STEPS.length) {
+      addAssistantMessage("That's the tour! Want to take the next step?");
+      addTourEndOptions();
+      return;
+    }
+
+    requestInProgress = true;
+    sendButton.disabled = true;
+    input.disabled = true;
+
+    const typingElement = addSearchingIndicator(TOUR_STEPS[tourStepIndex]);
+
+    try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), CONFIG.requestTimeoutMs);
+
+      const response = await fetch(CONFIG.apiUrl, {
+        method: "POST",
+        mode: "cors",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: TOUR_STEPS[tourStepIndex],
+          page: window.location.pathname,
+          sessionId: conversationSessionId,
+          fingerprint: deviceFingerprint,
+          history: conversationHistory
+        }),
+        signal: controller.signal
+      });
+
+      window.clearTimeout(timeout);
+
+      const data = await response.json().catch(() => ({}));
+      typingElement.remove();
+
+      if (!response.ok || !data) {
+        addAssistantMessage("I wasn't able to pull that up just now. Let's move on.", "error");
+      } else {
+        const answer = data.answer || data.response || data.message || data.content || data.output;
+        if (typeof answer === "string") {
+          const { displayText } = parseAssistantResponse(answer);
+          addAssistantMessage(displayText);
+          conversationHistory.push({ question: TOUR_STEPS[tourStepIndex], answer: displayText });
+          if (conversationHistory.length > MAX_HISTORY_TURNS) conversationHistory.shift();
+        }
+      }
+
+      tourStepIndex++;
+      addTourNextButton();
+    } catch (error) {
+      typingElement.remove();
+      console.error("Guided tour step failed:", error);
+      addAssistantMessage("I wasn't able to pull that up just now. Let's move on.", "error");
+      tourStepIndex++;
+      addTourNextButton();
+    } finally {
+      requestInProgress = false;
+      if (!chatDisabled) {
+        sendButton.disabled = false;
+        input.disabled = false;
+      }
+    }
+  }
+
+  function addTourNextButton() {
+    const wrap = document.createElement("div");
+    wrap.className = "tyler-ai-suggestions";
+
+    const nextChip = document.createElement("button");
+    nextChip.type = "button";
+    nextChip.className = "tyler-ai-suggestion-chip";
+    nextChip.textContent = tourStepIndex < TOUR_STEPS.length ? "Next →" : "Finish Tour";
+    nextChip.addEventListener("click", () => {
+      wrap.remove();
+      runTourStep();
+    });
+
+    const endChip = document.createElement("button");
+    endChip.type = "button";
+    endChip.className = "tyler-ai-suggestion-chip";
+    endChip.textContent = "End Tour";
+    endChip.addEventListener("click", () => {
+      wrap.remove();
+      tourStepIndex = TOUR_STEPS.length;
+      addAssistantMessage("No problem, feel free to ask me anything else.");
+    });
+
+    wrap.appendChild(nextChip);
+    if (tourStepIndex < TOUR_STEPS.length) wrap.appendChild(endChip);
+
+    messages.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function addTourEndOptions() {
+    const wrap = document.createElement("div");
+    wrap.className = "tyler-ai-suggestions";
+
+    ["Send me Tyler's resume", "Arrange Intro Meeting"].forEach((label) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "tyler-ai-suggestion-chip";
+      chip.textContent = label;
+      chip.addEventListener("click", () => {
+        wrap.remove();
+        input.value = label;
+        form.requestSubmit();
+      });
+      wrap.appendChild(chip);
+    });
+
+    messages.appendChild(wrap);
+    scrollToBottom();
   }
 
   async function handleScheduleRequest() {

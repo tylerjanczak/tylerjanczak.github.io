@@ -78,20 +78,19 @@
   }
 
   .username-input-row {
-    display: flex;
-    align-items: stretch;
-    gap: 8px;
+    position: relative;
     margin-bottom: 14px;
   }
 
   .username-input-row input[type="text"] {
-    flex: 1;
+    width: 100%;
     padding: 12px 14px;
     border: 1px solid var(--rule);
     border-radius: 6px;
     font-size: 15px;
     background: var(--bg);
     color: var(--ink);
+    text-align: center;
   }
 
   .username-input-row input[type="text"]:focus {
@@ -100,20 +99,32 @@
   }
 
   .username-warning-icon {
-    flex: 0 0 auto;
-    width: 46px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(122, 46, 46, 0.08);
-    border: 1px solid rgba(122, 46, 46, 0.25);
-    border-radius: 6px;
+    pointer-events: none;
     transition: opacity 150ms ease;
   }
 
   .username-warning-icon svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
+    animation: usernameIconPulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes usernameIconPulse {
+    0%, 100% { opacity: 0.55; transform: scale(0.94); }
+    50% { opacity: 1; transform: scale(1.06); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .username-warning-icon svg {
+      animation: none;
+    }
   }
 
   .username-warning-icon.hidden {
@@ -938,7 +949,7 @@
           <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
         </svg>
       </span>
-      <input type="text" id="username-input" placeholder="Username" autocomplete="username" autocapitalize="off" spellcheck="false" />
+      <input type="text" id="username-input" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Username" />
     </div>
     <button class="primary" id="username-continue-btn">Continue</button>
   </div>
@@ -967,8 +978,9 @@
 <div id="auth-overlay">
   <div class="auth-box">
     <svg class="auth-heart" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path class="heart-fill" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-      <path class="ecg-line" d="M3 12 L7.5 12 L9.5 7 L12 17 L14.5 9 L16.5 12 L21 12" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path class="heart-fill" d="M12 20 C7 16 3 12.5 3 8.5 C3 5.5 5.5 3.5 8 3.5 C9.8 3.5 11 4.5 12 6 C13 4.5 14.2 3.5 16 3.5 C18.5 3.5 21 5.5 21 8.5 C21 12.5 17 16 12 20 Z"/>
+      <path d="M6.5 6.2 C7.2 5.2 8.5 4.6 9.6 4.8" stroke="rgba(255,255,255,0.35)" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <path class="ecg-line" d="M3.5 11.5 L7 11.5 L9 7.5 L12 15.5 L14.5 8.5 L16.5 11.5 L20.5 11.5" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <div class="auth-text">Authenticating&hellip;</div>
   </div>
@@ -1267,6 +1279,24 @@
       <tbody id="call-request-body"></tbody>
     </table>
   </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Visitor Intake (getdetails.do)</h2>
+      <span class="panel-count" id="intake-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">IP</th>
+          <th>Device Fingerprint</th>
+          <th style="width:100px;">Recruiter?</th>
+        </tr>
+      </thead>
+      <tbody id="intake-body"></tbody>
+    </table>
+  </section>
 </div>
 
 
@@ -1293,6 +1323,10 @@
   const usernameWarningIcon = document.getElementById("username-warning-icon");
 
   usernameInputEl.addEventListener("input", () => {
+    usernameWarningIcon.classList.toggle("hidden", usernameInputEl.value.length > 0);
+  });
+
+  usernameInputEl.addEventListener("blur", () => {
     usernameWarningIcon.classList.toggle("hidden", usernameInputEl.value.length > 0);
   });
 
@@ -1890,6 +1924,24 @@
           </tr>
         `).join("")
       : `<tr><td colspan="4" class="empty-row">No call requests yet.</td></tr>`;
+  }
+
+  function renderIntakeLog() {
+    const entries = currentData.intakeLog || [];
+    const body = document.getElementById("intake-body");
+
+    document.getElementById("intake-count").textContent = entries.length;
+
+    body.innerHTML = entries.length
+      ? entries.map((e) => `
+          <tr>
+            <td class="timestamp">${formatDate(e.timestamp)}</td>
+            <td>${escapeHtml(e.ip || "unknown")}</td>
+            <td style="font-family: monospace; font-size: 11px;">${e.fingerprint ? escapeHtml(e.fingerprint.slice(0, 24)) + "..." : "—"}</td>
+            <td>${e.isRecruiter === true ? '<span class="intent-tag">Yes</span>' : e.isRecruiter === false ? "No" : "—"}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="4" class="empty-row">No intake entries yet.</td></tr>`;
   }
 
   function renderMaintenanceLog() {
@@ -2585,7 +2637,8 @@
       bannedRanges: data.bannedRanges || [],
       bannedFingerprints: data.bannedFingerprints || [],
       injectionAttempts: data.injectionAttempts || [],
-      callRequests: data.callRequests || []
+      callRequests: data.callRequests || [],
+      intakeLog: data.intakeLog || []
     };
 
     gate.style.display = "none";
@@ -2600,6 +2653,7 @@
     renderBannedRanges();
     renderBannedFingerprints();
     renderCallRequests();
+    renderIntakeLog();
 
     if (!kbHasLoaded) {
       kbHasLoaded = true;

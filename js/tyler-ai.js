@@ -676,54 +676,47 @@
     .tyler-ai-typing {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      min-width: 64px;
-      min-height: 32px;
+      gap: 4px;
+      min-width: 46px;
+      min-height: 14px;
+      padding: 12px 16px;
+      background: #e9e9eb;
+      border: none;
+      border-radius: 18px;
+      position: relative;
     }
 
-    .tyler-ai-typing svg {
-      display: block;
-      width: 64px;
-      height: 26px;
+    .tyler-ai-typing::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      bottom: -5px;
+      width: 9px;
+      height: 9px;
+      background: #e9e9eb;
+      border-radius: 50%;
     }
 
-    .tyler-ai-ecg-line {
-      fill: none;
-      stroke: var(--ta-red);
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-dasharray: 100;
-      stroke-dashoffset: 100;
-      animation: tylerAiEcgDraw 1.5s linear infinite;
+    .tyler-ai-typing-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #9a9a9e;
+      animation: tylerAiDotBounce 1.2s ease-in-out infinite;
     }
 
-    @keyframes tylerAiEcgDraw {
-      0% {
-        stroke-dashoffset: 100;
-        opacity: 1;
-      }
+    .tyler-ai-typing-dot:nth-child(2) { animation-delay: 0.15s; }
+    .tyler-ai-typing-dot:nth-child(3) { animation-delay: 0.3s; }
 
-      65% {
-        stroke-dashoffset: 0;
-        opacity: 1;
-      }
-
-      85% {
-        stroke-dashoffset: 0;
-        opacity: 1;
-      }
-
-      100% {
-        stroke-dashoffset: 0;
-        opacity: 0;
-      }
+    @keyframes tylerAiDotBounce {
+      0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+      30% { transform: translateY(-4px); opacity: 1; }
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .tyler-ai-ecg-line {
+      .tyler-ai-typing-dot {
         animation: none;
-        stroke-dashoffset: 0;
+        opacity: 0.8;
       }
     }
 
@@ -747,12 +740,26 @@
       padding-top: 1px;
     }
 
-    .tyler-ai-searching-title svg {
+    .tyler-ai-searching-spinner {
       display: block;
-      width: 30px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       flex: 0 0 auto;
-      margin-top: 1px;
+      margin-top: 2px;
+      border: 2px solid rgba(123, 31, 42, 0.15);
+      border-top-color: var(--ta-red);
+      border-radius: 50%;
+      animation: tylerAiSpinnerSpin 0.7s linear infinite;
+    }
+
+    @keyframes tylerAiSpinnerSpin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tyler-ai-searching-spinner {
+        animation: none;
+      }
     }
 
     .tyler-ai-searching-list {
@@ -1150,18 +1157,11 @@
   }
 
   async function runInitialMessages() {
-    await showInitialMessage(
-      "We and our partners may monitor and record conversations for quality, systems training, and personalization.",
-      "notice",
-      300,
-      1100
-    );
-
     const greetingText = isSelfIdentifiedRecruiter()
       ? `${getTimeBasedGreeting()}, I'm Tyler AI. Since you're a recruiter, I can quickly share what makes Tyler a strong fit, send over his resume, or help set up time to talk directly.`
       : `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
 
-    await showInitialMessage(greetingText, "", 500, 1100);
+    await showInitialMessage(greetingText, "", 300, 1100);
 
     addSuggestionChips();
   }
@@ -2144,13 +2144,9 @@
     typing.setAttribute("aria-label", "Tyler AI is responding");
 
     typing.innerHTML = `
-      <svg viewBox="0 0 130 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path
-          class="tyler-ai-ecg-line"
-          pathLength="100"
-          d="M0 20 L20 20 Q26 16 32 20 Q38 24 42 20 L54 20 L60 6 L66 34 L72 20 L84 20 Q90 12 96 20 Q102 28 108 20 L130 20"
-        />
-      </svg>
+      <span class="tyler-ai-typing-dot"></span>
+      <span class="tyler-ai-typing-dot"></span>
+      <span class="tyler-ai-typing-dot"></span>
     `;
 
     row.appendChild(avatar);
@@ -2193,13 +2189,7 @@
     bubble.setAttribute("aria-label", `Searching for: ${displayQuestion || "Tyler's portfolio"}`);
     bubble.innerHTML = `
       <div class="tyler-ai-searching-title">
-        <svg viewBox="0 0 130 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path
-            class="tyler-ai-ecg-line"
-            pathLength="100"
-            d="M0 20 L20 20 Q26 16 32 20 Q38 24 42 20 L54 20 L60 6 L66 34 L72 20 L84 20 Q90 12 96 20 Q102 28 108 20 L130 20"
-          />
-        </svg>
+        <span class="tyler-ai-searching-spinner" aria-hidden="true"></span>
         <span class="tyler-ai-searching-title-text">${escapeHtml(titleText)}</span>
       </div>
       <ul class="tyler-ai-searching-list">

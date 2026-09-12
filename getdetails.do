@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <!--
   © 2026 Tyler Janczak. All rights reserved.
-  bridges.tylerjanczak.com/getdetails.do
-
-  A brief intake gate shown before the chat itself. Captures a device
-  fingerprint (client-side) and IP (server-side, from the request itself)
-  and asks one qualifying question before handing off into bridges.html.
 -->
 <html lang="en">
 <head>
@@ -248,14 +243,12 @@
       </div>
 
       <div class="gate-disclosure" id="gate-disclosure">
-        We and our partners may monitor and record conversations for quality, systems training, and personalization.
+        We and our systems may collect device and connection information for security, quality, and personalization.
       </div>
     </div>
   </div>
 
   <script>
-    // Same fingerprinting approach used by the main chat widget, so
-    // fingerprints captured here are consistent with everywhere else.
     async function generateFingerprint() {
       try {
         const signals = [

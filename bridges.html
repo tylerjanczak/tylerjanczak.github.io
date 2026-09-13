@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
   <style>
     html, body {
       margin: 0;
@@ -91,7 +92,7 @@
       stroke-linejoin: round;
       stroke-dasharray: 100;
       stroke-dashoffset: 100;
-      animation: bridgesEcgDraw 1.1s linear infinite;
+      animation: bridgesEcgDraw 1.5s linear infinite;
     }
 
     @keyframes bridgesHeartBeat {
@@ -360,9 +361,6 @@
   </script>
 
   <script>
-    // Tracks whether the script tag itself ever loaded, distinct from
-    // whether it loaded but failed to initialize — genuinely different
-    // failure modes, shown separately in the diagnostic details below.
     var bridgesScriptLoaded = false;
     var bridgesScriptError = null;
 
@@ -375,12 +373,6 @@
           bridgesScriptError = "The script file itself failed to load (network error or 404).";
         });
       }
-
-      // Wait for the widget to finish initializing (it does its own async
-      // status/ban check before building anything), then open it and
-      // remove the loading state. If the site is blocked or under
-      // maintenance, tyler-ai.js will have already replaced the page
-      // content itself, so this simply won't find anything to open.
       var attempts = 0;
       var interval = setInterval(function () {
         attempts++;
@@ -393,8 +385,7 @@
           return;
         }
 
-        // Give up after ~8 seconds so a broken load doesn't hang forever.
-        if (attempts > 80) {
+        if (attempts > 30) {
           clearInterval(interval);
           showBridgesFailureState();
         }
@@ -420,8 +411,6 @@
         diagnostics.sessionStorageAvailable = false;
       }
 
-      // A real, live fetch to the same status API tyler-ai.js depends on —
-      // not an assumption, an actual test of reachability right now.
       var apiStart = (window.performance && performance.now) ? performance.now() : Date.now();
       try {
         var controller = new AbortController();
@@ -457,7 +446,7 @@
       var diagnosticContentEl = document.getElementById("bridges-diagnostic-content");
 
       if (loadingTextEl) {
-        loadingTextEl.textContent = "Tyler AI couldn't load right now. Please refresh the page.";
+        loadingTextEl.textContent = "There was an error loading Tyler AI couldn't right now. Please try again later.";
       }
 
       if (walkerEl) {

@@ -964,7 +964,7 @@
     .ecg-draw-line {
       stroke-dasharray: 500;
       stroke-dashoffset: 500;
-      animation: drawAndRepeat 1.4s linear infinite;
+      animation: drawAndRepeat 0.65s linear infinite;
     }
 
     @keyframes drawAndRepeat {
@@ -1024,7 +1024,7 @@
                 try {
                   sessionStorage.setItem('sectionsSeen', JSON.stringify(seen));
                 } catch (e) { /* storage full or disabled */ }
-              }, 1000);
+              }, 700);
             }
           });
         }, {

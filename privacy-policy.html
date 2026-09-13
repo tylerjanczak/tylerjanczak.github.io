@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tyler Janczak - Legal</title>
+  <title>Privacy Policy — Tyler Janczak</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23F7F4EE'/%3E%3Ctext x='50' y='68' font-family='Georgia, serif' font-size='52' font-weight='600' fill='%236B1F1F' text-anchor='middle'%3ETNJ%3C/text%3E%3C/svg%3E">
   <meta name="description" content="Privacy Policy for tylerjanczak.com" />
   <meta name="robots" content="noindex" />
@@ -130,6 +130,84 @@
     .policy-toggle button.active {
       background: var(--accent);
       color: #ffffff;
+    }
+
+    .selector-label {
+      margin-top: 0;
+    }
+
+    .selector-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .selector-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 20px;
+      min-width: 100px;
+      border: 1px solid var(--rule);
+      border-radius: 8px;
+      background: #ffffff;
+      font-family: var(--body);
+      font-size: 13px;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+
+    .selector-box.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .selector-icon {
+      font-size: 20px;
+    }
+
+    .language-note {
+      background: var(--bg-subtle);
+      border-left: 3px solid var(--accent);
+      padding: 14px 18px;
+      font-size: 13px;
+      color: var(--ink-soft);
+      max-width: 620px;
+      margin-bottom: 36px;
+    }
+
+    .lang-block {
+      display: none;
+    }
+
+    .lang-block.active-lang {
+      display: block;
+    }
+
+    .region-section {
+      display: none;
+    }
+
+    .region-section.active-region {
+      display: block;
+    }
+
+    .step-hidden {
+      display: none;
+    }
+
+    .step-revealed {
+      display: block;
+      animation: stepFadeIn 0.3s ease;
+    }
+
+    @keyframes stepFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     #policy-simple, #policy-legal {
@@ -320,12 +398,65 @@
       features actually collect, why, and where it goes.
     </p>
 
+    <h3 class="selector-label">Choose a Region</h3>
+    <div class="selector-grid" id="region-selector">
+      <button type="button" class="selector-box" data-region="global">
+        <span class="selector-icon">🌐</span>
+        Global
+      </button>
+      <button type="button" class="selector-box" data-region="california">
+        <span class="selector-icon">🇺🇸</span>
+        California, US
+      </button>
+      <button type="button" class="selector-box" data-region="eu">
+        <span class="selector-icon">🇪🇺</span>
+        European Union
+      </button>
+    </div>
+
+    <div id="step-language" class="step-hidden">
+
+    <h3 class="selector-label">Choose a Language</h3>
+    <div class="selector-grid" id="language-selector">
+      <button type="button" class="selector-box" data-lang="en">
+        <span class="selector-icon">🇬🇧</span>
+        English
+      </button>
+      <button type="button" class="selector-box" data-lang="es">
+        <span class="selector-icon">🇪🇸</span>
+        Español
+      </button>
+      <button type="button" class="selector-box" data-lang="fr">
+        <span class="selector-icon">🇫🇷</span>
+        Français
+      </button>
+      <button type="button" class="selector-box" data-lang="pl">
+        <span class="selector-icon">🇵🇱</span>
+        Polski
+      </button>
+      <button type="button" class="selector-box" data-lang="ja">
+        <span class="selector-icon">🇯🇵</span>
+        日本語
+      </button>
+    </div>
+
+    <div class="language-note" id="language-note" style="display: none;">
+      The Simple Read version is available in the language selected above. The Full Legal Text
+      and region-specific sections remain in English, the authoritative version for legal purposes.
+    </div>
+
+    </div>
+
+    <div id="step-content" class="step-hidden">
+
     <div class="policy-toggle">
       <button type="button" id="btn-legal" class="active">Full Legal Text</button>
       <button type="button" id="btn-simple">Simple Read</button>
     </div>
 
     <div id="policy-simple">
+
+    <div class="lang-block active-lang" data-lang="en">
 
     <details class="policy-accordion" open>
       <summary>What this site is<span class="accordion-icon"></span></summary>
@@ -463,6 +594,27 @@
     </details>
 
     <details class="policy-accordion">
+      <summary>Intellectual property<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          The design, layout, original writing, and custom illustrations on this site are Tyler
+          Janczak's own work and are protected by copyright. "Tyler Janczak" and "Tyler AI" are
+          used as personal identifiers, not registered trademarks.
+        </p>
+        <p>
+          Any third-party names, logos, or trademarks mentioned on this site (such as OpenAI,
+          Calendly, Resend, or Microsoft) belong to their respective owners and are referenced
+          only to describe the tools this site uses.
+        </p>
+        <p>
+          If you believe something on this site infringes your intellectual property rights,
+          contact <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a> with details and
+          it will be reviewed.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
       <summary>Your choices<span class="accordion-icon"></span></summary>
       <div class="accordion-content">
         <p>
@@ -484,6 +636,704 @@
       </div>
     </details>
 
+    </div>
+
+    <div class="lang-block" data-lang="es">
+
+    <details class="policy-accordion" open>
+      <summary>Qué es este sitio<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          tylerjanczak.com es un sitio de portafolio personal. Incluye un asistente de IA
+          ("Tyler AI"), una función de programación de citas, una función de solicitud de
+          currículum y análisis web estándar. Esta política cubre todo lo anterior.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Información recopilada automáticamente<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Al visitar cualquier página de este sitio, se puede recopilar automáticamente lo siguiente:</p>
+        <ul>
+          <li><strong>Dirección IP</strong> — utilizada para seguridad básica (por ejemplo, bloquear visitantes abusivos) y contexto de ubicación aproximada para análisis.</li>
+          <li><strong>Características del dispositivo y navegador</strong> — como tamaño de pantalla, zona horaria, tipo de navegador y señales técnicas similares, combinadas en una huella técnica no identificable utilizada para seguridad y prevención de abuso.</li>
+          <li><strong>Datos de uso</strong> — páginas visitadas, duración de la sesión e interacciones, a través de Microsoft Clarity (ver "Análisis" abajo).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Tyler AI (el asistente de chat)<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Si utiliza el asistente de chat, adicionalmente se recopila:</p>
+        <ul>
+          <li>Las preguntas que hace y las respuestas dadas, almacenadas para mejorar el asistente y para que Tyler tenga visibilidad sobre el interés de los visitantes.</li>
+          <li>Un identificador de sesión, utilizado para mantener el contexto de la conversación y prevenir abuso.</li>
+          <li>Si solicita el currículum o pide programar una llamada: su nombre, número de teléfono y/o dirección de correo electrónico, que usted proporciona voluntariamente.</li>
+        </ul>
+        <p>
+          Las preguntas enviadas a Tyler AI son procesadas por OpenAI para generar respuestas.
+          Las propias prácticas de privacidad de OpenAI rigen ese procesamiento; consulte la
+          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">política de privacidad de OpenAI</a>.
+        </p>
+        <div class="note">
+          <strong>Nota sobre moderación:</strong> si una conversación se marca por contenido
+          abusivo o inapropiado, o un intento de manipular las instrucciones del asistente, la
+          dirección IP y la huella del dispositivo asociadas pueden registrarse y, tras
+          infracciones repetidas, bloquearse el acceso adicional al asistente.
+        </div>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Programar una llamada<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Si solicita programar una llamada, la disponibilidad en tiempo real se obtiene de la
+          cuenta de Calendly de Tyler. Su nombre, teléfono y correo electrónico (que usted
+          proporciona) se envían por correo electrónico a Tyler a través de Resend, un servicio
+          de correo transaccional, para que pueda dar seguimiento y confirmar la reunión. Ninguna
+          reserva se realiza automáticamente sin la confirmación directa de Tyler.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Solicitar el currículum<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Si solicita el currículum de Tyler, la dirección de correo electrónico que proporciona
+          se utiliza únicamente para enviar el currículum a través de Resend, y se registra para
+          que Tyler pueda ver que ocurrió la solicitud.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Análisis<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Este sitio utiliza <strong>Microsoft Clarity</strong> para análisis, incluyendo
+          grabaciones de sesión y mapas de calor de cómo los visitantes interactúan con el sitio.
+          Clarity puede establecer cookies y recopilar la información técnica descrita
+          anteriormente. Consulte la
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Declaración de privacidad de Microsoft</a>
+          para más detalles.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Cookies y almacenamiento del navegador<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Este sitio utiliza almacenamiento de sesión del navegador (no cookies persistentes en
+          el sentido tradicional) para recordar cosas como su sesión de chat actual y si ya ha
+          visto ciertas animaciones de página, para que no se repitan innecesariamente. Estos
+          datos se borran al cerrar la pestaña del navegador y no se utilizan para rastrearlo en
+          otros sitios web.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Servicios de terceros que utiliza este sitio<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <table>
+          <thead>
+            <tr><th>Servicio</th><th>Propósito</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>Genera las respuestas de Tyler AI</td></tr>
+            <tr><td>Calendly</td><td>Proporciona disponibilidad de reuniones en tiempo real</td></tr>
+            <tr><td>Resend</td><td>Entrega correos de currículum y solicitudes de llamada</td></tr>
+            <tr><td>Microsoft Clarity</td><td>Análisis web y grabación de sesión</td></tr>
+            <tr><td>Vercel</td><td>Alojamiento e infraestructura</td></tr>
+            <tr><td>Upstash</td><td>Almacenamiento de base de datos</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Cuánto tiempo se conserva la información<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Los registros de conversaciones, solicitudes de currículum y solicitudes de llamada se
+          conservan para que Tyler pueda revisar el interés de los visitantes con el tiempo. Los
+          tokens de sesión temporales utilizados para acceder al chat expiran automáticamente tras
+          una ventana corta (actualmente 10 minutos) y no pueden reutilizarse. Los bloqueos de IP
+          o dispositivo por abuso se conservan hasta que se revierten manualmente.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Lo que este sitio no hace<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <ul>
+          <li>No vende su información a nadie.</li>
+          <li>No utiliza su información para publicidad de terceros.</li>
+          <li>No intenta determinar su identidad real solo a partir de la huella técnica — esos datos se usan únicamente para seguridad y prevención de abuso.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Sus opciones<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Puede negarse a proporcionar su nombre, teléfono o correo electrónico en cualquier
+          momento, aunque hacerlo significa que funciones como el envío del currículum o la
+          programación de llamadas no podrán completarse. La mayoría de los navegadores le
+          permiten bloquear cookies de terceros y borrar datos del sitio en cualquier momento.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Contacto<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Las preguntas sobre esta política o su información pueden enviarse a
+          <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.
+        </p>
+      </div>
+    </details>
+
+    </div>
+
+    <div class="lang-block" data-lang="fr">
+
+    <details class="policy-accordion" open>
+      <summary>Ce qu'est ce site<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          tylerjanczak.com est un site de portfolio personnel. Il comprend un assistant IA
+          (« Tyler AI »), une fonction de prise de rendez-vous, une fonction de demande de CV et
+          des analyses web standard. Cette politique couvre l'ensemble de ces éléments.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Informations collectées automatiquement<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Lors de votre visite sur ce site, les informations suivantes peuvent être collectées automatiquement :</p>
+        <ul>
+          <li><strong>Adresse IP</strong> — utilisée pour la sécurité de base (par exemple, bloquer les visiteurs abusifs) et le contexte de localisation approximative pour les analyses.</li>
+          <li><strong>Caractéristiques de l'appareil et du navigateur</strong> — telles que la taille de l'écran, le fuseau horaire, le type de navigateur et des signaux techniques similaires, combinés en une empreinte technique non identifiante utilisée pour la sécurité et la prévention des abus.</li>
+          <li><strong>Données d'utilisation</strong> — pages visitées, durée de session et interactions, via Microsoft Clarity (voir « Analyses » ci-dessous).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Tyler AI (l'assistant de chat)<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Si vous utilisez l'assistant de chat, sont également collectées :</p>
+        <ul>
+          <li>Les questions que vous posez et les réponses données, stockées pour améliorer l'assistant et pour la visibilité de Tyler sur l'intérêt des visiteurs.</li>
+          <li>Un identifiant de session, utilisé pour maintenir le contexte de la conversation et prévenir les abus.</li>
+          <li>Si vous demandez le CV ou demandez à programmer un appel : votre nom, numéro de téléphone et/ou adresse e-mail, que vous fournissez volontairement.</li>
+        </ul>
+        <p>
+          Les questions envoyées à Tyler AI sont traitées par OpenAI pour générer des réponses.
+          Les propres pratiques de confidentialité d'OpenAI régissent ce traitement ; voir la
+          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">politique de confidentialité d'OpenAI</a>.
+        </p>
+        <div class="note">
+          <strong>Note sur la modération :</strong> si une conversation est signalée pour contenu
+          abusif ou inapproprié, ou une tentative de manipuler les instructions de l'assistant,
+          l'adresse IP et l'empreinte de l'appareil associées peuvent être enregistrées et, après
+          des violations répétées, l'accès à l'assistant peut être bloqué.
+        </div>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Planifier un appel<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Si vous demandez à planifier un appel, la disponibilité en temps réel est extraite du
+          compte Calendly de Tyler. Votre nom, téléphone et e-mail (que vous fournissez) sont
+          envoyés par e-mail à Tyler via Resend, un service d'e-mail transactionnel, afin qu'il
+          puisse assurer le suivi et confirmer la réunion. Aucune réservation n'est effectuée
+          automatiquement sans la confirmation directe de Tyler.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Demander le CV<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Si vous demandez le CV de Tyler, l'adresse e-mail que vous fournissez est utilisée
+          uniquement pour envoyer le CV via Resend, et est enregistrée afin que Tyler puisse voir
+          que la demande a eu lieu.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Analyses<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Ce site utilise <strong>Microsoft Clarity</strong> pour les analyses, y compris les
+          enregistrements de session et les cartes de chaleur de l'interaction des visiteurs avec
+          le site. Clarity peut définir des cookies et collecter les informations techniques
+          décrites ci-dessus. Voir la
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">déclaration de confidentialité de Microsoft</a>
+          pour plus de détails.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Cookies et stockage du navigateur<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Ce site utilise le stockage de session du navigateur (et non des cookies persistants au
+          sens traditionnel) pour se souvenir d'éléments tels que votre session de chat actuelle
+          et si vous avez déjà vu certaines animations de page, afin qu'elles ne se répètent pas
+          inutilement. Ces données sont effacées à la fermeture de l'onglet du navigateur et ne
+          sont pas utilisées pour vous suivre sur d'autres sites web.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Services tiers utilisés par ce site<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <table>
+          <thead>
+            <tr><th>Service</th><th>Objectif</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>Génère les réponses de Tyler AI</td></tr>
+            <tr><td>Calendly</td><td>Fournit la disponibilité des rendez-vous en temps réel</td></tr>
+            <tr><td>Resend</td><td>Livre les e-mails de CV et de demande d'appel</td></tr>
+            <tr><td>Microsoft Clarity</td><td>Analyses web et enregistrement de session</td></tr>
+            <tr><td>Vercel</td><td>Hébergement et infrastructure</td></tr>
+            <tr><td>Upstash</td><td>Stockage de base de données</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Durée de conservation des informations<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Les journaux de conversation, les demandes de CV et les demandes d'appel sont conservés
+          afin que Tyler puisse examiner l'intérêt des visiteurs au fil du temps. Les jetons de
+          session temporaires utilisés pour accéder au chat expirent automatiquement après une
+          courte période (actuellement 10 minutes) et ne peuvent pas être réutilisés. Les
+          blocages d'IP ou d'appareil pour abus sont conservés jusqu'à ce qu'ils soient
+          manuellement annulés.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Ce que ce site ne fait pas<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <ul>
+          <li>Il ne vend pas vos informations à qui que ce soit.</li>
+          <li>Il n'utilise pas vos informations à des fins de publicité tierce.</li>
+          <li>Il ne tente pas de déterminer votre identité réelle uniquement à partir de l'empreinte technique — ces données sont utilisées uniquement pour la sécurité et la prévention des abus.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Vos choix<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Vous pouvez refuser de fournir votre nom, téléphone ou e-mail à tout moment, bien que
+          cela signifie que des fonctionnalités comme l'envoi du CV ou la planification d'appels
+          ne pourront pas être complétées. La plupart des navigateurs vous permettent de bloquer
+          les cookies tiers et d'effacer les données du site à tout moment.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Contact<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Les questions concernant cette politique ou vos informations peuvent être envoyées à
+          <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.
+        </p>
+      </div>
+    </details>
+
+    </div>
+
+    <div class="lang-block" data-lang="pl">
+
+    <details class="policy-accordion" open>
+      <summary>Czym jest ta strona<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          tylerjanczak.com to osobista strona portfolio. Zawiera asystenta AI ("Tyler AI"),
+          funkcję umawiania rozmów, funkcję prośby o życiorys oraz standardową analitykę
+          internetową. Niniejsza polityka obejmuje wszystkie te elementy.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Informacje zbierane automatycznie<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Podczas odwiedzania dowolnej strony w tej witrynie mogą być automatycznie zbierane następujące informacje:</p>
+        <ul>
+          <li><strong>Adres IP</strong> — wykorzystywany do podstawowego bezpieczeństwa (np. blokowania nadużywających odwiedzających) oraz przybliżonego kontekstu lokalizacji do celów analitycznych.</li>
+          <li><strong>Cechy urządzenia i przeglądarki</strong> — takie jak rozmiar ekranu, strefa czasowa, typ przeglądarki i podobne sygnały techniczne, połączone w niezidentyfikowany odcisk techniczny wykorzystywany do bezpieczeństwa i zapobiegania nadużyciom.</li>
+          <li><strong>Dane użytkowania</strong> — odwiedzone strony, czas trwania sesji i interakcje, za pośrednictwem Microsoft Clarity (patrz "Analityka" poniżej).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Tyler AI (asystent czatu)<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Jeśli korzystasz z asystenta czatu, dodatkowo zbierane są:</p>
+        <ul>
+          <li>Zadawane pytania i udzielone odpowiedzi, przechowywane w celu ulepszenia asystenta oraz dla wglądu Tylera w zainteresowanie odwiedzających.</li>
+          <li>Identyfikator sesji, wykorzystywany do utrzymania kontekstu rozmowy i zapobiegania nadużyciom.</li>
+          <li>Jeśli poprosisz o życiorys lub umówienie rozmowy: imię, numer telefonu i/lub adres e-mail, które podajesz dobrowolnie.</li>
+        </ul>
+        <p>
+          Pytania wysyłane do Tyler AI są przetwarzane przez OpenAI w celu generowania odpowiedzi.
+          Własne praktyki prywatności OpenAI regulują to przetwarzanie; zobacz
+          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">politykę prywatności OpenAI</a>.
+        </p>
+        <div class="note">
+          <strong>Uwaga dotycząca moderacji:</strong> jeśli rozmowa zostanie oznaczona jako
+          obraźliwa lub niewłaściwa treść, lub próba manipulacji instrukcjami asystenta,
+          powiązany adres IP i odcisk urządzenia mogą zostać zarejestrowane, a po powtarzających
+          się naruszeniach — zablokowane dla dalszego dostępu do asystenta.
+        </div>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Umawianie rozmowy<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Jeśli poprosisz o umówienie rozmowy, dostępność w czasie rzeczywistym jest pobierana z
+          konta Calendly Tylera. Twoje imię, telefon i e-mail (które podajesz) są wysyłane e-mailem
+          do Tylera za pośrednictwem Resend, usługi poczty transakcyjnej, aby mógł się skontaktować
+          i potwierdzić spotkanie. Żadna rezerwacja nie jest dokonywana automatycznie bez
+          bezpośredniego potwierdzenia Tylera.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Prośba o życiorys<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Jeśli poprosisz o życiorys Tylera, podany adres e-mail jest wykorzystywany wyłącznie
+          do wysłania życiorysu za pośrednictwem Resend i jest rejestrowany, aby Tyler mógł
+          zobaczyć, że taka prośba miała miejsce.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Analityka<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Ta strona korzysta z <strong>Microsoft Clarity</strong> do analityki, w tym nagrań sesji
+          i map cieplnych sposobu interakcji odwiedzających ze stroną. Clarity może ustawiać pliki
+          cookie i zbierać opisane powyżej informacje techniczne. Zobacz
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Oświadczenie o ochronie prywatności Microsoft</a>
+          po więcej szczegółów.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Pliki cookie i pamięć przeglądarki<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Ta strona wykorzystuje pamięć sesji przeglądarki (nie trwałe pliki cookie w tradycyjnym
+          sensie) do zapamiętywania takich rzeczy jak bieżąca sesja czatu oraz to, czy widziałeś
+          już pewne animacje strony, aby nie powtarzały się niepotrzebnie. Dane te są usuwane po
+          zamknięciu karty przeglądarki i nie są wykorzystywane do śledzenia Cię na innych
+          stronach internetowych.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Usługi firm trzecich wykorzystywane przez tę stronę<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <table>
+          <thead>
+            <tr><th>Usługa</th><th>Cel</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>Generuje odpowiedzi Tyler AI</td></tr>
+            <tr><td>Calendly</td><td>Zapewnia dostępność spotkań w czasie rzeczywistym</td></tr>
+            <tr><td>Resend</td><td>Dostarcza e-maile z życiorysem i prośbami o rozmowę</td></tr>
+            <tr><td>Microsoft Clarity</td><td>Analityka internetowa i nagrywanie sesji</td></tr>
+            <tr><td>Vercel</td><td>Hosting i infrastruktura</td></tr>
+            <tr><td>Upstash</td><td>Przechowywanie bazy danych</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Jak długo przechowywane są informacje<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Dzienniki rozmów, prośby o życiorys i prośby o rozmowę są przechowywane, aby Tyler mógł
+          z czasem przeglądać zainteresowanie odwiedzających. Tymczasowe tokeny sesji używane do
+          dostępu do czatu wygasają automatycznie po krótkim okresie (obecnie 10 minut) i nie mogą
+          być ponownie użyte. Blokady adresu IP lub urządzenia z powodu nadużyć są przechowywane
+          do momentu ich ręcznego cofnięcia.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Czego ta strona nie robi<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <ul>
+          <li>Nie sprzedaje Twoich informacji nikomu.</li>
+          <li>Nie wykorzystuje Twoich informacji do reklam stron trzecich.</li>
+          <li>Nie próbuje ustalić Twojej tożsamości w świecie rzeczywistym wyłącznie na podstawie odcisku technicznego — te dane są wykorzystywane wyłącznie do bezpieczeństwa i zapobiegania nadużyciom.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Twoje wybory<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Możesz odmówić podania imienia, telefonu lub e-maila w dowolnym momencie, chociaż
+          oznacza to, że funkcje takie jak dostarczenie życiorysu lub umówienie rozmowy nie będą
+          mogły zostać zrealizowane. Większość przeglądarek pozwala zablokować pliki cookie stron
+          trzecich i wyczyścić dane strony w dowolnym momencie.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Kontakt<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Pytania dotyczące niniejszej polityki lub Twoich informacji można kierować na adres
+          <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.
+        </p>
+      </div>
+    </details>
+
+    </div>
+
+    <div class="lang-block" data-lang="ja">
+
+    <details class="policy-accordion" open>
+      <summary>このサイトについて<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          tylerjanczak.comは個人のポートフォリオサイトです。AIアシスタント(「Tyler AI」)、
+          予約機能、履歴書リクエスト機能、標準的なウェブ解析が含まれます。
+          本ポリシーはこれらすべてを対象としています。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>自動的に収集される情報<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>このサイトの任意のページを訪問すると、以下の情報が自動的に収集される場合があります:</p>
+        <ul>
+          <li><strong>IPアドレス</strong> — 不正利用者のブロックなど基本的なセキュリティ、および解析のためのおおよその位置情報のコンテキストに使用されます。</li>
+          <li><strong>デバイスおよびブラウザの特性</strong> — 画面サイズ、タイムゾーン、ブラウザの種類などの技術的signalを組み合わせた、個人を特定しない技術的フィンガープリントで、セキュリティと不正利用防止に使用されます。</li>
+          <li><strong>利用データ</strong> — Microsoft Clarityを通じた、訪問したページ、セッション時間、操作内容(下記「アナリティクス」を参照)。</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Tyler AI(チャットアシスタント)<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>チャットアシスタントを利用する場合、以下も追加で収集されます:</p>
+        <ul>
+          <li>アシスタントの改善およびTylerが訪問者の関心を把握するために保存される、あなたが尋ねた質問と回答。</li>
+          <li>会話の文脈を維持し、不正利用を防止するために使用されるセッション識別子。</li>
+          <li>履歴書のリクエストや通話の予約を依頼した場合:あなたが任意で提供する氏名、電話番号、メールアドレス。</li>
+        </ul>
+        <p>
+          Tyler AIに送信された質問は、回答を生成するためにOpenAIによって処理されます。
+          この処理はOpenAI自身のプライバシー慣行に従います。詳細は
+          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAIのプライバシーポリシー</a>をご覧ください。
+        </p>
+        <div class="note">
+          <strong>モデレーションに関する注記:</strong> 会話が虐待的または不適切な内容、
+          またはアシスタントの指示を操作しようとする試みとしてフラグ付けされた場合、
+          関連するIPアドレスとデバイスフィンガープリントが記録され、
+          違反が繰り返された場合はアシスタントへのさらなるアクセスがブロックされることがあります。
+        </div>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>通話の予定を立てる<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          通話の予約をリクエストすると、リアルタイムの空き状況がTylerのCalendlyアカウントから
+          取得されます。あなたの氏名、電話番号、メールアドレス(あなたが提供したもの)は、
+          トランザクションメールサービスであるResendを通じてTylerにメールで送信され、
+          フォローアップと会議の確認ができるようになります。Tylerの直接の確認なしに
+          自動的に予約が行われることはありません。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>履歴書のリクエスト<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Tylerの履歴書をリクエストした場合、提供されたメールアドレスはResendを通じて
+          履歴書を送信する目的にのみ使用され、リクエストが発生したことをTylerが
+          確認できるように記録されます。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>アナリティクス<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          このサイトは、セッション記録や訪問者のサイトとの操作のヒートマップを含む
+          アナリティクスのために<strong>Microsoft Clarity</strong>を使用しています。
+          Clarityはcookieを設定し、上記の技術情報を収集することがあります。詳細は
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Microsoftのプライバシーステートメント</a>をご覧ください。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Cookieとブラウザストレージ<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          このサイトは、現在のチャットセッションや特定のページアニメーションを
+          既に見たかどうかなどを記憶するために、従来の意味での永続的なcookieではなく、
+          ブラウザのセッションストレージを使用しています。このデータはブラウザタブを
+          閉じるとクリアされ、他のウェブサイトであなたを追跡するために使用されることは
+          ありません。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>このサイトが使用するサードパーティサービス<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <table>
+          <thead>
+            <tr><th>サービス</th><th>目的</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>Tyler AIの応答を生成</td></tr>
+            <tr><td>Calendly</td><td>リアルタイムの予約可能時間を提供</td></tr>
+            <tr><td>Resend</td><td>履歴書と通話リクエストのメールを配信</td></tr>
+            <tr><td>Microsoft Clarity</td><td>ウェブ解析とセッション記録</td></tr>
+            <tr><td>Vercel</td><td>ホスティングとインフラストラクチャ</td></tr>
+            <tr><td>Upstash</td><td>データベースストレージ</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>情報の保持期間<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          会話ログ、履歴書リクエスト、通話リクエストは、Tylerが長期にわたって訪問者の
+          関心を確認できるように保持されます。チャットへのアクセスに使用される
+          一時的なセッショントークンは、短い期間(現在10分)後に自動的に失効し、
+          再利用することはできません。不正利用によるIPまたはデバイスのブロックは、
+          手動で解除されるまで保持されます。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>このサイトが行わないこと<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <ul>
+          <li>あなたの情報を誰にも販売しません。</li>
+          <li>あなたの情報をサードパーティの広告に使用しません。</li>
+          <li>技術的フィンガープリントのみからあなたの実際の身元を特定しようとすることはありません — そのデータはセキュリティと不正利用防止のみに使用されます。</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>あなたの選択<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          氏名、電話番号、メールアドレスの提供はいつでも拒否できますが、その場合、
+          履歴書の送付や通話の予約などの機能を完了できなくなります。ほとんどの
+          ブラウザでは、サードパーティのcookieをブロックしたり、
+          いつでもサイトデータを消去したりできます。
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>お問い合わせ<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          このポリシーやあなたの情報に関するご質問は、
+          <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>までお送りください。
+        </p>
+      </div>
+    </details>
+
+    </div>
+
+    </div>
+
+    <div class="region-section" data-region="california">
+      <details class="policy-accordion">
+        <summary>California Privacy Rights (CCPA/CPRA)<span class="accordion-icon"></span></summary>
+        <div class="accordion-content">
+          <p>If you are a California resident, you have the following rights under the California Consumer Privacy Act, as amended by the California Privacy Rights Act:</p>
+          <ul>
+            <li><strong>Right to Know</strong> — the categories and specific pieces of personal information collected, as described in this Policy.</li>
+            <li><strong>Right to Delete</strong> — request deletion of personal information you've voluntarily provided, subject to certain exceptions (e.g. records needed for security purposes).</li>
+            <li><strong>Right to Correct</strong> — request correction of inaccurate personal information.</li>
+            <li><strong>Right to Opt-Out of Sale or Sharing</strong> — this site does not sell or share personal information for cross-context behavioral advertising, so no opt-out mechanism is necessary.</li>
+            <li><strong>Right to Non-Discrimination</strong> — you will not receive discriminatory treatment for exercising any of these rights.</li>
+          </ul>
+          <p>To exercise any of these rights, contact <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="region-section" data-region="eu">
+      <details class="policy-accordion">
+        <summary>European Economic Area Rights (GDPR)<span class="accordion-icon"></span></summary>
+        <div class="accordion-content">
+          <p>If you are located in the European Economic Area, the following applies under the General Data Protection Regulation:</p>
+          <ul>
+            <li><strong>Data Controller.</strong> Tyler Janczak is the data controller for information collected via this Site.</li>
+            <li><strong>Legal Basis.</strong> Technical data (Section 2.1) is processed under legitimate interest (security and abuse prevention). Voluntarily submitted data (Section 2.3) is processed based on your consent, given by submitting it.</li>
+            <li><strong>Your Rights</strong> include: access to your data, rectification of inaccurate data, erasure ("right to be forgotten"), restriction of processing, data portability, and objection to processing based on legitimate interest.</li>
+            <li><strong>International Transfers.</strong> Some third-party processors (Section 5) may process data outside the EEA, including in the United States. Where this occurs, it relies on those processors' own compliance mechanisms (e.g. Standard Contractual Clauses).</li>
+            <li><strong>Right to Complain.</strong> You may lodge a complaint with your local data protection supervisory authority.</li>
+          </ul>
+          <p>To exercise any of these rights, contact <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.</p>
+        </div>
+      </details>
     </div>
 
     <div id="policy-legal" class="visible">
@@ -567,23 +1417,32 @@
     <details class="policy-accordion">
       <summary>9. User Rights and Requests<span class="accordion-icon"></span></summary>
       <div class="accordion-content">
-        <p>User may request access to, correction of, or deletion of information described in Section 2.3 by contacting Operator at the address provided in Section 11. Operator will respond to verified requests within a reasonable time. This Policy does not confer rights beyond those Operator elects to extend, except where applicable law independently requires otherwise.</p>
+        <p>User may request access to, correction of, or deletion of information described in Section 2.3 by contacting Operator at the address provided in Section 12. Operator will respond to verified requests within a reasonable time. This Policy does not confer rights beyond those Operator elects to extend, except where applicable law independently requires otherwise.</p>
       </div>
     </details>
 
     <details class="policy-accordion">
-      <summary>10. Modifications to This Policy<span class="accordion-icon"></span></summary>
+      <summary>10. Intellectual Property<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>The Site's design, layout, original written content, and custom illustrations constitute the copyrighted work of Operator. "Tyler Janczak" and "Tyler AI" are used as identifiers of Operator's personal brand and do not constitute registered trademarks. Any third-party names, logos, or trademarks referenced herein (including but not limited to OpenAI, Calendly, Resend, and Microsoft) remain the property of their respective owners and are referenced solely to describe the third-party services the Site relies upon. A User who believes content on the Site infringes their intellectual property rights may submit a claim to the address provided in Section 12, including a description of the material at issue and the basis for the claim.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>11. Modifications to This Policy<span class="accordion-icon"></span></summary>
       <div class="accordion-content">
         <p>Operator reserves the right to amend this Policy at any time. The "Last updated" date at the top of this page reflects the most recent revision. Continued use of the Site following any amendment constitutes acceptance of the revised Policy.</p>
       </div>
     </details>
 
     <details class="policy-accordion">
-      <summary>11. Contact<span class="accordion-icon"></span></summary>
+      <summary>12. Contact<span class="accordion-icon"></span></summary>
       <div class="accordion-content">
         <p>Inquiries regarding this Policy may be directed to <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.</p>
       </div>
     </details>
+
+    </div>
 
     </div>
 
@@ -613,6 +1472,60 @@
         btnLegal.classList.remove('active');
         policySimple.classList.add('visible');
         policyLegal.classList.remove('visible');
+      });
+
+      // Region selector — reveals a real, distinct region-specific
+      // section (California CCPA/CPRA or EU GDPR rights), then
+      // reveals the next step (language selection).
+      const regionButtons = document.querySelectorAll('#region-selector .selector-box');
+      const regionSections = document.querySelectorAll('.region-section');
+      const stepLanguage = document.getElementById('step-language');
+      const stepContent = document.getElementById('step-content');
+
+      regionButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          regionButtons.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+
+          const selected = btn.getAttribute('data-region');
+          regionSections.forEach(function (section) {
+            section.classList.toggle('active-region', section.getAttribute('data-region') === selected);
+          });
+
+          if (stepLanguage.classList.contains('step-hidden')) {
+            stepLanguage.classList.remove('step-hidden');
+            stepLanguage.classList.add('step-revealed');
+            stepLanguage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+      });
+
+      // Language selector — switches the Simple Read version's
+      // language, then reveals the final step (the actual policy
+      // content). The Full Legal Text and region sections stay in
+      // English, the authoritative version for legal purposes.
+      const langButtons = document.querySelectorAll('#language-selector .selector-box');
+      const langBlocks = document.querySelectorAll('.lang-block');
+      const languageNote = document.getElementById('language-note');
+
+      langButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          langButtons.forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+
+          const selected = btn.getAttribute('data-lang');
+          langBlocks.forEach(function (block) {
+            block.classList.toggle('active-lang', block.getAttribute('data-lang') === selected);
+          });
+
+          languageNote.style.display = selected === 'en' ? 'none' : 'block';
+
+          if (stepContent.classList.contains('step-hidden')) {
+            stepContent.classList.remove('step-hidden');
+            stepContent.classList.add('step-revealed');
+            stepContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
       });
     })();
   </script>

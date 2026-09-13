@@ -361,6 +361,13 @@
       box-shadow: 0 8px 22px rgba(0,0,0,0.13);
     }
 
+    /* Applied when this exact button is relocated into the invalid
+       session error card, instead of sitting fixed top-right. */
+    #bridges-back-home.bridges-back-home-inline {
+      position: static;
+      margin-top: 4px;
+    }
+
     #bridges-back-home-icon {
       width: 30px;
       height: 30px;
@@ -417,14 +424,7 @@
       <h1 class="bridges-error-heading">Error</h1>
       <p class="bridges-error-message">Invalid Session</p>
 
-      <a href="https://tylerjanczak.com" class="bridges-error-back-link" id="bridges-error-back-link">
-        <span class="bridges-error-back-icon">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M7 12 L11 8 M7 12 L11 16 M7 12 L14 12 A4 4 0 0 1 18 16 L18 19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        Back to Home
-      </a>
+      <div id="bridges-error-back-slot"></div>
 
       <div class="bridges-error-footer">
         © 2026 <span>Tyler Janczak</span>
@@ -505,9 +505,19 @@
     function showInvalidSession() {
       const loadingEl = document.getElementById("bridges-loading");
       const errorPageEl = document.getElementById("bridges-invalid-session");
+      const backButtonEl = document.getElementById("bridges-back-home");
+      const backSlotEl = document.getElementById("bridges-error-back-slot");
 
       if (loadingEl) loadingEl.style.display = "none";
       if (errorPageEl) errorPageEl.classList.add("visible");
+
+      // Relocate the one real "Back to Home" button (spinner-morph
+      // behavior and all) into the error card, rather than leaving a
+      // second, duplicate button fixed top-right.
+      if (backButtonEl && backSlotEl) {
+        backButtonEl.classList.add("bridges-back-home-inline");
+        backSlotEl.appendChild(backButtonEl);
+      }
     }
   </script>
 
@@ -620,7 +630,7 @@
       var diagnosticContentEl = document.getElementById("bridges-diagnostic-content");
 
       if (loadingTextEl) {
-        loadingTextEl.textContent = "Tyler AI couldn't load right now. Please try again later.";
+        loadingTextEl.textContent = "Tyler AI couldn't load right now. Please refresh the page.";
       }
 
       if (walkerEl) {

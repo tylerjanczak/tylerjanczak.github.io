@@ -192,10 +192,12 @@ export default async function middleware(request) {
   // middleware rather than vercel.json rewrites, since Vercel's rewrite
   // layer can behave inconsistently on paths Edge Middleware also
   // intercepts. Keeping all routing logic in one place avoids that.
-  if (hostname !== "bridges.tylerjanczak.com") {
-    const pathname = new URL(request.url).pathname;
+  const currentPathname = new URL(request.url).pathname;
+  console.log("MIDDLEWARE DEBUG — hostname:", hostname, "| pathname:", currentPathname);
 
-    if (pathname === "/legal") {
+  if (hostname !== "bridges.tylerjanczak.com") {
+    if (currentPathname === "/legal") {
+      console.log("MIDDLEWARE DEBUG — /legal matched, rewriting to /privacy-policy.html");
       return rewrite(new URL("/privacy-policy.html", request.url));
     }
   }

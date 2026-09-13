@@ -2,6 +2,12 @@
 <!--
   © 2026 Tyler Janczak. All rights reserved.
   bridges.tylerjanczak.com — full-screen Tyler AI
+
+  This page intentionally has no chat logic of its own. It loads the
+  exact same js/tyler-ai.js used everywhere else on the main site, then
+  restyles the widget to fill the screen and auto-opens it, so this page
+  always has 100% feature parity with the normal chat widget (resume
+  delivery, scheduling, moderation, everything) with zero duplicated code.
 -->
 <html lang="en">
 <head>
@@ -12,7 +18,8 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
   <style>
     html, body {
       margin: 0;
@@ -67,7 +74,7 @@
        "Authenticating…" style and the getdetails.do gate, for visual
        consistency across the whole chat-access flow. */
     #bridges-loading-walker {
-      width: 52px;
+      width: 58px;
       height: 52px;
     }
 
@@ -78,15 +85,15 @@
     }
 
     .bridges-heart-fill {
-      fill: #7B1F2A;
+      fill: #C84545;
       animation: bridgesHeartBeat 1.1s ease-in-out infinite;
       transform-origin: center;
     }
 
     .bridges-ecg-line {
       fill: none;
-      stroke: #ffffff;
-      stroke-width: 1.3;
+      stroke: #F7F4EE;
+      stroke-width: 3;
       stroke-linecap: round;
       stroke-linejoin: round;
       stroke-dasharray: 100;
@@ -111,6 +118,147 @@
       .bridges-heart-fill,
       .bridges-ecg-line {
         animation: none;
+      }
+    }
+
+    /* ============================================
+       INVALID SESSION ERROR PAGE
+       Matches the site's established "Error" page
+       design exactly — doodle background, red
+       Fraunces heading, pill-style back link.
+       ============================================ */
+    #bridges-invalid-session {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      background-color: #FBFBFB;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='480' height='480' viewBox='0 0 480 480'><g fill='%23CCCCCC' stroke='%23CCCCCC' stroke-linecap='round' stroke-linejoin='round'><g stroke-width='1.4' fill='none'><path d='M40 55 Q48 40 56 55 L54 78 Q48 84 42 78 Z'/><path d='M42 78 L38 88 M54 78 L58 88 M48 78 L48 92'/></g><g stroke-width='1.4' fill='none'><path d='M155 40 Q163 25 171 40 L169 63 Q163 69 157 63 Z'/><path d='M157 63 L153 73 M169 63 L173 73 M163 63 L163 77'/></g><g stroke-width='1.4' fill='none'><path d='M320 60 Q328 45 336 60 L334 83 Q328 89 322 83 Z'/><path d='M322 83 L318 93 M334 83 L338 93 M328 83 L328 97'/></g><g stroke-width='1.4' fill='none'><path d='M85 175 Q93 160 101 175 L99 198 Q93 204 87 198 Z'/><path d='M87 198 L83 208 M99 198 L103 208 M93 198 L93 212'/></g><g stroke-width='1.4' fill='none'><path d='M245 195 Q253 180 261 195 L259 218 Q253 224 247 218 Z'/><path d='M247 218 L243 228 M259 218 L263 228 M253 218 L253 232'/></g><g stroke-width='1.4' fill='none'><path d='M400 145 Q408 130 416 145 L414 168 Q408 174 402 168 Z'/><path d='M402 168 L398 178 M414 168 L418 178 M408 168 L408 182'/></g><g stroke-width='1.4' fill='none'><path d='M55 310 Q63 295 71 310 L69 333 Q63 339 57 333 Z'/><path d='M57 333 L53 343 M69 333 L73 343 M63 333 L63 347'/></g><g stroke-width='1.4' fill='none'><path d='M195 340 Q203 325 211 340 L209 363 Q203 369 197 363 Z'/><path d='M197 363 L193 373 M209 363 L213 373 M203 363 L203 377'/></g><g stroke-width='1.4' fill='none'><path d='M355 310 Q363 295 371 310 L369 333 Q363 339 357 333 Z'/><path d='M357 333 L353 343 M369 333 L373 343 M363 333 L363 347'/></g><g stroke-width='1.4' fill='none'><path d='M120 415 Q128 400 136 415 L134 438 Q128 444 122 438 Z'/><path d='M122 438 L118 448 M134 438 L138 448 M128 438 L128 452'/></g><g stroke-width='1.4' fill='none'><path d='M290 425 Q298 410 306 425 L304 448 Q298 454 292 448 Z'/><path d='M292 448 L288 458 M304 448 L308 458 M298 448 L298 462'/></g><g stroke-width='1.4' fill='none'><path d='M425 400 Q433 385 441 400 L439 423 Q433 429 427 423 Z'/><path d='M427 423 L423 433 M439 423 L443 433 M433 423 L433 437'/></g><g stroke='none'><path d='M110 65 L112 72 L119 72 L114 76 L116 83 L110 79 L104 83 L106 76 L101 72 L108 72 Z'/><path d='M220 90 L222 95 L227 95 L223 98 L224 103 L220 100 L216 103 L217 98 L213 95 L218 95 Z'/><path d='M280 40 L282 46 L288 46 L283 50 L285 56 L280 52 L275 56 L277 50 L272 46 L278 46 Z'/><path d='M370 110 L372 116 L378 116 L373 120 L375 126 L370 122 L365 126 L367 120 L362 116 L368 116 Z'/><path d='M30 130 L32 136 L38 136 L33 140 L35 146 L30 142 L25 146 L27 140 L22 136 L28 136 Z'/><path d='M130 245 L132 251 L138 251 L133 255 L135 261 L130 257 L125 261 L127 255 L122 251 L128 251 Z'/><path d='M275 250 L277 256 L283 256 L278 260 L280 266 L275 262 L270 266 L272 260 L267 256 L273 256 Z'/><path d='M415 235 L417 241 L423 241 L418 245 L420 251 L415 247 L410 251 L412 245 L407 241 L413 241 Z'/><path d='M40 380 L42 386 L48 386 L43 390 L45 396 L40 392 L35 396 L37 390 L32 386 L38 386 Z'/><path d='M155 380 L157 386 L163 386 L158 390 L160 396 L155 392 L150 396 L152 390 L147 386 L153 386 Z'/><path d='M245 405 L247 410 L252 410 L248 413 L249 418 L245 415 L241 418 L242 413 L238 410 L243 410 Z'/><path d='M395 460 L397 466 L403 466 L398 470 L400 476 L395 472 L390 476 L392 470 L387 466 L393 466 Z'/></g><g stroke='none'><circle cx='75' cy='105' r='2.5'/><circle cx='190' cy='125' r='2'/><circle cx='340' cy='175' r='2.5'/><circle cx='95' cy='260' r='2'/><circle cx='220' cy='285' r='2.5'/><circle cx='380' cy='265' r='2'/><circle cx='60' cy='405' r='2'/><circle cx='185' cy='430' r='2.5'/><circle cx='340' cy='380' r='2'/><circle cx='430' cy='45' r='2.5'/></g><g stroke-width='1.3' fill='none'><ellipse cx='220' cy='125' rx='18' ry='5' transform='rotate(-18 220 125)'/><circle cx='220' cy='125' r='9'/></g><g stroke-width='1.3' fill='none'><ellipse cx='75' cy='240' rx='16' ry='5' transform='rotate(10 75 240)'/><circle cx='75' cy='240' r='8'/></g><g stroke-width='1.3' fill='none'><ellipse cx='370' cy='210' rx='18' ry='5' transform='rotate(-8 370 210)'/><circle cx='370' cy='210' r='9'/></g><g stroke-width='1.3' fill='none'><ellipse cx='150' cy='290' rx='16' ry='5' transform='rotate(15 150 290)'/><circle cx='150' cy='290' r='8'/></g><g stroke-width='1.3' fill='none'><ellipse cx='305' cy='375' rx='17' ry='5' transform='rotate(-12 305 375)'/><circle cx='305' cy='375' r='8.5'/></g><g stroke-width='1.3' fill='none'><ellipse cx='440' cy='320' rx='16' ry='5' transform='rotate(5 440 320)'/><circle cx='440' cy='320' r='8'/></g><g stroke-width='1.3' fill='none'><path d='M255 60 Q260 55 264 60 Q268 64 264 68 Q260 72 256 68 Q253 64 256 60 M264 60 Q270 50 275 60 M256 68 Q250 72 246 68'/></g><g stroke-width='1.3' fill='none'><path d='M35 210 Q40 205 44 210 Q48 214 44 218 Q40 222 36 218 Q33 214 36 210 M44 210 Q50 200 55 210 M36 218 Q30 222 26 218'/></g><g stroke-width='1.3' fill='none'><path d='M290 285 Q295 280 299 285 Q303 289 299 293 Q295 297 291 293 Q288 289 291 285 M299 285 Q305 275 310 285 M291 293 Q285 297 281 293'/></g><g stroke-width='1.3' fill='none'><path d='M415 385 Q420 380 424 385 Q428 389 424 393 Q420 397 416 393 Q413 389 416 385 M424 385 Q430 375 435 385 M416 393 Q410 397 406 393'/></g><g stroke-width='1.3' fill='none'><path d='M180 205 Q185 200 189 205 Q193 209 189 213 Q185 217 181 213 Q178 209 181 205 M189 205 Q195 195 200 205 M181 213 Q175 217 171 213'/></g><g stroke='none'><path d='M395 285 Q395 280 400 279 L410 279 Q415 280 415 285 L415 293 Q413 296 411 296 L410 300 L408 300 L408 296 L402 296 L402 300 L400 300 L400 296 Q397 296 395 293 Z M393 282 L397 279 M415 282 L418 279'/></g><g stroke='none'><path d='M105 355 Q105 350 110 349 L120 349 Q125 350 125 355 L125 363 Q123 366 121 366 L120 370 L118 370 L118 366 L112 366 L112 370 L110 370 L110 366 Q107 366 105 363 Z M103 352 L107 349 M125 352 L128 349'/></g><g stroke='none'><path d='M240 155 Q240 150 245 149 L255 149 Q260 150 260 155 L260 163 Q258 166 256 166 L255 170 L253 170 L253 166 L247 166 L247 170 L245 170 L245 166 Q242 166 240 163 Z M238 152 L242 149 M260 152 L263 149'/></g><g stroke='none'><path d='M330 275 Q325 268 335 265 Q340 262 348 265 Q356 262 361 268 Q368 272 363 280 Q368 285 360 288 L358 292 L355 292 L355 288 L340 288 L340 292 L337 292 L337 288 Q327 285 330 275 Z'/></g><g stroke='none'><path d='M55 430 Q50 423 60 420 Q65 417 73 420 Q81 417 86 423 Q93 427 88 435 Q93 440 85 443 L83 447 L80 447 L80 443 L65 443 L65 447 L62 447 L62 443 Q52 440 55 430 Z'/></g><g stroke-width='1.2' fill='none'><path d='M180 60 Q185 55 190 60 Q195 65 200 60 M188 60 L188 68 M185 70 L191 70'/></g><g stroke-width='1.2' fill='none'><path d='M25 175 Q30 170 35 175 Q40 180 45 175 M33 175 L33 183 M30 185 L36 185'/></g><g stroke-width='1.2' fill='none'><path d='M405 55 Q410 50 415 55 Q420 60 425 55 M413 55 L413 63 M410 65 L416 65'/></g></g></svg>");
+      background-repeat: repeat;
+      background-size: 480px 480px;
+    }
+
+    #bridges-invalid-session.visible {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    #bridges-invalid-session::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center, rgba(251, 251, 251, 0.6) 0%, rgba(251, 251, 251, 0) 70%);
+      pointer-events: none;
+    }
+
+    .bridges-error-card {
+      position: relative;
+      background: #FFFFFF;
+      max-width: 520px;
+      width: 100%;
+      padding: 48px 44px;
+      border-radius: 6px;
+      border: 1px solid #E5E5E5;
+      box-shadow: 0 1px 3px rgba(27,27,27,0.04), 0 12px 40px rgba(27,27,27,0.08);
+      text-align: left;
+    }
+
+    .bridges-error-heading {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 500;
+      font-size: 42px;
+      line-height: 1;
+      color: #B21F1F;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .bridges-error-message {
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #4A4A48;
+      margin-bottom: 36px;
+    }
+
+    .bridges-error-back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #D93838;
+      text-decoration: none;
+      border: 1px solid #D93838;
+      border-radius: 999px;
+      padding: 4px 20px 4px 4px;
+      background: #FFFFFF;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .bridges-error-back-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #D93838;
+      color: #FFFFFF;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .bridges-error-back-icon svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+    }
+
+    .bridges-error-back-link:hover {
+      background: rgba(217, 56, 56, 0.06);
+      transform: translateY(-1px);
+      box-shadow: 0 0 0 3px rgba(217, 56, 56, 0.15);
+    }
+
+    .bridges-error-back-link:hover .bridges-error-back-icon {
+      transform: translateX(-2px);
+    }
+
+    .bridges-error-footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #E5E5E5;
+      font-family: "Fraunces", Georgia, serif;
+      font-size: 11px;
+      color: #4A4A48;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .bridges-error-footer span {
+      color: #1B1B1B;
+      font-weight: 500;
+    }
+
+    @media (max-width: 540px) {
+      .bridges-error-card {
+        padding: 36px 28px;
+      }
+      .bridges-error-heading {
+        font-size: 34px;
+      }
+      .bridges-error-message {
+        font-size: 14px;
+      }
+      #bridges-invalid-session {
+        background-size: 380px 380px;
       }
     }
 
@@ -264,12 +412,31 @@
     Back to Home
   </button>
 
+  <div id="bridges-invalid-session">
+    <div class="bridges-error-card">
+      <h1 class="bridges-error-heading">Error</h1>
+      <p class="bridges-error-message">Invalid Session</p>
+
+      <a href="https://tylerjanczak.com" class="bridges-error-back-link" id="bridges-error-back-link">
+        <span class="bridges-error-back-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M7 12 L11 8 M7 12 L11 16 M7 12 L14 12 A4 4 0 0 1 18 16 L18 19" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        Back to Home
+      </a>
+
+      <div class="bridges-error-footer">
+        © 2026 <span>Tyler Janczak</span>
+      </div>
+    </div>
+  </div>
+
   <div id="bridges-loading">
     <div id="bridges-loading-walker">
-      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path class="bridges-heart-fill" d="M12 20 C7 16 3 12.5 3 8.5 C3 5.5 5.5 3.5 8 3.5 C9.8 3.5 11 4.5 12 6 C13 4.5 14.2 3.5 16 3.5 C18.5 3.5 21 5.5 21 8.5 C21 12.5 17 16 12 20 Z"/>
-        <path d="M6.5 6.2 C7.2 5.2 8.5 4.6 9.6 4.8" stroke="rgba(255,255,255,0.35)" stroke-width="1.3" fill="none" stroke-linecap="round"/>
-        <path class="bridges-ecg-line" d="M3.5 11.5 L7 11.5 L9 7.5 L12 15.5 L14.5 8.5 L16.5 11.5 L20.5 11.5"/>
+      <svg viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path class="bridges-heart-fill" d="M100 165 C 40 120, 10 80, 10 50 C 10 28, 28 10, 50 10 C 68 10, 86 22, 100 40 C 114 22, 132 10, 150 10 C 172 10, 190 28, 190 50 C 190 80, 160 120, 100 165 Z"/>
+        <path class="bridges-ecg-line" pathLength="100" d="M 0 90 L 30 90 Q 38 85 46 90 Q 54 95 60 90 L 80 90 L 86 87 L 90 95 L 94 60 L 98 115 L 102 90 L 110 90 Q 118 80 130 90 Q 142 100 150 90 L 200 90"/>
       </svg>
     </div>
 
@@ -336,15 +503,11 @@
     }
 
     function showInvalidSession() {
-      const walkerEl = document.getElementById("bridges-loading-walker");
-      const warningEl = document.getElementById("bridges-loading-warning");
-      const textEl = document.getElementById("bridges-loading-text");
+      const loadingEl = document.getElementById("bridges-loading");
+      const errorPageEl = document.getElementById("bridges-invalid-session");
 
-      if (walkerEl) walkerEl.style.display = "none";
-      if (warningEl) warningEl.style.display = "flex";
-      if (textEl) {
-        textEl.textContent = "Invalid session. Please start from the main site.";
-      }
+      if (loadingEl) loadingEl.style.display = "none";
+      if (errorPageEl) errorPageEl.classList.add("visible");
     }
   </script>
 
@@ -360,6 +523,9 @@
   </script>
 
   <script>
+    // Tracks whether the script tag itself ever loaded, distinct from
+    // whether it loaded but failed to initialize — genuinely different
+    // failure modes, shown separately in the diagnostic details below.
     var bridgesScriptLoaded = false;
     var bridgesScriptError = null;
 
@@ -372,6 +538,12 @@
           bridgesScriptError = "The script file itself failed to load (network error or 404).";
         });
       }
+
+      // Wait for the widget to finish initializing (it does its own async
+      // status/ban check before building anything), then open it and
+      // remove the loading state. If the site is blocked or under
+      // maintenance, tyler-ai.js will have already replaced the page
+      // content itself, so this simply won't find anything to open.
       var attempts = 0;
       var interval = setInterval(function () {
         attempts++;
@@ -384,7 +556,8 @@
           return;
         }
 
-        if (attempts > 30) {
+        // Give up after ~8 seconds so a broken load doesn't hang forever.
+        if (attempts > 80) {
           clearInterval(interval);
           showBridgesFailureState();
         }
@@ -410,6 +583,8 @@
         diagnostics.sessionStorageAvailable = false;
       }
 
+      // A real, live fetch to the same status API tyler-ai.js depends on —
+      // not an assumption, an actual test of reachability right now.
       var apiStart = (window.performance && performance.now) ? performance.now() : Date.now();
       try {
         var controller = new AbortController();
@@ -445,7 +620,7 @@
       var diagnosticContentEl = document.getElementById("bridges-diagnostic-content");
 
       if (loadingTextEl) {
-        loadingTextEl.textContent = "There was an error loading Tyler AI couldn't right now. Please try again later.";
+        loadingTextEl.textContent = "Tyler AI couldn't load right now. Please try again later.";
       }
 
       if (walkerEl) {

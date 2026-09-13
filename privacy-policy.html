@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<!--
+  © 2026 Tyler Janczak. All rights reserved.
+  Privacy Policy — tylerjanczak.com
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Tyler Janczak</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23F7F4EE'/%3E%3Ctext x='50' y='68' font-family='Georgia, serif' font-size='52' font-weight='600' fill='%236B1F1F' text-anchor='middle'%3ETNJ%3C/text%3E%3C/svg%3E">
+  <meta name="description" content="Privacy Policy for tylerjanczak.com" />
+  <meta name="robots" content="noindex" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg:          #F7F4EE;
+      --bg-subtle:   #EFEAE0;
+      --ink:         #1B1B1B;
+      --ink-soft:    #4A4A48;
+      --rule:        #D9D2C4;
+      --accent:      #6B1F1F;
+      --display:     "Fraunces", Georgia, serif;
+      --body:        "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--body);
+      font-size: 16px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px 100px;
+    }
+
+    .masthead {
+      border-bottom: 1px solid var(--rule);
+      padding: 22px 0;
+      margin-bottom: 64px;
+    }
+
+    .masthead-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+    }
+
+    .masthead-mark {
+      font-family: var(--display);
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+    }
+
+    .masthead-inner a {
+      color: var(--ink-soft);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-weight: 400;
+      font-size: clamp(36px, 6vw, 52px);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .updated {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--ink-soft);
+      margin-bottom: 48px;
+    }
+
+    .intro {
+      font-family: var(--display);
+      font-size: 19px;
+      font-weight: 300;
+      line-height: 1.55;
+      color: var(--ink);
+      margin-bottom: 40px;
+      max-width: 620px;
+    }
+
+    .policy-toggle {
+      display: inline-flex;
+      border: 1px solid var(--rule);
+      border-radius: 999px;
+      padding: 3px;
+      margin-bottom: 48px;
+      gap: 2px;
+    }
+
+    .policy-toggle button {
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      padding: 9px 20px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--ink-soft);
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease;
+    }
+
+    .policy-toggle button.active {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    #policy-simple, #policy-legal {
+      display: none;
+    }
+
+    #policy-simple.visible, #policy-legal.visible {
+      display: block;
+    }
+
+    /* Collapsible accordion sections */
+    .policy-accordion {
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .policy-accordion summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 26px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 20px;
+      color: var(--ink);
+    }
+
+    .policy-accordion summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .accordion-icon {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-family: var(--body);
+      line-height: 1;
+    }
+
+    .policy-accordion[open] .accordion-icon::before {
+      content: "−";
+    }
+
+    .policy-accordion:not([open]) .accordion-icon::before {
+      content: "+";
+    }
+
+    .accordion-content {
+      padding-bottom: 30px;
+      max-width: 640px;
+    }
+
+    .accordion-content p:last-child,
+    .accordion-content ul:last-child {
+      margin-bottom: 0;
+    }
+
+    .legal-section-num {
+      color: var(--accent);
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    h2 {
+      font-family: var(--display);
+      font-weight: 500;
+      font-size: 24px;
+      margin-top: 52px;
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-family: var(--body);
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-top: 28px;
+      margin-bottom: 10px;
+    }
+
+    p { margin-bottom: 16px; max-width: 640px; }
+
+    ul { margin: 0 0 16px 22px; max-width: 620px; }
+    li { margin-bottom: 8px; }
+
+    a {
+      color: var(--ink);
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: 1px;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+
+    a:hover { background: rgba(107, 31, 31, 0.08); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 28px;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 14px 10px 0;
+      border-bottom: 1px solid var(--rule);
+      vertical-align: top;
+    }
+
+    th {
+      font-family: var(--body);
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-soft);
+    }
+
+    .note {
+      background: var(--bg-subtle);
+      border-left: 3px solid var(--accent);
+      padding: 20px 24px;
+      margin: 32px 0;
+      font-size: 15px;
+      max-width: 620px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .heart-shape, .ecg-draw-line { animation: none; }
+      .ecg-draw-line { stroke-dashoffset: 0; }
+    }
+    footer {
+      border-top: 1px solid var(--rule);
+      padding: 36px 32px 64px;
+      margin-top: 80px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      color: var(--ink-soft);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    footer a {
+      color: var(--ink-soft);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    @media (max-width: 640px) {
+      .container { padding: 0 20px 72px; }
+      .masthead-inner { padding: 0 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="masthead">
+    <div class="masthead-inner">
+      <span class="masthead-mark">TNJ</span>
+      <a href="index.html">← Back to Home</a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <h1>Privacy Policy</h1>
+    <div class="updated">Last updated: September 2026</div>
+
+    <p class="intro">
+      This page describes, plainly and accurately, what information tylerjanczak.com and its
+      features actually collect, why, and where it goes.
+    </p>
+
+    <div class="policy-toggle">
+      <button type="button" id="btn-legal" class="active">Full Legal Text</button>
+      <button type="button" id="btn-simple">Simple Read</button>
+    </div>
+
+    <div id="policy-simple">
+
+    <details class="policy-accordion" open>
+      <summary>What this site is<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          tylerjanczak.com is a personal portfolio site. It includes an AI assistant ("Tyler AI"),
+          a scheduling feature, a resume-request feature, and standard web analytics. This policy
+          covers all of them.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Information collected automatically<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>When you visit any page on this site, the following may be collected automatically:</p>
+        <ul>
+          <li><strong>IP address</strong> — used for basic security (e.g. blocking abusive visitors) and approximate location context for analytics.</li>
+          <li><strong>Device and browser characteristics</strong> — such as screen size, time zone, browser type, and similar technical signals, combined into a non-identifying technical fingerprint used for security and abuse prevention.</li>
+          <li><strong>Usage data</strong> — pages visited, session duration, and interactions, via Microsoft Clarity (see "Analytics" below).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Tyler AI (the chat assistant)<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>If you use the chat assistant, additionally collected:</p>
+        <ul>
+          <li>The questions you ask and the answers given, stored to improve the assistant and for Tyler's own visibility into visitor interest.</li>
+          <li>A session identifier, used to maintain conversation context and prevent abuse.</li>
+          <li>If you request the resume or ask to schedule a call: your name, phone number, and/or email address, which you provide voluntarily.</li>
+        </ul>
+        <p>
+          Questions sent to Tyler AI are processed by OpenAI to generate responses. OpenAI's own
+          privacy practices govern that processing; see
+          <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener">OpenAI's privacy policy</a>.
+        </p>
+        <div class="note">
+          <strong>A note on moderation:</strong> if a conversation is flagged for abusive or
+          inappropriate content, or an attempt to manipulate the assistant's instructions, the
+          associated IP address and device fingerprint may be recorded and, after repeated
+          violations, blocked from further access to the assistant.
+        </div>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Scheduling a call<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          If you request to schedule a call, real-time availability is pulled from Tyler's Calendly
+          account. Your name, phone number, and email (which you provide) are sent via email to Tyler
+          through Resend, a transactional email service, so he can follow up and confirm the meeting.
+          No booking is made automatically without Tyler's direct confirmation.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Requesting the resume<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          If you request Tyler's resume, the email address you provide is used solely to send the
+          resume via Resend, and is logged so Tyler can see that the request occurred.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Analytics<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          This site uses <strong>Microsoft Clarity</strong> for analytics, including session
+          recordings and heatmaps of how visitors interact with the site. Clarity may set cookies
+          and collect the technical information described above. See
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Microsoft's Privacy Statement</a>
+          for details on how Clarity handles data.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Cookies and browser storage<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          This site uses browser session storage (not persistent cookies in the traditional sense)
+          to remember things like your current chat session and whether you've already seen certain
+          page animations, so they don't unnecessarily repeat. This data is cleared when you close
+          your browser tab and is not used to track you across other websites.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Third-party services this site uses<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <table>
+          <thead>
+            <tr><th>Service</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI</td><td>Generates Tyler AI's responses</td></tr>
+            <tr><td>Calendly</td><td>Provides real-time meeting availability</td></tr>
+            <tr><td>Resend</td><td>Delivers resume and meeting-request emails</td></tr>
+            <tr><td>Microsoft Clarity</td><td>Web analytics and session recording</td></tr>
+            <tr><td>Vercel</td><td>Hosting and serverless infrastructure</td></tr>
+            <tr><td>Upstash</td><td>Database storage for conversation logs and site data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>How long information is kept<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Conversation logs, resume requests, and call requests are retained so Tyler can review
+          visitor interest over time. Temporary session tokens used to access the chat expire
+          automatically after a short window (currently 10 minutes) and cannot be reused. IP or
+          device blocks from abuse are retained until manually reversed.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>What this site does not do<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <ul>
+          <li>It does not sell your information to anyone.</li>
+          <li>It does not use your information for third-party advertising.</li>
+          <li>It does not attempt to determine your real-world identity from technical fingerprinting alone — that data is used only for security and abuse prevention.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Your choices<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          You can decline to provide your name, phone, or email at any point, though doing so means
+          features like resume delivery or call scheduling won't be able to complete. Most browsers
+          let you block third-party cookies and clear site data at any time, including the analytics
+          described above.
+        </p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>Contact<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          Questions about this policy or your information can be sent to
+          <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.
+        </p>
+      </div>
+    </details>
+
+    </div>
+
+    <div id="policy-legal" class="visible">
+
+    <details class="policy-accordion" open>
+      <summary>1. Scope and Acceptance<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>This Privacy Policy ("Policy") governs the collection, use, and disclosure of information by tylerjanczak.com (the "Site"), a personal portfolio operated by Tyler Janczak ("Operator," "we," "us"). By accessing or using the Site, including its AI assistant feature ("Tyler AI"), you ("User," "you") acknowledge that you have read and understood this Policy. This Policy does not constitute a contract for services and does not create any fiduciary or confidential relationship between Operator and User beyond what is expressly stated herein.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>2. Categories of Information Collected<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Operator collects the following categories of information in connection with User's access to and use of the Site:</p>
+        <ul>
+          <li><strong>2.1 Technical and Device Data.</strong> Internet Protocol (IP) address; browser type and version; operating system; screen resolution; time zone setting; hardware concurrency; and a derived, non-reversible cryptographic hash ("Device Fingerprint") computed from the foregoing signals, collected for the purposes described in Section 4.</li>
+          <li><strong>2.2 Interaction Data.</strong> Content of queries submitted to Tyler AI, generated responses, session identifiers, and associated timestamps.</li>
+          <li><strong>2.3 Voluntarily Submitted Data.</strong> Name, telephone number, and/or email address, submitted by User in connection with a request for Operator's resume or a request to schedule a call.</li>
+          <li><strong>2.4 Usage and Analytics Data.</strong> Aggregate and session-level interaction data collected via third-party analytics tooling, as further described in Section 6.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>3. Legal Basis and Voluntariness<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Technical and Device Data (Section 2.1) is collected automatically as a function of standard web request processing and is not separately consented to. Voluntarily Submitted Data (Section 2.3) is provided at User's sole discretion; declining to provide such data will result in the corresponding feature (resume delivery, call scheduling) being unavailable to User, with no other penalty.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>4. Purposes of Processing<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Information described in Section 2 is processed for the following purposes: (a) operation and functionality of Tyler AI, including maintenance of conversational context; (b) prevention of abusive, fraudulent, or malicious use of the Site, including the identification and blocking of repeat offending IP addresses or Device Fingerprints; (c) fulfillment of User-initiated requests, including resume delivery and call scheduling; (d) analysis of aggregate usage patterns to improve Site functionality; and (e) compliance with legal obligations, where applicable.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>5. Disclosure to Third Parties<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Operator discloses information to the following categories of third-party processors, solely to the extent necessary to provide the corresponding functionality:</p>
+        <table>
+          <thead>
+            <tr><th>Processor</th><th>Category of Data Disclosed</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>OpenAI, L.L.C.</td><td>Interaction Data (Section 2.3)</td><td>Generation of Tyler AI responses</td></tr>
+            <tr><td>Calendly, Inc.</td><td>None (Operator-side calendar data only)</td><td>Provision of real-time availability</td></tr>
+            <tr><td>Resend, Inc.</td><td>Voluntarily Submitted Data (Section 2.3)</td><td>Transactional email delivery</td></tr>
+            <tr><td>Microsoft Corporation (Clarity)</td><td>Usage and Analytics Data (Section 2.4)</td><td>Session analytics and heatmapping</td></tr>
+            <tr><td>Vercel Inc.</td><td>All categories, as infrastructure host</td><td>Application hosting and execution</td></tr>
+            <tr><td>Upstash, Inc.</td><td>Interaction Data, Voluntarily Submitted Data</td><td>Database storage</td></tr>
+          </tbody>
+        </table>
+        <p>Operator does not sell, rent, or otherwise disclose User information to third parties for the third parties' independent marketing or advertising purposes.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>6. Cookies and Similar Technologies<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>The Site employs browser session storage mechanisms, which are not persistent cookies, to maintain session continuity and to avoid repetition of certain visual elements within a single browsing session. Such data is not accessible across origins and is cleared upon closure of the browser session. Third-party analytics tooling (Section 2.4) may independently set cookies subject to that provider's own privacy practices.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>7. Data Retention<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Interaction Data and Voluntarily Submitted Data are retained indefinitely for Operator's business record-keeping purposes unless User requests deletion pursuant to Section 9. Session tokens issued in connection with chat access expire automatically ten (10) minutes after issuance and are single-use. Records associated with a determination of abusive use (Section 4(b)) are retained until affirmatively reversed by Operator.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>8. Security Measures<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Operator employs reasonable technical measures, including passkey-based (WebAuthn) authentication for administrative access, encrypted data transmission (HTTPS/TLS), and automated abuse-detection systems, to protect information from unauthorized access. No method of electronic transmission or storage is completely secure, and Operator cannot guarantee absolute security.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>9. User Rights and Requests<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>User may request access to, correction of, or deletion of information described in Section 2.3 by contacting Operator at the address provided in Section 11. Operator will respond to verified requests within a reasonable time. This Policy does not confer rights beyond those Operator elects to extend, except where applicable law independently requires otherwise.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>10. Modifications to This Policy<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Operator reserves the right to amend this Policy at any time. The "Last updated" date at the top of this page reflects the most recent revision. Continued use of the Site following any amendment constitutes acceptance of the revised Policy.</p>
+      </div>
+    </details>
+
+    <details class="policy-accordion">
+      <summary>11. Contact<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>Inquiries regarding this Policy may be directed to <a href="mailto:tjanczak13@gmail.com">tjanczak13@gmail.com</a>.</p>
+      </div>
+    </details>
+
+    </div>
+
+  </main>
+
+  <footer>
+    <span>© 2026 Tyler Janczak</span>
+    <a href="index.html">Home</a>
+  </footer>
+
+  <script>
+    (function () {
+      const btnLegal = document.getElementById('btn-legal');
+      const btnSimple = document.getElementById('btn-simple');
+      const policyLegal = document.getElementById('policy-legal');
+      const policySimple = document.getElementById('policy-simple');
+
+      btnLegal.addEventListener('click', function () {
+        btnLegal.classList.add('active');
+        btnSimple.classList.remove('active');
+        policyLegal.classList.add('visible');
+        policySimple.classList.remove('visible');
+      });
+
+      btnSimple.addEventListener('click', function () {
+        btnSimple.classList.add('active');
+        btnLegal.classList.remove('active');
+        policySimple.classList.add('visible');
+        policyLegal.classList.remove('visible');
+      });
+    })();
+  </script>
+
+</body>
+</html>

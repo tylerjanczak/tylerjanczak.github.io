@@ -1,5 +1,15 @@
 import { kv } from "@vercel/kv";
 import { rewrite } from "@vercel/functions";
+
+// Runs on Vercel's Edge Network before any page is sent to the browser —
+// a banned visitor never receives the real page content at all, not even
+// for a flash. Only checks IP and subnet bans; device fingerprint bans
+// still rely on the client-side check in tyler-ai.js, since a fingerprint
+// requires JavaScript to run in an already-loaded page first.
+//
+// Also handles hostname-based routing: bridges.tylerjanczak.com serves
+// a dedicated full-screen chat page instead of the normal portfolio.
+
 export const config = {
   matcher: ["/((?!api/|.*\\.(?:css|js|jpg|jpeg|png|gif|svg|ico|pdf|woff|woff2|ttf|json|webp)$).*)"]
 };
@@ -176,6 +186,18 @@ export default async function middleware(request) {
   } catch (err) {
     // Fail open — a broken KV check should never take the whole site down.
     console.error("Middleware ban check failed:", err);
+  }
+
+  // Not banned — clean URL for the privacy policy, handled directly in
+  // middleware rather than vercel.json rewrites, since Vercel's rewrite
+  // layer can behave inconsistently on paths Edge Middleware also
+  // intercepts. Keeping all routing logic in one place avoids that.
+  if (hostname !== "bridges.tylerjanczak.com") {
+    const pathname = new URL(request.url).pathname;
+
+    if (pathname === "/legal") {
+      return rewrite(new URL("/privacy-policy.html", request.url));
+    }
   }
 
   // Not banned — check if this is the bridges subdomain, and if so,

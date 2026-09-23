@@ -1,5 +1,16 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
+  Site-wide accessibility toggle widget.
+
+  Include on every page with:
+    <script src="js/accessibility-widget.js" defer></script>
+
+  Settings persist across the whole site via localStorage, so a choice
+  made on one page carries over when navigating to another.
+
+  Fires a "tylerA11yChange" window event on any change (profile pick, tile
+  toggle, or reset) so other scripts already loaded on the page (e.g. the
+  Tyler AI chat widget) can react live without a page reload.
 */
 (function () {
   "use strict";
@@ -17,8 +28,18 @@
     textAlign: false,
     dyslexiaFriendly: false,
     reducedMotion: false, // no standalone tile — only set via the Seizure & Epileptic profile
-    activeProfile: null
+    activeProfile: null,
+    language: "en"
   };
+
+  // Translation data for this widget's own UI (js/accessibility-i18n.js).
+  // If that file wasn't included on this page, fall back to English only —
+  // never throw over a missing optional script.
+  const I18N = window.TylerA11yI18n || { LANGUAGES: [], STRINGS: {} };
+  function t(key) {
+    const dict = I18N.STRINGS[settings.language] || I18N.STRINGS.en || {};
+    return dict[key] || (I18N.STRINGS.en && I18N.STRINGS.en[key]) || key;
+  }
 
   // localStorage is scoped per-origin, so a setting saved on tylerjanczak.com
   // is invisible to bridges.tylerjanczak.com (a different origin). A cookie
@@ -124,24 +145,56 @@
       width: 340px;
       max-width: calc(100vw - 48px);
       max-height: 78vh;
-      overflow-y: auto;
+      display: none;
+      flex-direction: column;
       background: #F7F4EE;
       border: 1px solid #D9D2C4;
       border-radius: 14px;
       box-shadow: 0 12px 40px rgba(0,0,0,0.18);
-      padding: 20px;
       font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-      display: none;
+      overflow: hidden;
     }
 
-    #a11y-panel.open { display: block; }
+    #a11y-panel.open { display: flex; }
+
+    #a11y-panel-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 16px 20px;
+      background: #1B1B1B;
+    }
 
     #a11y-panel-title {
       font-family: "Fraunces", Georgia, serif;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 500;
-      color: #1B1B1B;
-      margin-bottom: 4px;
+      color: #ffffff;
+    }
+
+    #a11y-panel-close {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      transition: background 140ms ease;
+    }
+
+    #a11y-panel-close:hover { background: rgba(255,255,255,0.2); }
+    #a11y-panel-close svg { width: 15px; height: 15px; }
+
+    #a11y-panel-body {
+      overflow-y: auto;
+      padding: 18px 20px 20px;
     }
 
     #a11y-panel-sub {
@@ -150,20 +203,170 @@
       margin-bottom: 16px;
     }
 
+    #a11y-lang-wrap {
+      position: relative;
+      margin: -4px -4px 4px;
+    }
+
+    #a11y-lang-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1B1B1B;
+      text-align: left;
+      transition: background 120ms ease;
+    }
+
+    #a11y-lang-btn:hover { background: #EFEAE0; }
+
+    #a11y-lang-btn-badge {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #C84545;
+      color: #ffffff;
+      font-size: 9.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #a11y-lang-btn-label { flex: 1; }
+
+    #a11y-lang-btn .chev {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      stroke: #4A4A48;
+      transition: transform 140ms ease;
+    }
+
+    #a11y-lang-btn.open .chev { transform: rotate(180deg); }
+
+    #a11y-lang-panel {
+      display: none;
+      margin: 4px 0 14px;
+      background: #ffffff;
+      border: 1.5px solid #D9D2C4;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    #a11y-lang-panel.open { display: block; }
+
+    #a11y-lang-search-wrap {
+      position: relative;
+      padding: 10px;
+      border-bottom: 1px solid #EFEAE0;
+    }
+
+    #a11y-lang-search {
+      width: 100%;
+      padding: 8px 32px 8px 12px;
+      border: 1px solid #D9D2C4;
+      border-radius: 999px;
+      font-family: "Inter", sans-serif;
+      font-size: 12.5px;
+      color: #1B1B1B;
+      background: #F7F4EE;
+    }
+
+    #a11y-lang-search:focus { outline: 2px solid #C8454580; outline-offset: 1px; }
+
+    #a11y-lang-search-icon {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      stroke: #8b857e;
+      pointer-events: none;
+    }
+
+    #a11y-lang-list {
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .a11y-lang-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 14px;
+      background: transparent;
+      border: none;
+      border-top: 1px solid #EFEAE0;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+      font-size: 12.5px;
+      color: #1B1B1B;
+      text-align: left;
+    }
+
+    .a11y-lang-option:first-child { border-top: none; }
+    .a11y-lang-option:hover { background: #FBEFEF; }
+    .a11y-lang-option.selected { color: #C84545; font-weight: 700; background: #FBEFEF; }
+
+    .a11y-lang-badge {
+      flex-shrink: 0;
+      min-width: 26px;
+      padding: 2px 5px;
+      border-radius: 999px;
+      background: #EFEAE0;
+      color: #4A4A48;
+      font-size: 9.5px;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.02em;
+    }
+
+    .a11y-lang-option.selected .a11y-lang-badge { background: #C84545; color: #ffffff; }
+
+    .a11y-lang-native { flex: 1; }
+
+    .a11y-lang-check {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      stroke: #C84545;
+      visibility: hidden;
+    }
+
+    .a11y-lang-option.selected .a11y-lang-check { visibility: visible; }
+
+    .a11y-lang-empty {
+      padding: 14px;
+      font-size: 12px;
+      color: #8b857e;
+      text-align: center;
+    }
+
     #a11y-profile-wrap {
       position: relative;
-      margin-bottom: 16px;
+      margin: 0 -4px 14px;
     }
 
     #a11y-profile-btn {
       width: 100%;
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 10px;
-      padding: 11px 14px;
-      background: #ffffff;
-      border: 1.5px solid #D9D2C4;
+      padding: 10px;
+      background: transparent;
+      border: none;
       border-radius: 10px;
       cursor: pointer;
       font-family: "Inter", sans-serif;
@@ -171,12 +374,28 @@
       font-weight: 600;
       color: #1B1B1B;
       text-align: left;
+      transition: background 120ms ease;
     }
 
-    #a11y-profile-btn.has-profile {
-      border-color: #C84545;
-      color: #C84545;
+    #a11y-profile-btn:hover { background: #EFEAE0; }
+
+    #a11y-profile-btn.has-profile { color: #C84545; }
+
+    #a11y-profile-btn-badge {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #1B1B1B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
+
+    #a11y-profile-btn-badge svg { width: 14px; height: 14px; stroke: #ffffff; fill: none; }
+    #a11y-profile-btn.has-profile #a11y-profile-btn-badge { background: #C84545; }
+
+    #a11y-profile-btn-label { flex: 1; }
 
     #a11y-profile-btn .chev {
       flex-shrink: 0;
@@ -190,10 +409,10 @@
 
     #a11y-profile-list {
       display: none;
-      margin-top: 6px;
+      margin: 2px 0 4px;
       background: #ffffff;
       border: 1.5px solid #D9D2C4;
-      border-radius: 10px;
+      border-radius: 12px;
       overflow: hidden;
     }
 
@@ -217,7 +436,7 @@
 
     .a11y-profile-option:first-child { border-top: none; }
     .a11y-profile-option:hover { background: #FBEFEF; }
-    .a11y-profile-option.selected { color: #C84545; font-weight: 700; }
+    .a11y-profile-option.selected { color: #C84545; font-weight: 700; background: #FBEFEF; }
 
     .a11y-profile-option-icon {
       flex-shrink: 0;
@@ -233,6 +452,18 @@
     .a11y-profile-option-icon svg { width: 13px; height: 13px; stroke: #1B1B1B; fill: none; }
     .a11y-profile-option.selected .a11y-profile-option-icon { background: #C84545; }
     .a11y-profile-option.selected .a11y-profile-option-icon svg { stroke: #ffffff; }
+
+    .a11y-profile-option-label { flex: 1; }
+
+    .a11y-profile-check {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      stroke: #C84545;
+      visibility: hidden;
+    }
+
+    .a11y-profile-option.selected .a11y-profile-check { visibility: visible; }
 
     #a11y-grid {
       display: grid;
@@ -296,6 +527,44 @@
     }
 
     #a11y-reset:hover { border-color: #C84545; color: #C84545; }
+
+    #a11y-insight {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #EFEAE0;
+      font-size: 11.5px;
+      color: #4A4A48;
+    }
+
+    #a11y-insight.visible { display: block; }
+
+    #a11y-insight-summary {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      list-style: none;
+    }
+
+    #a11y-insight-summary::-webkit-details-marker { display: none; }
+
+    #a11y-insight-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #3f9b64;
+      flex-shrink: 0;
+    }
+
+    #a11y-insight-list {
+      margin: 8px 0 0;
+      padding-left: 16px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+
+    #a11y-insight-list li { margin-bottom: 5px; line-height: 1.4; }
 
     /* Applied effects */
     html.a11y-bigger-text { font-size: 118% !important; }
@@ -387,37 +656,37 @@
   const TOGGLES = [
     {
       key: "biggerText",
-      label: "Bigger Text",
+      labelKey: "tileBiggerText",
       icon: `<path d="M4 6h7M7.5 6v12" stroke-width="1.8" stroke-linecap="round"/><path d="M14 10h7M17.5 10v8" stroke-width="1.8" stroke-linecap="round"/>`
     },
     {
       key: "contrast",
-      label: "Contrast+",
+      labelKey: "tileContrast",
       icon: `<circle cx="12" cy="12" r="9" stroke-width="1.8"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/>`
     },
     {
       key: "textSpacing",
-      label: "Text Spacing",
+      labelKey: "tileTextSpacing",
       icon: `<path d="M5 12h2M17 12h2M9 12h1M14 12h1" stroke-width="1.8" stroke-linecap="round"/><path d="M4 8l-1.5 4L4 16M20 8l1.5 4L20 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
     },
     {
       key: "lineHeight",
-      label: "Line Height",
+      labelKey: "tileLineHeight",
       icon: `<path d="M6 5v14M6 5l-2 2M6 5l2 2M6 19l-2-2M6 19l2-2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7h9M12 12h9M12 17h9" stroke-width="1.8" stroke-linecap="round"/>`
     },
     {
       key: "highlightLinks",
-      label: "Highlight Links",
+      labelKey: "tileHighlightLinks",
       icon: `<path d="M9 15l6-6" stroke-width="1.8" stroke-linecap="round"/><path d="M10 6.5l1-1a3.5 3.5 0 015 5l-1 1M14 17.5l-1 1a3.5 3.5 0 01-5-5l1-1" stroke-width="1.8" stroke-linecap="round"/>`
     },
     {
       key: "textAlign",
-      label: "Text Align",
+      labelKey: "tileTextAlign",
       icon: `<path d="M4 6h16M4 11h11M4 16h16M4 21h11" stroke-width="1.8" stroke-linecap="round"/>`
     },
     {
       key: "dyslexiaFriendly",
-      label: "Dyslexia Friendly",
+      labelKey: "tileDyslexiaFriendly",
       icon: `<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" stroke="none" font-family="Georgia, serif">Df</text>`
     }
   ];
@@ -431,37 +700,37 @@
   const PROFILES = [
     {
       key: "lowVision",
-      label: "Low Vision",
+      labelKey: "profileLowVision",
       icon: `<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" stroke-width="1.6"/>`,
       settings: { biggerText: true, contrast: true }
     },
     {
       key: "colorBlind",
-      label: "Color Blind",
+      labelKey: "profileColorBlind",
       icon: `<path d="M12 3c3 4 5 6.5 5 9.5a5 5 0 01-10 0C7 9.5 9 7 12 3z" stroke-width="1.6" stroke-linejoin="round"/>`,
       settings: { contrast: true, highlightLinks: true }
     },
     {
       key: "dyslexia",
-      label: "Dyslexia",
+      labelKey: "profileDyslexia",
       icon: `<text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" stroke="none" font-family="Georgia, serif">Df</text>`,
       settings: { dyslexiaFriendly: true, lineHeight: true, textSpacing: true }
     },
     {
       key: "cognitive",
-      label: "Cognitive & Learning",
+      labelKey: "profileCognitive",
       icon: `<circle cx="9" cy="9" r="2.2" stroke-width="1.6"/><circle cx="15" cy="9" r="2.2" stroke-width="1.6"/><circle cx="9" cy="15" r="2.2" stroke-width="1.6"/><circle cx="15" cy="15" r="2.2" stroke-width="1.6"/>`,
       settings: { lineHeight: true, textSpacing: true, highlightLinks: true }
     },
     {
       key: "seizure",
-      label: "Seizure & Epileptic",
+      labelKey: "profileSeizure",
       icon: `<path d="M12 3a9 9 0 100 18 9 9 0 000-18z" stroke-width="1.6"/><path d="M12 3a9 9 0 000 18" stroke-width="1.6"/>`,
       settings: { reducedMotion: true, contrast: true }
     },
     {
       key: "adhd",
-      label: "ADHD",
+      labelKey: "profileAdhd",
       icon: `<circle cx="12" cy="12" r="8" stroke-width="1.6"/><circle cx="12" cy="12" r="3.5" stroke-width="1.6"/>`,
       settings: { highlightLinks: true, lineHeight: true }
     }
@@ -485,18 +754,148 @@
   const panel = document.createElement("div");
   panel.id = "a11y-panel";
 
+  // --- Dark header bar with title + close button ---
+  const panelHeader = document.createElement("div");
+  panelHeader.id = "a11y-panel-header";
+
   const title = document.createElement("div");
   title.id = "a11y-panel-title";
-  title.textContent = "Accessibility";
+
+  const panelClose = document.createElement("button");
+  panelClose.id = "a11y-panel-close";
+  panelClose.type = "button";
+  panelClose.setAttribute("aria-label", "Close accessibility menu");
+  panelClose.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+  panelClose.addEventListener("click", () => {
+    panel.classList.remove("open");
+    closeDropdowns();
+  });
+
+  panelHeader.appendChild(title);
+  panelHeader.appendChild(panelClose);
+  panel.appendChild(panelHeader);
+
+  // --- Scrollable body: everything below the header lives here ---
+  const panelBody = document.createElement("div");
+  panelBody.id = "a11y-panel-body";
+  panel.appendChild(panelBody);
 
   const sub = document.createElement("div");
   sub.id = "a11y-panel-sub";
-  sub.textContent = "Adjust how this site displays for you. Settings apply across every page.";
+  panelBody.appendChild(sub);
 
-  panel.appendChild(title);
-  panel.appendChild(sub);
+  // --- Language menu row ---
+  const langWrap = document.createElement("div");
+  langWrap.id = "a11y-lang-wrap";
 
-  // --- Accessibility Profiles dropdown ---
+  const langBtn = document.createElement("button");
+  langBtn.id = "a11y-lang-btn";
+  langBtn.type = "button";
+  langBtn.setAttribute("aria-haspopup", "listbox");
+  langBtn.setAttribute("aria-expanded", "false");
+
+  const langBtnBadge = document.createElement("span");
+  langBtnBadge.id = "a11y-lang-btn-badge";
+
+  const langBtnLabel = document.createElement("span");
+  langBtnLabel.id = "a11y-lang-btn-label";
+
+  const langChev = document.createElement("span");
+  langChev.innerHTML = `<svg class="chev" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  langBtn.appendChild(langBtnBadge);
+  langBtn.appendChild(langBtnLabel);
+  langBtn.appendChild(langChev.firstElementChild);
+
+  // Bordered panel that drops open below the button: search box + scroll list.
+  const langPanel = document.createElement("div");
+  langPanel.id = "a11y-lang-panel";
+
+  const langSearchWrap = document.createElement("div");
+  langSearchWrap.id = "a11y-lang-search-wrap";
+
+  const langSearch = document.createElement("input");
+  langSearch.id = "a11y-lang-search";
+  langSearch.type = "text";
+  langSearch.setAttribute("autocomplete", "off");
+  langSearch.setAttribute("aria-label", "Search language");
+
+  const langSearchIcon = document.createElement("span");
+  langSearchIcon.innerHTML = `<svg id="a11y-lang-search-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-4.5-4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
+  langSearchWrap.appendChild(langSearch);
+  langSearchWrap.appendChild(langSearchIcon.firstElementChild);
+
+  const langList = document.createElement("div");
+  langList.id = "a11y-lang-list";
+  langList.setAttribute("role", "listbox");
+
+  const langEmpty = document.createElement("div");
+  langEmpty.className = "a11y-lang-empty";
+  langEmpty.style.display = "none";
+
+  (I18N.LANGUAGES || []).forEach((lang) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "a11y-lang-option";
+    option.setAttribute("role", "option");
+    option.setAttribute("data-lang", lang.code);
+    option.innerHTML = `
+      <span class="a11y-lang-badge">${lang.badge}</span>
+      <span class="a11y-lang-native">${lang.native}</span>
+      <svg class="a11y-lang-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    `;
+    option.addEventListener("click", () => {
+      settings.language = lang.code;
+      saveSettings(settings);
+      applyTranslations();
+      langSearch.value = "";
+      filterLangList("");
+      langPanel.classList.remove("open");
+      langBtn.classList.remove("open");
+      langBtn.setAttribute("aria-expanded", "false");
+    });
+    langList.appendChild(option);
+  });
+
+  langList.appendChild(langEmpty);
+
+  function filterLangList(query) {
+    const normalized = query.trim().toLowerCase();
+    let visibleCount = 0;
+    langList.querySelectorAll(".a11y-lang-option").forEach((el) => {
+      const native = el.querySelector(".a11y-lang-native");
+      const matches = !normalized || (native && native.textContent.toLowerCase().includes(normalized));
+      el.style.display = matches ? "" : "none";
+      if (matches) visibleCount += 1;
+    });
+    langEmpty.textContent = "No languages found";
+    langEmpty.style.display = visibleCount === 0 ? "block" : "none";
+  }
+
+  langSearch.addEventListener("input", () => filterLangList(langSearch.value));
+  langSearch.addEventListener("click", (event) => event.stopPropagation());
+
+  langPanel.appendChild(langSearchWrap);
+  langPanel.appendChild(langList);
+
+  langBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpen = langPanel.classList.toggle("open");
+    langBtn.classList.toggle("open", isOpen);
+    langBtn.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) {
+      langSearch.value = "";
+      filterLangList("");
+      setTimeout(() => langSearch.focus(), 0);
+    }
+  });
+
+  langWrap.appendChild(langBtn);
+  langWrap.appendChild(langPanel);
+  panelBody.appendChild(langWrap);
+
+  // --- Accessibility Profiles menu row ---
   const profileWrap = document.createElement("div");
   profileWrap.id = "a11y-profile-wrap";
 
@@ -506,12 +905,17 @@
   profileBtn.setAttribute("aria-haspopup", "listbox");
   profileBtn.setAttribute("aria-expanded", "false");
 
+  const profileBtnBadge = document.createElement("span");
+  profileBtnBadge.id = "a11y-profile-btn-badge";
+  profileBtnBadge.innerHTML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke-width="1.8"/><path d="M5 20c1.4-4 4-6 7-6s5.6 2 7 6" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
   const profileBtnLabel = document.createElement("span");
   profileBtnLabel.id = "a11y-profile-btn-label";
 
   const chevSvg = document.createElement("span");
   chevSvg.innerHTML = `<svg class="chev" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
+  profileBtn.appendChild(profileBtnBadge);
   profileBtn.appendChild(profileBtnLabel);
   profileBtn.appendChild(chevSvg.firstElementChild);
 
@@ -520,9 +924,9 @@
   profileList.setAttribute("role", "listbox");
 
   function profileLabelFor(key) {
-    if (!key) return "Accessibility Profiles";
+    if (!key) return t("profilePlaceholder");
     const match = PROFILES.find((p) => p.key === key);
-    return match ? match.label : "Accessibility Profiles";
+    return match ? t(match.labelKey) : t("profilePlaceholder");
   }
 
   function refreshProfileButton() {
@@ -555,11 +959,12 @@
       <span class="a11y-profile-option-icon">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${profile.icon}</svg>
       </span>
-      ${profile.label}
+      <span class="a11y-profile-option-label" data-label-key="${profile.labelKey}">${t(profile.labelKey)}</span>
+      <svg class="a11y-profile-check" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 13l4 4L19 7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     `;
     option.addEventListener("click", () => {
       const alreadySelected = settings.activeProfile === profile.key;
-      settings = Object.assign({}, DEFAULTS);
+      settings = Object.assign({}, DEFAULTS, { language: settings.language });
       if (!alreadySelected) {
         Object.assign(settings, profile.settings);
         settings.activeProfile = profile.key;
@@ -585,23 +990,23 @@
 
   profileWrap.appendChild(profileBtn);
   profileWrap.appendChild(profileList);
-  panel.appendChild(profileWrap);
+  panelBody.appendChild(profileWrap);
 
   const grid = document.createElement("div");
   grid.id = "a11y-grid";
 
-  TOGGLES.forEach(({ key, label, icon }) => {
+  TOGGLES.forEach(({ key, labelKey, icon }) => {
     const tile = document.createElement("button");
     tile.type = "button";
     tile.className = "a11y-tile" + (settings[key] ? " on" : "");
     tile.setAttribute("data-key", key);
     tile.setAttribute("role", "switch");
     tile.setAttribute("aria-checked", String(!!settings[key]));
-    tile.setAttribute("aria-label", label);
+    tile.setAttribute("aria-label", t(labelKey));
 
     tile.innerHTML = `
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${icon}</svg>
-      <span class="a11y-tile-label">${label}</span>
+      <span class="a11y-tile-label" data-label-key="${labelKey}">${t(labelKey)}</span>
     `;
 
     tile.addEventListener("click", () => {
@@ -619,14 +1024,13 @@
     grid.appendChild(tile);
   });
 
-  panel.appendChild(grid);
+  panelBody.appendChild(grid);
 
   const resetBtn = document.createElement("button");
   resetBtn.id = "a11y-reset";
   resetBtn.type = "button";
-  resetBtn.textContent = "Reset to Default";
   resetBtn.addEventListener("click", () => {
-    settings = Object.assign({}, DEFAULTS);
+    settings = Object.assign({}, DEFAULTS, { language: settings.language });
     applySettings();
     saveSettings(settings);
     refreshTiles();
@@ -634,34 +1038,109 @@
     refreshProfileOptions();
   });
 
-  panel.appendChild(resetBtn);
+  panelBody.appendChild(resetBtn);
 
-  refreshProfileButton();
+  // --- Remediation insight (populated only if js/accessibility-remediation.js
+  // is also included on this page — otherwise this section just stays hidden) ---
+  const insight = document.createElement("details");
+  insight.id = "a11y-insight";
+
+  const insightSummary = document.createElement("summary");
+  insightSummary.id = "a11y-insight-summary";
+  insightSummary.innerHTML = `<span id="a11y-insight-dot"></span><span id="a11y-insight-text"></span>`;
+
+  const insightList = document.createElement("ul");
+  insightList.id = "a11y-insight-list";
+
+  insight.appendChild(insightSummary);
+  insight.appendChild(insightList);
+  panelBody.appendChild(insight);
+
+  let lastRemediationData = null;
+
+  function refreshInsight(data) {
+    lastRemediationData = data;
+    const applied = (data && data.appliedFixes) || [];
+    if (!applied.length) {
+      insight.classList.remove("visible");
+      return;
+    }
+    insight.classList.add("visible");
+    document.getElementById("a11y-insight-text").textContent =
+      `${applied.length} ${t("insightSuffix")}`;
+    insightList.innerHTML = "";
+    applied.slice(0, 20).forEach((fix) => {
+      const li = document.createElement("li");
+      li.textContent = fix.description;
+      insightList.appendChild(li);
+    });
+  }
+
+  if (window.__tylerA11yRemediation) refreshInsight(window.__tylerA11yRemediation);
+  window.addEventListener("tylerA11yRemediationUpdate", (event) => refreshInsight(event.detail));
+
+  // Re-renders every piece of the widget's own text in the currently
+  // selected language — called on init and whenever the language changes.
+  function applyTranslations() {
+    title.textContent = t("panelTitle");
+    sub.textContent = t("panelSub");
+    resetBtn.textContent = t("resetBtn");
+
+    const currentLang = (I18N.LANGUAGES || []).find((l) => l.code === settings.language);
+    langBtnBadge.textContent = currentLang ? currentLang.badge : "";
+    langBtnLabel.textContent = currentLang ? currentLang.native : t("languagePlaceholder");
+    langList.querySelectorAll(".a11y-lang-option").forEach((el) => {
+      el.classList.toggle("selected", el.getAttribute("data-lang") === settings.language);
+    });
+
+    panel.querySelectorAll("[data-label-key]").forEach((el) => {
+      el.textContent = t(el.getAttribute("data-label-key"));
+    });
+
+    TOGGLES.forEach(({ key, labelKey }) => {
+      const tile = grid.querySelector(`.a11y-tile[data-key="${key}"]`);
+      if (tile) tile.setAttribute("aria-label", t(labelKey));
+    });
+
+    refreshProfileButton();
+    if (lastRemediationData) refreshInsight(lastRemediationData);
+
+    // Lets the rest of the page (and screen readers) know the widget's own
+    // content is now in a different language than the surrounding page.
+    widget.setAttribute("lang", settings.language);
+    const RTL_LANGS = ["ar", "he", "fa", "ps", "prs"];
+    panel.setAttribute("dir", RTL_LANGS.includes(settings.language) ? "rtl" : "ltr");
+  }
+
+  applyTranslations();
   refreshProfileOptions();
 
   launcher.addEventListener("click", () => {
     panel.classList.toggle("open");
   });
 
+  function closeDropdowns() {
+    profileList.classList.remove("open");
+    profileBtn.classList.remove("open");
+    profileBtn.setAttribute("aria-expanded", "false");
+    langPanel.classList.remove("open");
+    langBtn.classList.remove("open");
+    langBtn.setAttribute("aria-expanded", "false");
+  }
+
   document.addEventListener("click", (event) => {
     if (!widget.contains(event.target)) {
       panel.classList.remove("open");
-      profileList.classList.remove("open");
-      profileBtn.classList.remove("open");
-      profileBtn.setAttribute("aria-expanded", "false");
-    } else if (!profileWrap.contains(event.target)) {
-      profileList.classList.remove("open");
-      profileBtn.classList.remove("open");
-      profileBtn.setAttribute("aria-expanded", "false");
+      closeDropdowns();
+    } else if (!profileWrap.contains(event.target) && !langWrap.contains(event.target)) {
+      closeDropdowns();
     }
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       panel.classList.remove("open");
-      profileList.classList.remove("open");
-      profileBtn.classList.remove("open");
-      profileBtn.setAttribute("aria-expanded", "false");
+      closeDropdowns();
     }
   });
 

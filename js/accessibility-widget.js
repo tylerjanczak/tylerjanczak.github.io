@@ -20,21 +20,56 @@
     activeProfile: null
   };
 
-  function loadSettings() {
+  // localStorage is scoped per-origin, so a setting saved on tylerjanczak.com
+  // is invisible to bridges.tylerjanczak.com (a different origin). A cookie
+  // scoped to ".tylerjanczak.com" (leading dot) is shared by every subdomain,
+  // so it's mirrored here to carry settings across to the bridges chat.
+  const COOKIE_NAME = "tylerA11y";
+  const COOKIE_DOMAIN = ".tylerjanczak.com";
+
+  function readCookie(name) {
+    const match = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function writeCookie(name, value) {
     try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-      return Object.assign({}, DEFAULTS, stored);
+      document.cookie =
+        name + "=" + encodeURIComponent(value) +
+        "; domain=" + COOKIE_DOMAIN +
+        "; path=/; max-age=31536000; SameSite=Lax";
     } catch {
-      return Object.assign({}, DEFAULTS);
+      // Cookie write blocked (e.g. local file testing) — non-critical.
     }
   }
 
-  function saveSettings(settings) {
+  function loadSettings() {
+    let fromCookie = {};
+    let fromLocal = {};
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      const cookieRaw = readCookie(COOKIE_NAME);
+      if (cookieRaw) fromCookie = JSON.parse(cookieRaw);
+    } catch {
+      fromCookie = {};
+    }
+    try {
+      fromLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    } catch {
+      fromLocal = {};
+    }
+    // Same-origin localStorage is the more current source when both exist;
+    // the cookie only fills in when this origin has never saved anything.
+    return Object.assign({}, DEFAULTS, fromCookie, fromLocal);
+  }
+
+  function saveSettings(settings) {
+    const serialized = JSON.stringify(settings);
+    try {
+      localStorage.setItem(STORAGE_KEY, serialized);
     } catch {
       // Storage blocked — settings just won't persist across pages, non-critical.
     }
+    writeCookie(COOKIE_NAME, serialized);
     try {
       window.dispatchEvent(new CustomEvent("tylerA11yChange", { detail: settings }));
     } catch {

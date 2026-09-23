@@ -21,7 +21,8 @@
     textSpacing: false,
     lineHeight: false,
     highlightLinks: false,
-    textAlign: false
+    textAlign: false,
+    dyslexiaFriendly: false
   };
 
   function loadSettings() {
@@ -42,6 +43,18 @@
   }
 
   let settings = loadSettings();
+
+  // Load OpenDyslexic (open-license web font) on demand, only if the
+  // dyslexia-friendly toggle is ever turned on — no cost to page weight otherwise.
+  let dyslexiaFontLoaded = false;
+  function ensureDyslexiaFont() {
+    if (dyslexiaFontLoaded) return;
+    dyslexiaFontLoaded = true;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://cdn.jsdelivr.net/npm/open-dyslexic@1.0.3/open-dyslexic.css";
+    document.head.appendChild(link);
+  }
 
   const style = document.createElement("style");
   style.textContent = `
@@ -177,6 +190,12 @@
       text-decoration-thickness: 2px !important;
     }
     html.a11y-text-align-left body, html.a11y-text-align-left p { text-align: left !important; }
+    html.a11y-dyslexia-font body, html.a11y-dyslexia-font p, html.a11y-dyslexia-font li,
+    html.a11y-dyslexia-font h1, html.a11y-dyslexia-font h2, html.a11y-dyslexia-font h3,
+    html.a11y-dyslexia-font span, html.a11y-dyslexia-font a, html.a11y-dyslexia-font div {
+      font-family: "OpenDyslexic", "Comic Sans MS", Verdana, Tahoma, sans-serif !important;
+      letter-spacing: 0.03em !important;
+    }
   `;
   document.head.appendChild(style);
 
@@ -186,10 +205,12 @@
     textSpacing: "a11y-text-spacing",
     lineHeight: "a11y-line-height",
     highlightLinks: "a11y-highlight-links",
-    textAlign: "a11y-text-align-left"
+    textAlign: "a11y-text-align-left",
+    dyslexiaFriendly: "a11y-dyslexia-font"
   };
 
   function applySettings() {
+    if (settings.dyslexiaFriendly) ensureDyslexiaFont();
     Object.keys(CLASS_MAP).forEach((key) => {
       document.documentElement.classList.toggle(CLASS_MAP[key], !!settings[key]);
     });
@@ -227,6 +248,11 @@
       key: "textAlign",
       label: "Text Align",
       icon: `<path d="M4 6h16M4 11h11M4 16h16M4 21h11" stroke-width="1.8" stroke-linecap="round"/>`
+    },
+    {
+      key: "dyslexiaFriendly",
+      label: "Dyslexia Friendly",
+      icon: `<text x="12" y="17" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" stroke="none" font-family="Georgia, serif">Df</text>`
     }
   ];
 

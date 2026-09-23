@@ -576,6 +576,34 @@
       box-shadow: 0 0 0 3px rgba(63, 155, 100, 0.12);
     }
 
+    .tyler-ai-a11y-badge {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      margin-top: 6px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(123, 31, 42, 0.08);
+      color: var(--ta-red);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    .tyler-ai-a11y-badge.tyler-ai-a11y-badge-visible {
+      display: inline-flex;
+    }
+
+    .tyler-ai-a11y-badge-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--ta-red);
+      flex-shrink: 0;
+    }
+
     #tyler-ai-close {
       display: flex;
       align-items: center;
@@ -976,6 +1004,11 @@
             <span class="tyler-ai-status-dot" aria-hidden="true"></span>
             Online
           </div>
+
+          <div id="tyler-ai-a11y-badge" class="tyler-ai-a11y-badge">
+            <span class="tyler-ai-a11y-badge-dot" aria-hidden="true"></span>
+            Accessibility Mode Active
+          </div>
         </div>
 
         <button
@@ -1046,6 +1079,28 @@
   const sendButton = document.getElementById("tyler-ai-send");
   const notificationDot = document.getElementById("tyler-ai-notification-dot");
   const launcherLabel = document.getElementById("tyler-ai-launcher-label");
+  const a11yBadge = document.getElementById("tyler-ai-a11y-badge");
+
+  function refreshA11yBadge() {
+    if (!a11yBadge) return;
+    let active = false;
+    try {
+      const stored = JSON.parse(localStorage.getItem("tylerSiteA11ySettings") || "{}");
+      active = Object.keys(stored).some((key) => {
+        if (key === "activeProfile") return !!stored[key];
+        return stored[key] === true;
+      });
+    } catch {
+      active = false;
+    }
+    a11yBadge.classList.toggle("tyler-ai-a11y-badge-visible", active);
+  }
+
+  refreshA11yBadge();
+  window.addEventListener("tylerA11yChange", refreshA11yBadge);
+  window.addEventListener("storage", (event) => {
+    if (event.key === "tylerSiteA11ySettings") refreshA11yBadge();
+  });
 
   let requestInProgress = false;
   let conversationStarted = false;
@@ -1218,16 +1273,9 @@
     scrollToBottom();
   }
 
-  /* ------------------------------------------------------------------
-     Initial messages
-  ------------------------------------------------------------------ */
 
   runInitialMessages();
 
-  /* ------------------------------------------------------------------
-     Nudge tooltip — a gentle, one-time prompt after 15s of inactivity,
-     instead of forcing the chat panel open.
-  ------------------------------------------------------------------ */
 
   const NUDGE_SESSION_KEY = "tylerAiNudgeShown";
   const nudgeEl = document.getElementById("tyler-ai-nudge");
@@ -1281,11 +1329,6 @@
     hideNudge();
   });
 
-  /* ------------------------------------------------------------------
-     Launcher behavior — navigates to the full-screen chat experience
-     at bridges.tylerjanczak.com instead of opening an in-page popup.
-  ------------------------------------------------------------------ */
-
   launcher.addEventListener("click", () => {
     hideNudge();
     window.location.href = BRIDGES_URL;
@@ -1308,6 +1351,7 @@
     launcher.setAttribute("aria-expanded", "true");
     launcherLabel.textContent = "Close Tyler AI";
     notificationDot.classList.remove("tyler-ai-dot-visible");
+    refreshA11yBadge();
 
     window.setTimeout(() => {
       input.focus();

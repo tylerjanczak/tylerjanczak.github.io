@@ -3,7 +3,6 @@
 */
 (function () {
   "use strict";
-
   const LANGUAGES = [
     { code: "en", native: "English (USA)", badge: "US" },
     { code: "en-GB", native: "English (United Kingdom)", badge: "GB" },

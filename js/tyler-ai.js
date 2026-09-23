@@ -1081,17 +1081,42 @@
   const launcherLabel = document.getElementById("tyler-ai-launcher-label");
   const a11yBadge = document.getElementById("tyler-ai-a11y-badge");
 
+  // Reflects the site-wide accessibility widget's state (js/accessibility-widget.js)
+  // into the chat header, so visitors can see their settings carried into the chat.
+  //
+  // localStorage is scoped per-origin, so a setting saved on tylerjanczak.com is
+  // invisible here when the chat is the full-screen bridges.tylerjanczak.com page
+  // (a different origin). The accessibility widget also mirrors its settings into
+  // a "tylerA11y" cookie scoped to ".tylerjanczak.com", which every subdomain can
+  // read — so that cookie is the fallback whenever localStorage comes up empty.
+  function readA11yCookie() {
+    const match = document.cookie.match(/(?:^|; )tylerA11y=([^;]*)/);
+    return match ? decodeURIComponent(match[1]) : null;
+  }
+
+  function isA11yActive(stored) {
+    return Object.keys(stored || {}).some((key) => {
+      if (key === "activeProfile") return !!stored[key];
+      return stored[key] === true;
+    });
+  }
+
   function refreshA11yBadge() {
     if (!a11yBadge) return;
     let active = false;
     try {
-      const stored = JSON.parse(localStorage.getItem("tylerSiteA11ySettings") || "{}");
-      active = Object.keys(stored).some((key) => {
-        if (key === "activeProfile") return !!stored[key];
-        return stored[key] === true;
-      });
+      const localRaw = localStorage.getItem("tylerSiteA11ySettings");
+      if (localRaw) active = isA11yActive(JSON.parse(localRaw));
     } catch {
       active = false;
+    }
+    if (!active) {
+      try {
+        const cookieRaw = readA11yCookie();
+        if (cookieRaw) active = isA11yActive(JSON.parse(cookieRaw));
+      } catch {
+        active = false;
+      }
     }
     a11yBadge.classList.toggle("tyler-ai-a11y-badge-visible", active);
   }
@@ -1273,9 +1298,16 @@
     scrollToBottom();
   }
 
+  /* ------------------------------------------------------------------
+     Initial messages
+  ------------------------------------------------------------------ */
 
   runInitialMessages();
 
+  /* ------------------------------------------------------------------
+     Nudge tooltip — a gentle, one-time prompt after 15s of inactivity,
+     instead of forcing the chat panel open.
+  ------------------------------------------------------------------ */
 
   const NUDGE_SESSION_KEY = "tylerAiNudgeShown";
   const nudgeEl = document.getElementById("tyler-ai-nudge");
@@ -1328,6 +1360,11 @@
     event.stopPropagation();
     hideNudge();
   });
+
+  /* ------------------------------------------------------------------
+     Launcher behavior — navigates to the full-screen chat experience
+     at bridges.tylerjanczak.com instead of opening an in-page popup.
+  ------------------------------------------------------------------ */
 
   launcher.addEventListener("click", () => {
     hideNudge();

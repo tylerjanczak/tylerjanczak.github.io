@@ -1,26 +1,6 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
 
-  Tyler's site-wide accessibility suite — consolidated into one file so
-  every page only needs a single <script> tag:
-
-    <script src="js/accessibility.js" defer></script>
-
-  This one file contains, in load order:
-    1. Translation data for the widget's own UI (49 languages)
-    2. The accessibility widget itself (launcher, panel, tiles, profiles,
-       language picker)
-    3. Automatic accessibility remediation (safe auto-fixes + a human
-       review queue for anything it won't guess at)
-    4. Full-page translation (calls api/translate.js, a free MyMemory-
-       backed endpoint with Vercel KV caching)
-
-  Each section below is still a self-contained block (most are their own
-  IIFE), kept in this order because later sections read globals the
-  earlier ones set (window.TylerA11yI18n, the "tylerA11yChange" event,
-  etc.). If you ever want to pull a section back out into its own file,
-  each one still works standalone — nothing here is tangled together,
-  they just now ship as one request instead of four.
 */
 
 /* ------------------------------------------------------------------ */

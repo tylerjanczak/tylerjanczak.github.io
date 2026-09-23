@@ -1,16 +1,5 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
-  Site-wide accessibility toggle widget.
-
-  Include on every page with:
-    <script src="js/accessibility-widget.js" defer></script>
-
-  Settings persist across the whole site via localStorage, so a choice
-  made on one page carries over when navigating to another.
-
-  Fires a "tylerA11yChange" window event on any change (profile pick, tile
-  toggle, or reset) so other scripts already loaded on the page (e.g. the
-  Tyler AI chat widget) can react live without a page reload.
 */
 (function () {
   "use strict";

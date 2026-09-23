@@ -1,5 +1,12 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
+  Site-wide accessibility toggle widget.
+
+  Include on every page with:
+    <script src="js/accessibility-widget.js" defer></script>
+
+  Settings persist across the whole site via localStorage, so a choice
+  made on one page carries over when navigating to another.
 */
 (function () {
   "use strict";
@@ -13,7 +20,6 @@
     contrast: false,
     textSpacing: false,
     lineHeight: false,
-    pauseAnimations: false,
     highlightLinks: false,
     textAlign: false
   };
@@ -67,13 +73,13 @@
       bottom: 86px;
       left: 24px;
       z-index: 999999;
-      width: 300px;
+      width: 340px;
       max-width: calc(100vw - 48px);
-      max-height: 70vh;
+      max-height: 78vh;
       overflow-y: auto;
-      background: #FFFFFF;
+      background: #F7F4EE;
       border: 1px solid #D9D2C4;
-      border-radius: 12px;
+      border-radius: 14px;
       box-shadow: 0 12px 40px rgba(0,0,0,0.18);
       padding: 20px;
       font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -96,49 +102,51 @@
       margin-bottom: 16px;
     }
 
-    .a11y-toggle-row {
+    #a11y-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .a11y-tile {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-top: 1px solid #EFEAE0;
-    }
-
-    .a11y-toggle-row:first-of-type { border-top: none; }
-
-    .a11y-toggle-label {
-      font-size: 14px;
-      color: #1B1B1B;
-    }
-
-    .a11y-switch {
-      position: relative;
-      width: 40px;
-      height: 22px;
-      border-radius: 999px;
-      background: #D9D2C4;
-      border: none;
-      cursor: pointer;
-      flex-shrink: 0;
-      margin-left: 12px;
-      transition: background 140ms ease;
-    }
-
-    .a11y-switch.on { background: #C84545; }
-
-    .a11y-switch::after {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
+      justify-content: center;
+      gap: 10px;
+      padding: 18px 8px;
       background: #ffffff;
-      transition: left 140ms ease;
+      border: 1.5px solid #D9D2C4;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: border-color 140ms ease, background 140ms ease;
+      text-align: center;
     }
 
-    .a11y-switch.on::after { left: 20px; }
+    .a11y-tile:hover { border-color: #C8454580; }
+
+    .a11y-tile.on {
+      border-color: #C84545;
+      background: #FBEFEF;
+    }
+
+    .a11y-tile svg {
+      width: 26px;
+      height: 26px;
+      stroke: #1B1B1B;
+      fill: none;
+    }
+
+    .a11y-tile.on svg { stroke: #C84545; }
+
+    .a11y-tile-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1B1B1B;
+      line-height: 1.2;
+    }
+
+    .a11y-tile.on .a11y-tile-label { color: #C84545; }
 
     #a11y-reset {
       margin-top: 16px;
@@ -163,11 +171,6 @@
     html.a11y-contrast a { color: #00008B !important; }
     html.a11y-text-spacing body { letter-spacing: 0.04em !important; word-spacing: 0.12em !important; }
     html.a11y-line-height body, html.a11y-line-height p { line-height: 2 !important; }
-    html.a11y-pause-animations *, html.a11y-pause-animations *::before, html.a11y-pause-animations *::after {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
-    }
     html.a11y-highlight-links a {
       background: #FFF3B0 !important;
       text-decoration: underline !important;
@@ -182,7 +185,6 @@
     contrast: "a11y-contrast",
     textSpacing: "a11y-text-spacing",
     lineHeight: "a11y-line-height",
-    pauseAnimations: "a11y-pause-animations",
     highlightLinks: "a11y-highlight-links",
     textAlign: "a11y-text-align-left"
   };
@@ -196,13 +198,36 @@
   applySettings();
 
   const TOGGLES = [
-    { key: "biggerText", label: "Bigger Text" },
-    { key: "contrast", label: "Contrast+" },
-    { key: "textSpacing", label: "Text Spacing" },
-    { key: "lineHeight", label: "Line Height" },
-    { key: "pauseAnimations", label: "Pause Animations" },
-    { key: "highlightLinks", label: "Highlight Links" },
-    { key: "textAlign", label: "Left-Align Text" }
+    {
+      key: "biggerText",
+      label: "Bigger Text",
+      icon: `<path d="M4 6h7M7.5 6v12" stroke-width="1.8" stroke-linecap="round"/><path d="M14 10h7M17.5 10v8" stroke-width="1.8" stroke-linecap="round"/>`
+    },
+    {
+      key: "contrast",
+      label: "Contrast+",
+      icon: `<circle cx="12" cy="12" r="9" stroke-width="1.8"/><path d="M12 3a9 9 0 010 18z" fill="currentColor" stroke="none"/>`
+    },
+    {
+      key: "textSpacing",
+      label: "Text Spacing",
+      icon: `<path d="M5 12h2M17 12h2M9 12h1M14 12h1" stroke-width="1.8" stroke-linecap="round"/><path d="M4 8l-1.5 4L4 16M20 8l1.5 4L20 16" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
+    },
+    {
+      key: "lineHeight",
+      label: "Line Height",
+      icon: `<path d="M6 5v14M6 5l-2 2M6 5l2 2M6 19l-2-2M6 19l2-2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 7h9M12 12h9M12 17h9" stroke-width="1.8" stroke-linecap="round"/>`
+    },
+    {
+      key: "highlightLinks",
+      label: "Highlight Links",
+      icon: `<path d="M9 15l6-6" stroke-width="1.8" stroke-linecap="round"/><path d="M10 6.5l1-1a3.5 3.5 0 015 5l-1 1M14 17.5l-1 1a3.5 3.5 0 01-5-5l1-1" stroke-width="1.8" stroke-linecap="round"/>`
+    },
+    {
+      key: "textAlign",
+      label: "Text Align",
+      icon: `<path d="M4 6h16M4 11h11M4 16h16M4 21h11" stroke-width="1.8" stroke-linecap="round"/>`
+    }
   ];
 
   const widget = document.createElement("div");
@@ -234,33 +259,34 @@
   panel.appendChild(title);
   panel.appendChild(sub);
 
-  TOGGLES.forEach(({ key, label }) => {
-    const row = document.createElement("div");
-    row.className = "a11y-toggle-row";
+  const grid = document.createElement("div");
+  grid.id = "a11y-grid";
 
-    const labelEl = document.createElement("span");
-    labelEl.className = "a11y-toggle-label";
-    labelEl.textContent = label;
+  TOGGLES.forEach(({ key, label, icon }) => {
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "a11y-tile" + (settings[key] ? " on" : "");
+    tile.setAttribute("role", "switch");
+    tile.setAttribute("aria-checked", String(!!settings[key]));
+    tile.setAttribute("aria-label", label);
 
-    const switchEl = document.createElement("button");
-    switchEl.type = "button";
-    switchEl.className = "a11y-switch" + (settings[key] ? " on" : "");
-    switchEl.setAttribute("role", "switch");
-    switchEl.setAttribute("aria-checked", String(!!settings[key]));
-    switchEl.setAttribute("aria-label", label);
+    tile.innerHTML = `
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${icon}</svg>
+      <span class="a11y-tile-label">${label}</span>
+    `;
 
-    switchEl.addEventListener("click", () => {
+    tile.addEventListener("click", () => {
       settings[key] = !settings[key];
-      switchEl.classList.toggle("on", settings[key]);
-      switchEl.setAttribute("aria-checked", String(settings[key]));
+      tile.classList.toggle("on", settings[key]);
+      tile.setAttribute("aria-checked", String(settings[key]));
       applySettings();
       saveSettings(settings);
     });
 
-    row.appendChild(labelEl);
-    row.appendChild(switchEl);
-    panel.appendChild(row);
+    grid.appendChild(tile);
   });
+
+  panel.appendChild(grid);
 
   const resetBtn = document.createElement("button");
   resetBtn.id = "a11y-reset";
@@ -270,7 +296,7 @@
     settings = Object.assign({}, DEFAULTS);
     applySettings();
     saveSettings(settings);
-    panel.querySelectorAll(".a11y-switch").forEach((el) => {
+    grid.querySelectorAll(".a11y-tile").forEach((el) => {
       el.classList.remove("on");
       el.setAttribute("aria-checked", "false");
     });

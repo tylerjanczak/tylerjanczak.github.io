@@ -1,12 +1,5 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
-  Site-wide accessibility toggle widget.
-
-  Include on every page with:
-    <script src="js/accessibility-widget.js" defer></script>
-
-  Settings persist across the whole site via localStorage, so a choice
-  made on one page carries over when navigating to another.
 */
 (function () {
   "use strict";
@@ -22,7 +15,9 @@
     lineHeight: false,
     highlightLinks: false,
     textAlign: false,
-    dyslexiaFriendly: false
+    dyslexiaFriendly: false,
+    reducedMotion: false, // no standalone tile — only set via the Seizure & Epileptic profile
+    activeProfile: null
   };
 
   function loadSettings() {
@@ -39,6 +34,11 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
     } catch {
       // Storage blocked — settings just won't persist across pages, non-critical.
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("tylerA11yChange", { detail: settings }));
+    } catch {
+      // CustomEvent unsupported in some very old browser — non-critical.
     }
   }
 
@@ -114,6 +114,90 @@
       color: #4A4A48;
       margin-bottom: 16px;
     }
+
+    #a11y-profile-wrap {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    #a11y-profile-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 11px 14px;
+      background: #ffffff;
+      border: 1.5px solid #D9D2C4;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #1B1B1B;
+      text-align: left;
+    }
+
+    #a11y-profile-btn.has-profile {
+      border-color: #C84545;
+      color: #C84545;
+    }
+
+    #a11y-profile-btn .chev {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      transition: transform 140ms ease;
+    }
+
+    #a11y-profile-btn.open .chev { transform: rotate(180deg); }
+
+    #a11y-profile-list {
+      display: none;
+      margin-top: 6px;
+      background: #ffffff;
+      border: 1.5px solid #D9D2C4;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #a11y-profile-list.open { display: block; }
+
+    .a11y-profile-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 10px 14px;
+      background: transparent;
+      border: none;
+      border-top: 1px solid #EFEAE0;
+      cursor: pointer;
+      font-family: "Inter", sans-serif;
+      font-size: 13px;
+      color: #1B1B1B;
+      text-align: left;
+    }
+
+    .a11y-profile-option:first-child { border-top: none; }
+    .a11y-profile-option:hover { background: #FBEFEF; }
+    .a11y-profile-option.selected { color: #C84545; font-weight: 700; }
+
+    .a11y-profile-option-icon {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #EFEAE0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .a11y-profile-option-icon svg { width: 13px; height: 13px; stroke: #1B1B1B; fill: none; }
+    .a11y-profile-option.selected .a11y-profile-option-icon { background: #C84545; }
+    .a11y-profile-option.selected .a11y-profile-option-icon svg { stroke: #ffffff; }
 
     #a11y-grid {
       display: grid;
@@ -196,6 +280,52 @@
       font-family: "OpenDyslexic", "Comic Sans MS", Verdana, Tahoma, sans-serif !important;
       letter-spacing: 0.03em !important;
     }
+    html.a11y-reduced-motion *, html.a11y-reduced-motion *::before, html.a11y-reduced-motion *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+
+    /* Tyler AI chat widget — it's injected as plain DOM (no shadow root),
+       so it's reachable, but it sets its own fixed px sizes/colors that
+       the generic rules above don't touch. Hook its specific classes here. */
+    html.a11y-bigger-text .tyler-ai-title { font-size: 27px !important; }
+    html.a11y-bigger-text .tyler-ai-message { font-size: 16.5px !important; }
+    html.a11y-bigger-text .tyler-ai-message.notice { font-size: 15.5px !important; }
+    html.a11y-bigger-text .tyler-ai-suggestion-chip { font-size: 14.5px !important; }
+    html.a11y-bigger-text .tyler-ai-searching-list li,
+    html.a11y-bigger-text .tyler-ai-searching-title { font-size: 13.5px !important; }
+    html.a11y-bigger-text .tyler-ai-status { font-size: 11.5px !important; }
+
+    html.a11y-contrast #tyler-ai-panel { background: #ffffff !important; }
+    html.a11y-contrast #tyler-ai-messages { background: #ffffff !important; }
+    html.a11y-contrast .tyler-ai-message {
+      background: #ffffff !important;
+      color: #000000 !important;
+      border-color: #000000 !important;
+    }
+    html.a11y-contrast .tyler-ai-row.user .tyler-ai-message {
+      background: #000000 !important;
+      color: #ffffff !important;
+      border-color: #000000 !important;
+    }
+    html.a11y-contrast .tyler-ai-message a { color: #00008B !important; }
+    html.a11y-contrast .tyler-ai-row.user .tyler-ai-message a { color: #9fd2ff !important; }
+    html.a11y-contrast .tyler-ai-suggestion-chip {
+      background: #ffffff !important;
+      color: #000000 !important;
+      border-color: #000000 !important;
+    }
+
+    html.a11y-text-spacing .tyler-ai-message {
+      letter-spacing: 0.04em !important;
+      word-spacing: 0.12em !important;
+    }
+
+    html.a11y-line-height .tyler-ai-message { line-height: 1.9 !important; }
+
+    html.a11y-text-align-left .tyler-ai-message,
+    html.a11y-text-align-left .tyler-ai-suggestion-chip { text-align: left !important; }
   `;
   document.head.appendChild(style);
 
@@ -206,7 +336,8 @@
     lineHeight: "a11y-line-height",
     highlightLinks: "a11y-highlight-links",
     textAlign: "a11y-text-align-left",
-    dyslexiaFriendly: "a11y-dyslexia-font"
+    dyslexiaFriendly: "a11y-dyslexia-font",
+    reducedMotion: "a11y-reduced-motion"
   };
 
   function applySettings() {
@@ -256,6 +387,51 @@
     }
   ];
 
+  // Each profile is a self-identified starting point, not a diagnosis — picking
+  // one just applies the combination of the toggles above that best fits it.
+  // Left out: "Blind" and "Motor Impaired" — none of these display toggles do
+  // anything for either (screen readers work natively regardless, and nothing
+  // here addresses pointer/click precision), so listing them would promise
+  // something the widget doesn't deliver.
+  const PROFILES = [
+    {
+      key: "lowVision",
+      label: "Low Vision",
+      icon: `<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" stroke-width="1.6"/>`,
+      settings: { biggerText: true, contrast: true }
+    },
+    {
+      key: "colorBlind",
+      label: "Color Blind",
+      icon: `<path d="M12 3c3 4 5 6.5 5 9.5a5 5 0 01-10 0C7 9.5 9 7 12 3z" stroke-width="1.6" stroke-linejoin="round"/>`,
+      settings: { contrast: true, highlightLinks: true }
+    },
+    {
+      key: "dyslexia",
+      label: "Dyslexia",
+      icon: `<text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" stroke="none" font-family="Georgia, serif">Df</text>`,
+      settings: { dyslexiaFriendly: true, lineHeight: true, textSpacing: true }
+    },
+    {
+      key: "cognitive",
+      label: "Cognitive & Learning",
+      icon: `<circle cx="9" cy="9" r="2.2" stroke-width="1.6"/><circle cx="15" cy="9" r="2.2" stroke-width="1.6"/><circle cx="9" cy="15" r="2.2" stroke-width="1.6"/><circle cx="15" cy="15" r="2.2" stroke-width="1.6"/>`,
+      settings: { lineHeight: true, textSpacing: true, highlightLinks: true }
+    },
+    {
+      key: "seizure",
+      label: "Seizure & Epileptic",
+      icon: `<path d="M12 3a9 9 0 100 18 9 9 0 000-18z" stroke-width="1.6"/><path d="M12 3a9 9 0 000 18" stroke-width="1.6"/>`,
+      settings: { reducedMotion: true, contrast: true }
+    },
+    {
+      key: "adhd",
+      label: "ADHD",
+      icon: `<circle cx="12" cy="12" r="8" stroke-width="1.6"/><circle cx="12" cy="12" r="3.5" stroke-width="1.6"/>`,
+      settings: { highlightLinks: true, lineHeight: true }
+    }
+  ];
+
   const widget = document.createElement("div");
   widget.id = "a11y-widget";
 
@@ -285,6 +461,97 @@
   panel.appendChild(title);
   panel.appendChild(sub);
 
+  // --- Accessibility Profiles dropdown ---
+  const profileWrap = document.createElement("div");
+  profileWrap.id = "a11y-profile-wrap";
+
+  const profileBtn = document.createElement("button");
+  profileBtn.id = "a11y-profile-btn";
+  profileBtn.type = "button";
+  profileBtn.setAttribute("aria-haspopup", "listbox");
+  profileBtn.setAttribute("aria-expanded", "false");
+
+  const profileBtnLabel = document.createElement("span");
+  profileBtnLabel.id = "a11y-profile-btn-label";
+
+  const chevSvg = document.createElement("span");
+  chevSvg.innerHTML = `<svg class="chev" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+  profileBtn.appendChild(profileBtnLabel);
+  profileBtn.appendChild(chevSvg.firstElementChild);
+
+  const profileList = document.createElement("div");
+  profileList.id = "a11y-profile-list";
+  profileList.setAttribute("role", "listbox");
+
+  function profileLabelFor(key) {
+    if (!key) return "Accessibility Profiles";
+    const match = PROFILES.find((p) => p.key === key);
+    return match ? match.label : "Accessibility Profiles";
+  }
+
+  function refreshProfileButton() {
+    profileBtnLabel.textContent = profileLabelFor(settings.activeProfile);
+    profileBtn.classList.toggle("has-profile", !!settings.activeProfile);
+  }
+
+  function refreshTiles() {
+    grid.querySelectorAll(".a11y-tile").forEach((el) => {
+      const key = el.getAttribute("data-key");
+      const on = !!settings[key];
+      el.classList.toggle("on", on);
+      el.setAttribute("aria-checked", String(on));
+    });
+  }
+
+  function refreshProfileOptions() {
+    profileList.querySelectorAll(".a11y-profile-option").forEach((el) => {
+      el.classList.toggle("selected", el.getAttribute("data-key") === settings.activeProfile);
+    });
+  }
+
+  PROFILES.forEach((profile) => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "a11y-profile-option";
+    option.setAttribute("role", "option");
+    option.setAttribute("data-key", profile.key);
+    option.innerHTML = `
+      <span class="a11y-profile-option-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${profile.icon}</svg>
+      </span>
+      ${profile.label}
+    `;
+    option.addEventListener("click", () => {
+      const alreadySelected = settings.activeProfile === profile.key;
+      settings = Object.assign({}, DEFAULTS);
+      if (!alreadySelected) {
+        Object.assign(settings, profile.settings);
+        settings.activeProfile = profile.key;
+      }
+      applySettings();
+      saveSettings(settings);
+      refreshProfileButton();
+      refreshProfileOptions();
+      refreshTiles();
+      profileList.classList.remove("open");
+      profileBtn.classList.remove("open");
+      profileBtn.setAttribute("aria-expanded", "false");
+    });
+    profileList.appendChild(option);
+  });
+
+  profileBtn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const isOpen = profileList.classList.toggle("open");
+    profileBtn.classList.toggle("open", isOpen);
+    profileBtn.setAttribute("aria-expanded", String(isOpen));
+  });
+
+  profileWrap.appendChild(profileBtn);
+  profileWrap.appendChild(profileList);
+  panel.appendChild(profileWrap);
+
   const grid = document.createElement("div");
   grid.id = "a11y-grid";
 
@@ -292,6 +559,7 @@
     const tile = document.createElement("button");
     tile.type = "button";
     tile.className = "a11y-tile" + (settings[key] ? " on" : "");
+    tile.setAttribute("data-key", key);
     tile.setAttribute("role", "switch");
     tile.setAttribute("aria-checked", String(!!settings[key]));
     tile.setAttribute("aria-label", label);
@@ -303,10 +571,14 @@
 
     tile.addEventListener("click", () => {
       settings[key] = !settings[key];
-      tile.classList.toggle("on", settings[key]);
-      tile.setAttribute("aria-checked", String(settings[key]));
+      // A manual toggle makes the combination custom, so it no longer
+      // matches whichever profile (if any) was selected.
+      settings.activeProfile = null;
       applySettings();
       saveSettings(settings);
+      refreshTiles();
+      refreshProfileButton();
+      refreshProfileOptions();
     });
 
     grid.appendChild(tile);
@@ -322,13 +594,15 @@
     settings = Object.assign({}, DEFAULTS);
     applySettings();
     saveSettings(settings);
-    grid.querySelectorAll(".a11y-tile").forEach((el) => {
-      el.classList.remove("on");
-      el.setAttribute("aria-checked", "false");
-    });
+    refreshTiles();
+    refreshProfileButton();
+    refreshProfileOptions();
   });
 
   panel.appendChild(resetBtn);
+
+  refreshProfileButton();
+  refreshProfileOptions();
 
   launcher.addEventListener("click", () => {
     panel.classList.toggle("open");
@@ -337,12 +611,22 @@
   document.addEventListener("click", (event) => {
     if (!widget.contains(event.target)) {
       panel.classList.remove("open");
+      profileList.classList.remove("open");
+      profileBtn.classList.remove("open");
+      profileBtn.setAttribute("aria-expanded", "false");
+    } else if (!profileWrap.contains(event.target)) {
+      profileList.classList.remove("open");
+      profileBtn.classList.remove("open");
+      profileBtn.setAttribute("aria-expanded", "false");
     }
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       panel.classList.remove("open");
+      profileList.classList.remove("open");
+      profileBtn.classList.remove("open");
+      profileBtn.setAttribute("aria-expanded", "false");
     }
   });
 

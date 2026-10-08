@@ -848,7 +848,7 @@ work for the people using it at the bedside and on the floor.
 EDUCATION
 ==================================================
 
-- Master of Science in Health Data Science, Northwestern University
+- Master of Science in Health Administration, Northwestern University
 - Bachelor of Science in Health Administration and Neuroscience,
   University of Illinois Urbana-Champaign, cum laude
 - MBA in Business Administration at Northwestern University is listed as a

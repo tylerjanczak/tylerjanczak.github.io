@@ -255,15 +255,6 @@
       font-weight: 500;
       line-height: 1.25;
     }
-    
-    .role-subtitle {
-      font-family: var(--display);
-      font-size: 16px;
-      font-weight: 400;
-      line-height: 1.4;
-      margin-top: 4px;
-      opacity: 0.65;
-    }
 
     .role-dates {
       font-size: 13px;
@@ -399,7 +390,9 @@
 }
 
 .cert[data-tooltip]:hover::after,
-.cert[data-tooltip]:hover::before {
+.cert[data-tooltip]:hover::before,
+.cert[data-tooltip]:focus::after,
+.cert[data-tooltip]:focus::before {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
@@ -503,7 +496,7 @@
     </section>
 
     <section>
-      <div class="section-label">About</div>
+      <h2 class="section-label">About</h2>
       <p class="lead">
         I scale SaaS implementation, customer onboarding, and post-go-live programs across
         <span class="accent">multi-site healthcare environments.</span> 
@@ -516,16 +509,16 @@
         procedural and nursing areas.
       </p>
       <p class="lead">
-        I hold an MS in Health Administration from Northwestern University and a B.S. in
+        I hold an MS in Health Data Science from Northwestern University and a B.S. in
         Health Administration and Neuroscience from University of Illinois Urbana-Champaign
         (<em>cum laude</em>), and carry the operational certifications you&rsquo;d
-        expect:  PMP, Six Sigma Black Belt, ADKAR, CPHIMS, SAFe.
+        expect:  Six Sigma Black Belt, ADKAR, CPHIMS, SAFe, PMP.
       </p>
     </section>
 
 
     <section id="numbers">
-      <div class="section-label">By the numbers</div>
+      <h2 class="section-label">By the numbers</h2>
       <div class="numbers">
 
         <div class="stat">
@@ -560,12 +553,11 @@
 
 
     <section id="experience">
-      <div class="section-label">Experience</div>
+      <h2 class="section-label">Experience</h2>
 
       <div class="role">
         <div class="role-header">
-          <div class="role-title">Director, CORE Solutions </div>
-          <div class="role-subtitle"> Senior Project &amp; Implementation Management </div>
+          <h3 class="role-title">Director, CORE Solutions</h3>
           <div class="role-dates">Feb 2026 — June 2026</div>
         </div>
         <div class="role-company">Compass Group USA · Chicago, IL</div>
@@ -586,7 +578,7 @@
       </div>
       <div class="role">
         <div class="role-header">
-          <div class="role-title">Senior SaaS Implementation Manager</div>
+          <h3 class="role-title">Senior SaaS Implementation Specialist</h3>
           <div class="role-dates">Feb 2024 — Oct 2025</div>
         </div>
         <div class="role-company">Cardinal Health · Dublin, OH</div>
@@ -606,7 +598,7 @@
 
       <div class="role">
         <div class="role-header">
-          <div class="role-title">SaaS Supply Chain Analyst</div>
+          <h3 class="role-title">SaaS Supply Chain Analyst</h3>
           <div class="role-dates">Aug 2023 — Feb 2024</div>
         </div>
         <div class="role-company">Cardinal Health · Dublin, OH</div>
@@ -618,7 +610,7 @@
 
       <div class="role">
         <div class="role-header">
-          <div class="role-title">Senior Hospital Medicine Technician - Nocturnal <em style="font-style: italic; font-weight: 400; color: var(--ink-soft);">(PRN)</em></div>
+          <h3 class="role-title">Senior Hospital Medicine Technician - Nocturnal <em style="font-style: italic; font-weight: 400; color: var(--ink-soft);">(PRN)</em></h3>
           <div class="role-dates">Mar 2023 — Present</div>
         </div>
         <div class="role-company">Endeavor Health · Evanston, IL</div>
@@ -636,37 +628,38 @@
 
 
     <section id="credentials">
-      <div class="section-label">Credentials</div>
+      <h2 class="section-label">Credentials</h2>
 
       <div class="credential-group">
         <h3>Education</h3>
          <p>MBA Business Administration — Northwestern University<em>(Candidate, Starting 2028)</em></p>
-        <p>M.S. Health Data Science — Northwestern University</em></p>
+        <p>M.S. Health Administration — Northwestern University</em></p>
         <p>B.S. Health Administration &amp; Neuroscience — University of Illinois <em>(cum laude)</em></p>
       </div>
       <div class="credential-group">
         <h3>Certifications</h3>
 <div class="cert-list">
-  <span class="cert" data-tooltip="Lean Six Sigma Black Belt — process improvement and defect reduction methodology">Six Sigma Black Belt</span>
-  <span class="cert" data-tooltip="Prosci ADKAR — change management framework: Awareness, Desire, Knowledge, Ability, Reinforcement">ProSci ADKAR</span>
-  <span class="cert" data-tooltip="Certified Professional in Healthcare Information &amp; Management Systems">CPHIMS</span>
-  <span class="cert" data-tooltip="Scaled Agile Framework — Scrum Fundamentals">SAFe Scrum Fundamentals</span>
-  <span class="cert" data-tooltip="Scaled Agile Framework — AI-Native Foundations">SAFe AI-Native Foundations</span>
-  <span class="cert" data-tooltip="Microsoft Power BI Data Analyst Associate">Microsoft PL-300</span>
-  <span class="cert" data-tooltip="Excellence in Speaking Institute — professional communication training">Excellence in Speaking Institute</span>
-  <span class="cert" data-tooltip="Basic Life Support">BLS</span>
-  <span class="cert" data-tooltip="Advanced Cardiac Life Support">ACLS</span>
-  <span class="cert" data-tooltip="Pediatric Advanced Life Support">PALS</span>
-  <span class="cert" data-tooltip="Pediatric Advanced Life Support">PALS</span>
-  <span class="cert" data-tooltip="Neonatal Resuscitation Program">NRP</span>
+   <span class="cert" tabindex="0" data-tooltip="Project Management Professional">PMP</span>
+  <span class="cert" tabindex="0" data-tooltip="Lean Six Sigma Black Belt — process improvement and defect reduction methodology">Six Sigma Black Belt</span>
+  <span class="cert" tabindex="0" data-tooltip="Prosci ADKAR — change management framework: Awareness, Desire, Knowledge, Ability, Reinforcement">ProSci ADKAR</span>
+  <span class="cert" tabindex="0" data-tooltip="Certified Professional in Healthcare Information &amp; Management Systems">CPHIMS</span>
+  <span class="cert" tabindex="0" data-tooltip="Scaled Agile Framework — Scrum Fundamentals">SAFe Scrum Fundamentals</span>
+  <span class="cert" tabindex="0" data-tooltip="Scaled Agile Framework — AI-Native Foundations">SAFe AI-Native Foundations</span>
+  <span class="cert" tabindex="0" data-tooltip="Microsoft Power BI Data Analyst Associate">Microsoft PL-300</span>
+  <span class="cert" tabindex="0" data-tooltip="Excellence in Speaking Institute — professional communication training">Excellence in Speaking Institute</span>
+  <span class="cert" tabindex="0" data-tooltip="Basic Life Support">BLS</span>
+  <span class="cert" tabindex="0" data-tooltip="Advanced Cardiac Life Support">ACLS</span>
+  <span class="cert" tabindex="0" data-tooltip="Pediatric Advanced Life Support">PALS</span>
+  <span class="cert" tabindex="0" data-tooltip="Pediatric Advanced Life Support">PALS</span>
+  <span class="cert" tabindex="0" data-tooltip="Neonatal Resuscitation Program">NRP</span>
 </div>
 
       </div>
     </section>
 
     <section id="outside">
-      <div class="section-label">Outside of work</div>
-      <h2 class="section-heading">What keeps me sharp.</h2>
+      <h2 class="section-label">Outside of work</h2>
+      <h3 class="section-heading">What keeps me sharp.</h3>
 
       <div class="interests-grid">
 
@@ -703,8 +696,8 @@
 
 
     <section class="contact">
-      <div class="section-label">Contact</div> <section id="contact" class="contact">
-      <h2 class="section-heading">Reach out.</h2>
+      <h2 class="section-label">Contact</h2> <section id="contact" class="contact">
+      <h3 class="section-heading">Reach out.</h3>
       <p class="large" style="max-width: 580px;">
         Best for opportunities in healthcare technology leadership, SaaS implementation,
         customer success, or operations roles in regulated multi-site environments.
@@ -734,7 +727,7 @@
   <footer>
     <div class="container" style="display: flex; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 12px;">
       <span>© 2026 Tyler Janczak</span>
-      <a href="/privacy-policy.html" style="color: inherit; border-bottom: 1px solid var(--rule); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Privacy Policy</a>
+      <a href="privacy-policy.html" style="color: inherit; border-bottom: 1px solid var(--rule); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Privacy Policy</a>
       <span class="secure-badge">
       <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -999,54 +992,47 @@
     }
   </style>
 
+  <style>
+    #heartbeat-intro {
+      position: fixed;
+      inset: 0;
+      z-index: 1000000;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 1;
+      transition: opacity 0.45s ease;
+    }
+    #heartbeat-intro.fade-out { opacity: 0; pointer-events: none; }
+    #heartbeat-intro .section-ecg { min-height: 0; }
+    #heartbeat-intro .ecg-stage { width: 150px; }
+  </style>
+
   <script>
-    (function() {
-      const sectionIds = ['numbers', 'experience', 'credentials', 'outside', 'contact'];
+    (function () {
+      const INTRO_MS = 1500;
+      let seen = false;
+      try { seen = sessionStorage.getItem('heartbeatIntroSeen') === '1'; } catch (e) {}
+      const reduceMotion = window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (seen || reduceMotion) return;
+
       const template = document.getElementById('ecg-template');
+      if (!template) return;
 
-      let seen = {};
-      try {
-        seen = JSON.parse(sessionStorage.getItem('sectionsSeen') || '{}');
-      } catch (e) {
-        seen = {};
-      }
+      const overlay = document.createElement('div');
+      overlay.id = 'heartbeat-intro';
+      overlay.setAttribute('aria-hidden', 'true');
+      overlay.appendChild(template.content.cloneNode(true));
+      document.body.appendChild(overlay);
 
-      sectionIds.forEach(id => {
-        const section = document.getElementById(id);
-        if (!section) return;
+      try { sessionStorage.setItem('heartbeatIntroSeen', '1'); } catch (e) {}
 
-        if (seen[id]) {
-          section.classList.add('section-loaded');
-          return;
-        }
-
-        const ecg = template.content.cloneNode(true);
-        section.insertBefore(ecg, section.firstChild);
-        section.classList.add('section-loading');
-
-        const observer = new IntersectionObserver((entries) => {
-          entries.forEach(entry => {
-            if (entry.isIntersecting) {
-              observer.unobserve(section);
-              setTimeout(() => {
-                section.classList.remove('section-loading');
-                section.classList.add('section-loaded');
-                seen[id] = true;
-                try {
-                  sessionStorage.setItem('sectionsSeen', JSON.stringify(seen));
-                } catch (e) { /* storage full or disabled */ }
-              }, 700);
-            }
-          });
-        }, {
-          threshold: 0.15,
-          rootMargin: '0px 0px -100px 0px'
-        });
-
-        observer.observe(section);
-      });
+      setTimeout(function () {
+        overlay.classList.add('fade-out');
+        setTimeout(function () { overlay.remove(); }, 500);
+      }, INTRO_MS);
     })();
   </script>
-  <script src="js/accessibility-i18n.js" defer></script>
-  <script src="js/accessibility-widget.js" defer></script>
 </html>

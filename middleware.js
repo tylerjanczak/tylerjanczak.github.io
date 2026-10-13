@@ -20,6 +20,7 @@ function ipInCidr(ip, cidr) {
     return false;
   }
 }
+
 function buildBlockedPage() {
   const patternSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="260" height="260">
     <g stroke="#3d5a80" stroke-width="1.5" fill="none" opacity="0.55">
@@ -174,23 +175,30 @@ export default async function middleware(request) {
       });
     }
   } catch (err) {
+    // Fail open — a broken KV check should never take the whole site down.
     console.error("Middleware ban check failed:", err);
   }
 
-  const currentPathname = new URL(request.url).pathname;
-  console.log("MIDDLEWARE DEBUG — hostname:", hostname, "| pathname:", currentPathname);
-
-  if (hostname !== "bridges.tylerjanczak.com") {
-    if (currentPathname === "/legal") {
-      console.log("MIDDLEWARE DEBUG — /legal matched, rewriting to /privacy-policy.html");
-      return rewrite(new URL("/privacy-policy.html", request.url));
+  // Dashboard subdomain: serve the dashboard page at the root. Runs after
+  // the ban check above, so banned IPs never reach it either.
+  if (hostname === "dashboard.tylerjanczak.com") {
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/" || pathname === "/index.html") {
+      return rewrite(new URL("/dashboard.html", request.url));
     }
+    return;
   }
 
   // Not banned — check if this is the bridges subdomain, and if so,
   // serve the dedicated full-screen chat page instead of the normal site.
   if (hostname === "bridges.tylerjanczak.com") {
     const pathname = new URL(request.url).pathname;
+
+    // A dedicated intake gate — captures IP/fingerprint and asks a
+    // qualifying question before handing off into the actual chat.
+    // The file is now genuinely named getdetails.do, so no rewrite is
+    // needed here — just let it serve normally, and skip the catch-all
+    // bridges.html rewrite below.
     if (pathname === "/getdetails.do") {
       return;
     }
@@ -198,4 +206,5 @@ export default async function middleware(request) {
     return rewrite(new URL("/bridges.html", request.url));
   }
 
+  // Not blocked, not a special subdomain — let the request through untouched.
 }

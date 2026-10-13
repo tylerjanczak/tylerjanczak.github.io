@@ -586,6 +586,18 @@
     margin-right: 8px;
   }
 
+  .hardstop-form { display: none; margin-bottom: 18px; }
+  .hardstop-form.has-fields { display: block; }
+  .hardstop-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+  .hardstop-form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
+  .hardstop-form-grid label.wide { grid-column: 1 / -1; }
+  .hardstop-form-grid input, .hardstop-form-grid select {
+    font: inherit; font-size: 13.5px; font-weight: 400; color: var(--ink);
+    padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: #fff;
+  }
+  .hardstop-form-grid input:focus, .hardstop-form-grid select:focus { outline: 2px solid #c08a2f; outline-offset: 1px; }
+  @media (max-width: 520px) { .hardstop-form-grid { grid-template-columns: 1fr; } }
+
   .hardstop-warning-text {
     font-size: 12.5px;
     color: #b3261e;
@@ -998,6 +1010,10 @@
       </div>
     </div>
     <div class="hardstop-body">
+      <div class="hardstop-form" id="hardstop-form">
+        <div class="hardstop-section-label">Edit Access</div>
+        <div class="hardstop-form-grid" id="hardstop-form-grid"></div>
+      </div>
       <div class="hardstop-section-label">Associated Systems</div>
       <div class="hardstop-associated" id="hardstop-associated"></div>
       <div class="hardstop-warning-text" id="hardstop-warning-text"></div>
@@ -1070,9 +1086,6 @@
       <input id="greet-name" type="text" maxlength="60" placeholder="Greeting name (e.g. Sarah)" required style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
       <input id="greet-company" type="text" maxlength="80" placeholder="Company (optional)" style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
       <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
-      <select id="greet-permission" aria-label="Permission level" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
-      <select id="greet-template" aria-label="Template view" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
-      <select id="greet-duration" aria-label="Link time limit" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
       <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
     </form>
     <table>
@@ -2185,6 +2198,8 @@
     ["1w", "1 week"], ["1m", "1 month"]
   ];
 
+  function optLabel(list, v) { return (list.find((x) => x[0] === v) || [v, v])[1]; }
+
   function expiryInfo(l) {
     if (!l.expiresAt) return { expired: false, text: "No limit (legacy)" };
     const ms = Date.parse(l.expiresAt) - Date.now();
@@ -2200,10 +2215,6 @@
     return list.map(([value, label]) =>
       `<option value="${value}"${value === selected ? " selected" : ""}>${label}</option>`).join("");
   }
-
-  document.getElementById("greet-permission").innerHTML = optionsHtml(GREET_PERMISSIONS, "GUEST");
-  document.getElementById("greet-duration").innerHTML = optionsHtml(GREET_DURATIONS, "1w");
-  document.getElementById("greet-template").innerHTML = optionsHtml(GREET_TEMPLATES, "PROD_VIEW");
 
   function greetLinkUrl(code) {
     return `${SITE_ORIGIN}/?c=${encodeURIComponent(code)}`;
@@ -2240,10 +2251,8 @@
           <tr${revoked ? ' style="opacity:.55"' : ""}>
             <td class="timestamp">${formatDate(l.created)}</td>
             <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${exp.expired ? '<br><span class="intent-tag">expired</span>' : (l.status !== "active" ? '<br><span class="intent-tag">revoked</span>' : "")}
-              <div style="display:flex; flex-direction:column; gap:4px; margin-top:6px;">
-                <select data-greet-perm="${escapeHtml(l.code)}" aria-label="Permission level for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;">${optionsHtml(GREET_PERMISSIONS, l.permission || "GUEST")}</select>
-                <select data-greet-tpl="${escapeHtml(l.code)}" aria-label="Template view for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;">${optionsHtml(GREET_TEMPLATES, l.template || "PROD_VIEW")}</select>
-                <select data-greet-dur="${escapeHtml(l.code)}" aria-label="Reset time limit for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;"><option value="">⏱ ${escapeHtml(exp.text)}</option>${GREET_DURATIONS.map(([v, t]) => `<option value="${v}">Reset to ${t}</option>`).join("")}</select>
+              <div style="font-size:11.5px; color:#8b857e; margin-top:6px; line-height:1.6;">
+                ${escapeHtml(optLabel(GREET_PERMISSIONS, l.permission || "GUEST"))} · ${escapeHtml(optLabel(GREET_TEMPLATES, l.template || "PROD_VIEW"))}<br>⏱ ${escapeHtml(exp.text)}
               </div>
             </td>
             <td style="font-size:11.5px;">
@@ -2261,6 +2270,7 @@
             <td>${l.opens || 0}</td>
             <td class="timestamp">${l.lastOpened ? formatDate(l.lastOpened) : "—"}</td>
             <td>
+              <button class="small-action-btn" data-greet-edit="${escapeHtml(l.code)}">Edit</button>
               <button class="small-action-btn${l.status !== "active" ? "" : " unban"}" data-greet-toggle="${escapeHtml(l.code)}">${l.status !== "active" ? "Restore" : "Revoke"}</button>
               <button class="small-action-btn" data-greet-delete="${escapeHtml(l.code)}">Delete</button>
             </td>
@@ -2285,87 +2295,58 @@
       });
     });
 
-    body.querySelectorAll("[data-greet-perm], [data-greet-tpl]").forEach((select) => {
-      select.addEventListener("change", async () => {
-        const isPerm = select.hasAttribute("data-greet-perm");
-        const code = isPerm ? select.dataset.greetPerm : select.dataset.greetTpl;
-        const link = (currentData.greetLinks || []).find((x) => x.code === code);
+    body.querySelectorAll("[data-greet-edit]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const link = (currentData.greetLinks || []).find((x) => x.code === btn.dataset.greetEdit);
         if (!link) return;
-        const field = isPerm ? "permission" : "template";
-        const previous = link[field] || (isPerm ? "GUEST" : "PROD_VIEW");
-        if (select.value === previous) return;
-
-        const labelOf = (list, v) => (list.find((x) => x[0] === v) || [v, v])[1];
-        const oldPerm = isPerm ? previous : (link.permission || "GUEST");
-        const newPerm = isPerm ? select.value : oldPerm;
-        const oldTpl = isPerm ? (link.template || "PROD_VIEW") : previous;
-        const newTpl = isPerm ? oldTpl : select.value;
-        const change = (a, b, list) => a === b
-          ? labelOf(list, b)
-          : `${labelOf(list, a)} → ${labelOf(list, b)}`;
-        const displayName = link.name || "(unnamed)";
-
-        const confirmed = await showHardStop({
+        const exp = expiryInfo(link);
+        const summary = (v) => [
+          "Greeting Name: " + (v.name || "(required)"),
+          "Status: " + optLabel(GREET_PERMISSIONS, v.permission),
+          "PROD Group: " + optLabel(GREET_TEMPLATES, v.template),
+          "Time Limit: " + (v.duration ? "reset to " + optLabel(GREET_DURATIONS, v.duration) + " from now" : exp.text),
+          "Security: label only. Does not grant access to protected data or the dashboard."
+        ];
+        const start = {
+          name: link.name || "", company: link.company || "", note: link.note || "",
+          permission: link.permission || "GUEST", template: link.template || "PROD_VIEW", duration: ""
+        };
+        const ok = await showHardStop({
           risk: "MEDIUM",
-          title: "Confirm: Modify Access for " + displayName,
-          detail: "You are changing the access level shown to <strong>" + escapeHtml(displayName) +
-            "</strong> on their personal link. Review the details below before applying.",
-          associated: [
-            "Greeting Name: " + displayName,
-            "Status: " + change(oldPerm, newPerm, GREET_PERMISSIONS),
-            "PROD Group: " + change(oldTpl, newTpl, GREET_TEMPLATES),
-            "Security: label only. Does not grant access to protected data or the dashboard."
+          title: "Confirm: Modify Access for " + (link.name || "(unnamed)"),
+          detail: "Edit the details for <strong>" + escapeHtml(link.name || "(unnamed)") + "</strong>, then apply. Nothing changes until you confirm.",
+          fields: [
+            { key: "name", label: "Greeting Name", type: "text", value: start.name, max: 60 },
+            { key: "company", label: "Company", type: "text", value: start.company, max: 80 },
+            { key: "note", label: "Note", type: "text", value: start.note, max: 200, wide: true },
+            { key: "permission", label: "Status", type: "select", options: GREET_PERMISSIONS, value: start.permission },
+            { key: "template", label: "PROD Group", type: "select", options: GREET_TEMPLATES, value: start.template },
+            { key: "duration", label: "Time Limit", type: "select", options: [["", "Keep current (" + exp.text + ")"], ...GREET_DURATIONS], value: "", wide: true }
           ],
+          summary,
+          associated: summary(start),
           warning: "This changes the profile and template this visitor sees in Session Information and how Bridges identifies them.",
           riskLevel: "medium",
           confirmLabel: "Apply Change"
         });
-        if (!confirmed) { select.value = previous; return; }
-
-        select.disabled = true;
+        if (!ok) return;
+        const v = readHardStopForm();
+        const name = (v.name || "").trim();
+        if (!name) { alert("A greeting name is required."); return; }
+        const payload = { code: link.code };
+        if (name !== start.name) payload.name = name;
+        if ((v.company || "").trim() !== start.company) payload.company = (v.company || "").trim();
+        if ((v.note || "").trim() !== start.note) payload.note = (v.note || "").trim();
+        if (v.permission !== start.permission) payload.permission = v.permission;
+        if (v.template !== start.template) payload.template = v.template;
+        if (v.duration) payload.duration = v.duration;
+        if (Object.keys(payload).length === 1) return;
         try {
-          await greetApi("greet-update", { code, [field]: select.value });
-          link[field] = select.value;
-        } catch (err) {
-          select.value = previous;
-          alert(err.message);
-        } finally {
-          select.disabled = false;
-        }
-      });
-    });
-
-    body.querySelectorAll("[data-greet-dur]").forEach((select) => {
-      select.addEventListener("change", async () => {
-        const code = select.dataset.greetDur;
-        const value = select.value;
-        const link = (currentData.greetLinks || []).find((x) => x.code === code);
-        if (!link || !value) return;
-        const label = (GREET_DURATIONS.find((x) => x[0] === value) || [0, value])[1];
-        const confirmed = await showHardStop({
-          risk: "MEDIUM",
-          title: "Confirm: Reset Time Limit for " + (link.name || "(unnamed)"),
-          detail: "The link will work for <strong>" + escapeHtml(label) + "</strong> starting now, replacing the current limit.",
-          associated: [
-            "Greeting Name: " + (link.name || "(unnamed)"),
-            "Current: " + expiryInfo(link).text,
-            "New limit: " + label + " from now",
-            "Security: shorter limits reduce the window if a link is forwarded."
-          ],
-          warning: "After the limit passes, the link stops greeting and identifying this visitor automatically.",
-          riskLevel: "medium",
-          confirmLabel: "Reset Limit"
-        });
-        if (!confirmed) { select.selectedIndex = 0; return; }
-        select.disabled = true;
-        try {
-          const data = await greetApi("greet-update", { code, duration: value });
+          const data = await greetApi("greet-update", payload);
           Object.assign(link, data.link || {});
           renderGreetLinks();
         } catch (err) {
-          select.selectedIndex = 0;
           alert(err.message);
-          select.disabled = false;
         }
       });
     });
@@ -2376,6 +2357,28 @@
         const link = (currentData.greetLinks || []).find((x) => x.code === code);
         if (!link) return;
         const next = link.status === "active" ? "revoked" : "active";
+        const labelOf = (list, v) => (list.find((x) => x[0] === v) || [v, v])[1];
+        const who = link.name || "(unnamed)";
+        const ok = await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: " + (next === "revoked" ? "Revoke" : "Restore") + " Access for " + who,
+          detail: next === "revoked"
+            ? "This will turn off the personal link for <strong>" + escapeHtml(who) + "</strong> immediately."
+            : "This will turn the personal link for <strong>" + escapeHtml(who) + "</strong> back on.",
+          associated: [
+            "Greeting Name: " + who,
+            "Status: " + labelOf(GREET_PERMISSIONS, link.permission || "GUEST"),
+            "PROD Group: " + labelOf(GREET_TEMPLATES, link.template || "PROD_VIEW"),
+            "Time Limit: " + expiryInfo(link).text,
+            "Security: " + (next === "revoked" ? "link stops working for the visitor" : "link works again until the time limit passes")
+          ],
+          warning: next === "revoked"
+            ? "The visitor will no longer be greeted or identified in chat."
+            : "Anyone holding this link can use it again.",
+          riskLevel: "medium",
+          confirmLabel: next === "revoked" ? "Revoke" : "Restore"
+        });
+        if (!ok) return;
         try {
           await greetApi("greet-revoke", { code, status: next });
           link.status = next;
@@ -2421,21 +2424,42 @@
     const submit = document.getElementById("greet-submit");
     const name = document.getElementById("greet-name").value.trim();
     if (!name) return;
+    const summary = (v) => [
+      "Greeting Name: " + name,
+      "Status: " + optLabel(GREET_PERMISSIONS, v.permission),
+      "PROD Group: " + optLabel(GREET_TEMPLATES, v.template),
+      "Time Limit: " + optLabel(GREET_DURATIONS, v.duration),
+      "Security: label only. Does not grant access to protected data or the dashboard."
+    ];
+    const okCreate = await showHardStop({
+      risk: "MEDIUM",
+      title: "Confirm: Create Personal Link for " + name,
+      detail: "Choose the access for <strong>" + escapeHtml(name) + "</strong>, then create the link.",
+      fields: [
+        { key: "permission", label: "Status", type: "select", options: GREET_PERMISSIONS, value: "GUEST" },
+        { key: "template", label: "PROD Group", type: "select", options: GREET_TEMPLATES, value: "PROD_VIEW" },
+        { key: "duration", label: "Time Limit", type: "select", options: GREET_DURATIONS, value: "1w", wide: true }
+      ],
+      summary,
+      associated: summary({ permission: "GUEST", template: "PROD_VIEW", duration: "1w" }),
+      warning: "Anyone with this link can open it until the time limit passes or you revoke it.",
+      riskLevel: "medium",
+      confirmLabel: "Create Link"
+    });
+    if (!okCreate) return;
+    const chosen = readHardStopForm();
     submit.disabled = true;
     try {
       const data = await greetApi("greet-create", {
         name,
         company: document.getElementById("greet-company").value.trim(),
         note: document.getElementById("greet-note").value.trim(),
-        permission: document.getElementById("greet-permission").value,
-        template: document.getElementById("greet-template").value,
-        duration: document.getElementById("greet-duration").value
+        permission: chosen.permission,
+        template: chosen.template,
+        duration: chosen.duration
       });
       currentData.greetLinks = [data.link, ...(currentData.greetLinks || [])];
       event.target.reset();
-      document.getElementById("greet-permission").value = "GUEST";
-      document.getElementById("greet-template").value = "PROD_VIEW";
-      document.getElementById("greet-duration").value = "1w";
       renderGreetLinks();
     } catch (err) {
       alert(err.message);
@@ -2858,15 +2882,62 @@
   const hardstopOverlay = document.getElementById("hardstop-overlay");
   let hardstopResolver = null;
 
-  function showHardStop({ risk, title, detail, associated, warning, riskLevel = "high", confirmLabel = "Proceed Anyway" }) {
+  function renderHardStopAssociated(items) {
+    document.getElementById("hardstop-associated").innerHTML = items
+      .map((item) => `<div class="hardstop-associated-item">${escapeHtml(item)}</div>`)
+      .join("");
+  }
+
+  function readHardStopForm() {
+    const out = {};
+    document.querySelectorAll("#hardstop-form-grid [data-hs-key]").forEach((el) => {
+      out[el.dataset.hsKey] = el.value;
+    });
+    return out;
+  }
+
+  // fields: optional editable inputs shown inside the box
+  //   [{ key, label, type: "text"|"select", value, options, max, wide }]
+  // summary: optional (values) => string[] that re-renders the list as the person edits.
+  function showHardStop({ risk, title, detail, associated, warning, riskLevel = "high", confirmLabel = "Proceed Anyway", fields, summary }) {
     document.getElementById("hardstop-risk-label").textContent = risk;
     document.getElementById("hardstop-title").textContent = title;
     document.getElementById("hardstop-detail").innerHTML = detail;
-    document.getElementById("hardstop-associated").innerHTML = associated
-      .map((item) => `<div class="hardstop-associated-item">${escapeHtml(item)}</div>`)
-      .join("");
+    renderHardStopAssociated(associated || []);
     document.getElementById("hardstop-warning-text").textContent = warning || "";
     document.getElementById("hardstop-confirm-btn").textContent = confirmLabel;
+
+    const form = document.getElementById("hardstop-form");
+    const grid = document.getElementById("hardstop-form-grid");
+    grid.textContent = "";
+    form.classList.toggle("has-fields", !!(fields && fields.length));
+    (fields || []).forEach((f) => {
+      const label = document.createElement("label");
+      if (f.wide) label.className = "wide";
+      label.appendChild(document.createTextNode(f.label));
+      let el;
+      if (f.type === "select") {
+        el = document.createElement("select");
+        (f.options || []).forEach(([value, text]) => {
+          const o = document.createElement("option");
+          o.value = value;
+          o.textContent = text;
+          el.appendChild(o);
+        });
+      } else {
+        el = document.createElement("input");
+        el.type = "text";
+        if (f.max) el.maxLength = f.max;
+      }
+      el.dataset.hsKey = f.key;
+      el.value = f.value == null ? "" : f.value;
+      label.appendChild(el);
+      grid.appendChild(label);
+    });
+    grid.oninput = grid.onchange = summary
+      ? () => renderHardStopAssociated(summary(readHardStopForm()))
+      : null;
+    if (summary && fields && fields.length) renderHardStopAssociated(summary(readHardStopForm()));
 
     const card = document.querySelector(".hardstop-card");
     card.classList.toggle("risk-medium", riskLevel === "medium");

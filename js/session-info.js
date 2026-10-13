@@ -122,12 +122,15 @@
     var score = factors.reduce(function (n, f) { return n + f.points; }, 0);
     var tier = score >= 8 ? "Highly engaged" : score >= 4 ? "Engaged" : "Browsing";
 
-    var access = greeting && greeting.name ? "Personal-link guest" : "Visitor";
+    var permission = greeting && greeting.permission ? String(greeting.permission) : "";
+    var template = greeting && greeting.template ? String(greeting.template) : "PROD_VIEW";
+    var access = permission ? permission :
+      (greeting && greeting.name ? "GUEST" : "VISITOR");
 
     return {
       greeting: greeting, recruiter: recruiterRaw === "true" ? "Yes" : recruiterRaw === "false" ? "No" : "Not shared",
       a11y: a11y, chats: chats, pageCount: pageCount, activeMs: activeMs,
-      score: score, tier: tier, access: access, factors: factors
+      score: score, tier: tier, access: access, template: template, permission: permission, factors: factors
     };
   }
 
@@ -285,7 +288,7 @@
     // 5. Template linking
     var c5 = card("templates", "Template Linking Information");
     c5.appendChild(el("div", { "class": "si-sub" }, "General"));
-    row(c5, "Currently applied template:", p.greeting && p.greeting.name ? "Personal link — " + p.greeting.name : "Standard visitor");
+    row(c5, "Currently applied template:", p.greeting && p.greeting.name ? p.template : "PROD_VIEW");
     c5.appendChild(el("div", { "class": "si-sub" }, "Defined items"));
     var tbl = el("table", { "class": "si-table" });
     var thead = el("thead"); var hr = el("tr");
@@ -293,11 +296,11 @@
     thead.appendChild(hr); tbl.appendChild(thead);
     var tb = el("tbody");
     var items = [
-      ["LANGUAGE", lang, p.a11y.language && p.a11y.language !== "en" ? "Accessibility widget" : "—"],
-      ["ACCESSIBILITY PROFILE", a11yProfile, p.a11y.activeProfile ? "Accessibility widget" : "—"],
-      ["GREETING NAME", p.greeting && p.greeting.name ? p.greeting.name : "None", p.greeting && p.greeting.name ? "Personal link" : "—"],
+      ["LANGUAGE", lang, p.a11y.language && p.a11y.language !== "en" ? "INTERFACE_ACCESSIBILITY" : "—"],
+      ["ACCESSIBILITY PROFILE", a11yProfile, p.a11y.activeProfile ? "INTERFACE_ACCESSIBILITY" : "—"],
+      ["GREETING NAME", p.greeting && p.greeting.name ? p.greeting.name : "None", p.greeting && p.greeting.name ? "INTERFACE_PERSONALID" : "—"],
       ["MAXIMUM LOGIN SESSIONS", String(visitor.visits) + " so far", "—"],
-      ["TEXT & CONTRAST OPTIONS", ["biggerText", "contrast", "textSpacing", "lineHeight", "highlightLinks", "textAlign", "dyslexiaFriendly", "reducedMotion"].filter(function (k) { return p.a11y[k]; }).length + " active", "Accessibility widget"]
+      ["TEXT & CONTRAST OPTIONS", ["biggerText", "contrast", "textSpacing", "lineHeight", "highlightLinks", "textAlign", "dyslexiaFriendly", "reducedMotion"].filter(function (k) { return p.a11y[k]; }).length + " active", "INTERFACE_ACCESSIBILITY"]
     ];
     items.forEach(function (it) {
       var tr = el("tr");

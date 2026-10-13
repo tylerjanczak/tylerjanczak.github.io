@@ -551,6 +551,10 @@ async function handleGreetUpdate(req, res) {
   if (!(await requireSession(req, res))) return;
   try {
     const { code, permission, template, duration } = req.body || {};
+    const editName = req.body?.name !== undefined ? cleanText(req.body.name, 60) : undefined;
+    const editCompany = req.body?.company !== undefined ? cleanText(req.body.company, 80) : undefined;
+    const editNote = req.body?.note !== undefined ? cleanText(req.body.note, 200) : undefined;
+    if (editName !== undefined && !editName) return res.status(400).json({ error: "A greeting name is required." });
     if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
       return res.status(400).json({ error: "Invalid code." });
     }
@@ -566,6 +570,9 @@ async function handleGreetUpdate(req, res) {
     const raw = await kv.hget("greet_links", code);
     if (!raw) return res.status(404).json({ error: "Link not found." });
     const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (editName !== undefined) record.name = editName;
+    if (editCompany !== undefined) record.company = editCompany;
+    if (editNote !== undefined) record.note = editNote;
     if (duration !== undefined) {
       record.duration = duration;
       record.expiresAt = expiryFor(duration);

@@ -478,8 +478,19 @@
           <li><strong>Device and browser characteristics</strong> — such as screen size, time zone, browser type, and similar technical signals, combined into a non-identifying technical fingerprint used for security and abuse prevention.</li>
           <li><strong>Usage data</strong> — pages visited, session duration, and interactions, via Microsoft Clarity (see "Analytics" below).</li>
           <li><strong>Personal links</strong> — if you arrived through a personalized link (one containing a short code), the code is looked up on the server to show the greeting name Tyler chose for you. Tyler records only that the link was opened (a timestamp and a count); the code is removed from your address bar right away, and the name is kept only for the current browsing session.</li>
-          <li><strong>Session Information panel</strong> — the "Session" tab on the site shows you a summary of your visit (pages viewed, time on site, device details, and an engagement level). It is calculated entirely in your browser from data kept in your browser's storage, is not sent to the server, and can be erased with the "Clear my session data" button.</li>
+          <li><strong>Session information</strong> — the "Your session information" section on this page shows you a summary of your visit (pages viewed, time on site, device details, and an engagement level). It is calculated entirely in your browser from data kept in your browser's storage, is not sent to the server, and can be erased with the "Clear my session data" button.</li>
         </ul>
+      </div>
+    </details>
+
+    <details class="policy-accordion" id="session-information">
+      <summary>Your session information<span class="accordion-icon"></span></summary>
+      <div class="accordion-content">
+        <p>
+          This is what this browser session looks like and the profile that can be compiled from it.
+          It is built live in your browser; nothing on this panel is sent to the server.
+        </p>
+        <div id="session-info-inline" data-no-translate></div>
       </div>
     </details>
 
@@ -662,7 +673,7 @@
           <li><strong>Características del dispositivo y navegador</strong> — como tamaño de pantalla, zona horaria, tipo de navegador y señales técnicas similares, combinadas en una huella técnica no identificable utilizada para seguridad y prevención de abuso.</li>
           <li><strong>Datos de uso</strong> — páginas visitadas, duración de la sesión e interacciones, a través de Microsoft Clarity (ver "Análisis" abajo).</li>
           <li><strong>Enlaces personales</strong> — si llegó mediante un enlace personalizado (que contiene un código corto), el código se consulta en el servidor para mostrar el nombre de saludo que Tyler eligió para usted. Tyler solo registra que el enlace fue abierto (una marca de tiempo y un conteo); el código se elimina de su barra de direcciones de inmediato, y el nombre se conserva solo durante la sesión actual del navegador.</li>
-          <li><strong>Panel de información de sesión</strong> — la pestaña "Session" del sitio le muestra un resumen de su visita (páginas vistas, tiempo en el sitio, datos del dispositivo y un nivel de participación). Se calcula completamente en su navegador a partir de datos guardados en el almacenamiento de su navegador, no se envía al servidor y puede borrarse con el botón "Clear my session data".</li>
+          <li><strong>Panel de información de sesión</strong> — la sección "Your session information" de esta página (en inglés) le muestra un resumen de su visita (páginas vistas, tiempo en el sitio, datos del dispositivo y un nivel de participación). Se calcula completamente en su navegador a partir de datos guardados en el almacenamiento de su navegador, no se envía al servidor y puede borrarse con el botón "Clear my session data".</li>
         </ul>
       </div>
     </details>
@@ -1534,5 +1545,6 @@
     })();
   </script>
 
+<script src="js/session-info.js" defer></script>
 </body>
 </html>

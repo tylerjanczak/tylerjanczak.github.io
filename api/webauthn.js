@@ -7,8 +7,8 @@ import {
 } from "@simplewebauthn/server";
 
 const RP_NAME = "Tyler Janczak Portfolio";
-const RP_ID = "tylerjanczak-github-io.vercel.app";
-const ORIGIN = "https://tylerjanczak-github-io.vercel.app";
+const RP_ID = "dashboard.tylerjanczak.com";
+const ORIGIN = "https://dashboard.tylerjanczak.com";
 const SESSION_TTL_SECONDS = 60 * 60 * 24; // 24 hours
 
 async function getStoredCredentials() {

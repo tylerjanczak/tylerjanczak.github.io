@@ -1,8 +1,31 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
 
+  Tyler's site-wide accessibility suite — consolidated into one file so
+  every page only needs a single <script> tag:
+
+    <script src="js/accessibility-widget.js" defer></script>
+
+  This one file contains, in load order:
+    1. Translation data for the widget's own UI (49 languages)
+    2. The accessibility widget itself (launcher, panel, tiles, profiles,
+       language picker)
+    3. Automatic accessibility remediation (safe auto-fixes + a human
+       review queue for anything it won't guess at)
+    4. Full-page translation (calls api/translate.js, a free MyMemory-
+       backed endpoint with Vercel KV caching)
+
+  Each section below is still a self-contained block (most are their own
+  IIFE), kept in this order because later sections read globals the
+  earlier ones set (window.TylerA11yI18n, the "tylerA11yChange" event,
+  etc.). If you ever want to pull a section back out into its own file,
+  each one still works standalone — nothing here is tangled together,
+  they just now ship as one request instead of four.
 */
 
+/* ------------------------------------------------------------------ */
+/* SECTION 1 — Translation data for the widget's own UI */
+/* ------------------------------------------------------------------ */
 
 (function () {
   "use strict";
@@ -1661,7 +1684,7 @@
 (function () {
   "use strict";
 
-  const LOG_URL = "https://tylerjanczak-github-io.vercel.app/api/a11y-log";
+  const LOG_URL = "https://tylerjanczak-github-io.vercel.app/api/translate?action=log";
   const SESSION_FLAG = "tylerA11yRemediationSentThisPage";
 
   const appliedFixes = [];
@@ -2053,17 +2076,6 @@
     return "en";
   }
 
-  // Cheap, fast, non-cryptographic string hash (djb2) — only used to
-  // detect "has this page's translatable text changed since it was
-  // cached", not for anything security-sensitive.
-  function hashString(str) {
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
-    }
-    return String(hash >>> 0);
-  }
-
   function isSkippableAncestor(node) {
     let el = node.parentElement;
     while (el) {
@@ -2111,14 +2123,45 @@
     });
   }
 
-  async function fetchTranslations(lang, texts) {
-    const chunks = [];
-    for (let i = 0; i < texts.length; i += BATCH_SIZE) {
-      chunks.push(texts.slice(i, i + BATCH_SIZE));
+  // --- Per-language, per-string cache (shared across every page) ---
+  function loadLangCache(lang) {
+    try {
+      return JSON.parse(localStorage.getItem(CACHE_PREFIX + lang) || "{}");
+    } catch {
+      return {};
     }
+  }
 
+  function saveLangCache(lang, cache) {
+    try {
+      localStorage.setItem(CACHE_PREFIX + lang, JSON.stringify(cache));
+    } catch {
+      // Storage full or blocked — translations still apply this visit,
+      // just won't be instant (or free) on the next one.
+    }
+  }
+
+  // Fetches translations for exactly the strings not already cached.
+  // Returns { map, hadFailures } — map only contains entries that are
+  // either already-cached-good or freshly confirmed good by the server;
+  // failed strings are simply absent, so callers fall back to English.
+  async function resolveTranslations(lang, uniqueStrings) {
+    const cache = loadLangCache(lang);
     const map = {};
-    for (const chunk of chunks) {
+    const needsFetch = [];
+
+    uniqueStrings.forEach((str) => {
+      if (Object.prototype.hasOwnProperty.call(cache, str)) {
+        map[str] = cache[str];
+      } else {
+        needsFetch.push(str);
+      }
+    });
+
+    let hadFailures = false;
+
+    for (let i = 0; i < needsFetch.length; i += BATCH_SIZE) {
+      const chunk = needsFetch.slice(i, i + BATCH_SIZE);
       try {
         const res = await fetch(TRANSLATE_URL, {
           method: "POST",
@@ -2128,19 +2171,30 @@
         if (!res.ok) throw new Error(`Translate endpoint HTTP ${res.status}`);
         const data = await res.json();
         const translations = data.translations || [];
-        chunk.forEach((original, i) => {
-          map[original] = translations[i] || original;
+        const ok = data.ok || [];
+
+        let cacheDirty = false;
+        chunk.forEach((original, idx) => {
+          const succeeded = ok[idx] !== false; // treat missing ok[] (older deploy) as success
+          if (succeeded && translations[idx] && translations[idx] !== original) {
+            map[original] = translations[idx];
+            cache[original] = translations[idx];
+            cacheDirty = true;
+          } else {
+            // Deliberately NOT cached — leaves this string to retry on the
+            // next language switch or page load instead of getting stuck.
+            hadFailures = true;
+          }
         });
+
+        if (cacheDirty) saveLangCache(lang, cache);
       } catch (err) {
-        // Network hiccup or the endpoint isn't deployed yet — leave this
-        // chunk untranslated rather than breaking the page.
-        console.warn("[accessibility-translate] batch failed, showing original text:", err);
-        chunk.forEach((original) => {
-          map[original] = original;
-        });
+        console.warn("[accessibility-translate] batch request failed, leaving original text:", err);
+        hadFailures = true;
       }
     }
-    return map;
+
+    return { map, hadFailures };
   }
 
   let translateToken = 0;
@@ -2165,36 +2219,13 @@
       new Set(nodes.map((n) => originalTextMap.get(n).trim()).filter(Boolean))
     );
 
-    const contentHash = hashString(uniqueOriginals.join("|"));
-    const cacheKey = CACHE_PREFIX + normalizedLang + "::" + location.pathname;
-
-    let cachedMap = null;
-    try {
-      const raw = localStorage.getItem(cacheKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.hash === contentHash && parsed.map) cachedMap = parsed.map;
-      }
-    } catch {
-      cachedMap = null;
-    }
-
     window.dispatchEvent(new CustomEvent("tylerA11yTranslateStatus", { detail: { status: "translating", lang: normalizedLang } }));
 
-    const map = cachedMap || (await fetchTranslations(normalizedLang, uniqueOriginals));
+    const { map, hadFailures } = await resolveTranslations(normalizedLang, uniqueOriginals);
 
     // If the language changed again while we were waiting on the network,
     // don't clobber whatever the user picked next.
     if (myToken !== translateToken) return;
-
-    if (!cachedMap) {
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({ hash: contentHash, map }));
-      } catch {
-        // Storage full or blocked — translation still applies this visit,
-        // just won't be instant on the next one.
-      }
-    }
 
     nodes.forEach((node) => {
       const original = originalTextMap.get(node);
@@ -2208,9 +2239,20 @@
         const trailing = original.match(/\s*$/)[0];
         node.nodeValue = leading + translated + trailing;
       }
+      // Strings with no map entry (failed / not yet translated) are left
+      // as English rather than shown blank or broken.
     });
 
-    window.dispatchEvent(new CustomEvent("tylerA11yTranslateStatus", { detail: { status: "done", lang: normalizedLang } }));
+    if (hadFailures) {
+      console.warn(
+        "[accessibility-translate] some text on this page could not be translated this time " +
+        "(likely the free MyMemory daily quota) — it was left in English and will retry next time."
+      );
+    }
+
+    window.dispatchEvent(new CustomEvent("tylerA11yTranslateStatus", {
+      detail: { status: hadFailures ? "partial" : "done", lang: normalizedLang }
+    }));
   }
 
   window.TylerA11yTranslate = { translatePage };

@@ -469,13 +469,52 @@
     // unless this passes.
     (function checkBridgesSession() {
       const params = new URLSearchParams(window.location.search);
-      const sessionId = params.get("sid");
+      const personalCode = params.get("c");
+      let sessionId = params.get("sid");
+
+      // Personal link (?c=<code>): skips getdetails.do. The server checks
+      // the code and hands back a normal single-use session id.
+      if (!sessionId && personalCode && /^[A-Za-z0-9_-]{6,24}$/.test(personalCode)) {
+        fetch("https://tylerjanczak-github-io.vercel.app/api/chat", {
+          method: "POST",
+          mode: "cors",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "greet-session", code: personalCode })
+        })
+          .then(function (res) { return res.json(); })
+          .catch(function () { return { success: false }; })
+          .then(function (data) {
+            if (data && data.success && data.sessionId) {
+              try {
+                sessionStorage.setItem("tylerPersonalGreeting", JSON.stringify({
+                  name: String(data.name || "").slice(0, 60),
+                  company: String(data.company || "").slice(0, 80),
+                  note: String(data.note || "").slice(0, 200)
+                }));
+                // Greeting is by name only; leave recruiter status unset.
+                sessionStorage.removeItem("tylerAiIsRecruiter");
+              } catch (e) {}
+              try {
+                history.replaceState(null, "", "/?sid=" + encodeURIComponent(data.sessionId));
+              } catch (e) {}
+              validateSession(data.sessionId);
+            } else {
+              showInvalidSession();
+            }
+          });
+        return;
+      }
 
       if (!sessionId) {
         showInvalidSession();
         return;
       }
 
+      validateSession(sessionId);
+    })();
+
+    function validateSession(sessionId) {
       fetch("https://tylerjanczak-github-io.vercel.app/api/chat", {
         method: "POST",
         mode: "cors",
@@ -492,7 +531,7 @@
             showInvalidSession();
           }
         });
-    })();
+    }
 
     function loadTylerAiScript() {
       const script = document.createElement("script");

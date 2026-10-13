@@ -490,7 +490,9 @@
                 sessionStorage.setItem("tylerPersonalGreeting", JSON.stringify({
                   name: String(data.name || "").slice(0, 60),
                   company: String(data.company || "").slice(0, 80),
-                  note: String(data.note || "").slice(0, 200)
+                  note: String(data.note || "").slice(0, 200),
+                  permission: String(data.permission || "GUEST").slice(0, 24),
+                  template: String(data.template || "PROD_VIEW").slice(0, 24)
                 }));
                 // Greeting is by name only; leave recruiter status unset.
                 sessionStorage.removeItem("tylerAiIsRecruiter");

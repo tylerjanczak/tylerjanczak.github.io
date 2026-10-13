@@ -3,7 +3,9 @@ import { randomBytes } from "crypto";
 
 const KEYS = {
   conversation: "tyler_ai_conversations",
-  resume: "tyler_ai_resume_requests"
+  resume: "tyler_ai_resume_requests",
+  callRequest: "tyler_ai_call_requests",
+  intake: "visitor_intake_log"
 };
 
 async function requireSession(req, res) {

@@ -1,11 +1,22 @@
 /*
   © 2026 Tyler Janczak. All rights reserved.
+  Session Information — a visitor-facing panel that shows each visitor what
+  this browser session looks like and the profile the site can compile from
+  it. Everything here is computed IN THE BROWSER from sessionStorage /
+  localStorage; this script makes no network requests and sends nothing.
+
     <script src="js/session-info.js" defer></script>
+
+  Tracking (local only) runs on every page that includes this script. The
+  panel itself only appears where the page has an empty
+  <div id="session-info-inline"></div> (Privacy Policy page, homepage footer); on other
+  pages there is no visible UI.
 */
 (function () {
   "use strict";
   if (window.__tylerSessionInfoInit) return;
   window.__tylerSessionInfoInit = true;
+
   var SESSION_KEY = "tylerSessionInfo";
   var VISITOR_KEY = "tylerVisitorInfo";
 
@@ -126,9 +137,7 @@
   // Compilation, Host Information, Template Linking) with label/value rows.
   var css = document.createElement("style");
   css.textContent =
-    "#si-tab{position:fixed;left:0;bottom:96px;z-index:9990;background:#1B1B1B;color:#F7F4EE;border:0;border-radius:0 8px 8px 0;padding:10px 12px 10px 10px;font:600 12px/1 'Inter',sans-serif;letter-spacing:.04em;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}" +
-    "#si-tab:hover{background:#6B1F1F}#si-tab:focus-visible,#si-panel button:focus-visible{outline:2px solid #C84545;outline-offset:2px}" +
-    "#si-panel{position:fixed;left:0;top:0;bottom:0;width:min(440px,100vw);z-index:9991;background:#F2EEE6;color:#1B1B1B;border-right:1px solid #D9D2C4;box-shadow:6px 0 30px rgba(0,0,0,.2);font:13.5px/1.45 'Inter',sans-serif;display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .3s ease;visibility:hidden}" +
+            "#si-panel{position:fixed;left:0;top:0;bottom:0;width:min(440px,100vw);z-index:9991;background:#F2EEE6;color:#1B1B1B;border-right:1px solid #D9D2C4;box-shadow:6px 0 30px rgba(0,0,0,.2);font:13.5px/1.45 'Inter',sans-serif;display:flex;flex-direction:column;transform:translateX(-102%);transition:transform .3s ease;visibility:hidden}" +
     "#si-panel.open{transform:none;visibility:visible}" +
     "#si-title{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 8px}" +
     "#si-title h2{margin:0;font:400 20px 'Fraunces',serif;color:#3a3a38}#si-close{background:none;border:0;font-size:24px;line-height:1;cursor:pointer;padding:2px 8px;color:#4A4A48}" +
@@ -147,7 +156,7 @@
     ".si-table{width:100%;border-collapse:collapse;font-size:12.5px}.si-table th{text-align:left;color:#6a6a66;font-weight:400;padding:4px 6px 4px 0}.si-table td{padding:6px 6px 6px 0;border-top:1px solid #E0D9CA;vertical-align:top}" +
     ".si-mono{font-family:ui-monospace,Menlo,monospace;font-size:11.5px}" +
     "#si-foot{padding:10px 16px;font-size:11.5px;color:#6a6a66;border-top:1px solid #D9D2C4;background:#EAE5DA}#si-clear{margin-left:8px;background:none;border:1px solid #6B1F1F;color:#6B1F1F;border-radius:5px;padding:4px 9px;font:600 11.5px 'Inter',sans-serif;cursor:pointer}#si-clear:hover{background:#6B1F1F;color:#F7F4EE}" +
-    "@media(max-width:600px){#si-tab{bottom:70px}}@media(prefers-reduced-motion:reduce){#si-panel{transition:none}.si-chev{transition:none}}" +
+    "@media(prefers-reduced-motion:reduce){#si-panel{transition:none}.si-chev{transition:none}}" +
     "@media print{body>*:not(#si-panel){display:none!important}#si-panel{position:static;width:auto;transform:none;visibility:visible;box-shadow:none}#si-bar,#si-close,#si-foot{display:none}}";
   document.head.appendChild(css);
 
@@ -158,7 +167,8 @@
     return n;
   }
 
-  var tab = el("button", { id: "si-tab", type: "button", "aria-haspopup": "dialog", "aria-controls": "si-panel", "aria-expanded": "false", "data-no-translate": "" }, "Session");
+  var inlineHost = document.getElementById("session-info-inline");
+  css.textContent += "#si-panel.si-inline{position:static;width:auto;transform:none;visibility:visible;box-shadow:none;border:1px solid #D9D2C4;border-radius:6px;margin:8px 0 4px;overflow:hidden}#si-panel.si-inline #si-scroll{overflow:visible}#si-panel.si-inline #si-close{display:none}";
   var panel = el("div", { id: "si-panel", role: "dialog", "aria-label": "Session Information", "data-no-translate": "" });
   var title = el("div", { id: "si-title" });
   title.appendChild(el("h2", null, "Session Information"));
@@ -174,7 +184,12 @@
   var clear = el("button", { id: "si-clear", type: "button" }, "Clear my session data");
   foot.appendChild(clear);
   panel.appendChild(title); panel.appendChild(bar); panel.appendChild(scroller); panel.appendChild(foot);
-  document.body.appendChild(tab); document.body.appendChild(panel);
+  // The panel only ever renders inline, inside #session-info-inline.
+  // There is no floating side button.
+  if (inlineHost) {
+    panel.classList.add("si-inline");
+    inlineHost.appendChild(panel);
+  }
 
   var collapsed = {};
   var lastText = "";
@@ -296,7 +311,6 @@
   var timer = null;
   function open() {
     panel.classList.add("open");
-    tab.setAttribute("aria-expanded", "true");
     render();
     timer = setInterval(function () {
       var top = scroller.scrollTop; render(); scroller.scrollTop = top;
@@ -305,11 +319,8 @@
   }
   function close() {
     panel.classList.remove("open");
-    tab.setAttribute("aria-expanded", "false");
     clearInterval(timer);
-    tab.focus();
   }
-  tab.addEventListener("click", function () { panel.classList.contains("open") ? close() : open(); });
   closeBtn.addEventListener("click", close);
   bRefresh.addEventListener("click", function () { var t = scroller.scrollTop; render(); scroller.scrollTop = t; });
   bPrint.addEventListener("click", function () { window.print(); });
@@ -326,5 +337,18 @@
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape" && panel.classList.contains("open")) close(); });
 
-  window.TylerSessionInfo = { open: open, close: close };
+  if (inlineHost) {
+    render();
+    setInterval(function () {
+      if (document.visibilityState !== "visible") return;
+      var top = scroller.scrollTop; render(); scroller.scrollTop = top;
+    }, 5000);
+  } else {
+    // No inline host on this page: no UI at all (tracking keeps running).
+  }
+
+  window.TylerSessionInfo = {
+    open: open, close: close,
+    refresh: function () { if (inlineHost) { var t = scroller.scrollTop; render(); scroller.scrollTop = t; } }
+  };
 })();

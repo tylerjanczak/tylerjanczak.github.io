@@ -113,18 +113,6 @@
   .username-warning-icon svg {
     width: 22px;
     height: 22px;
-    animation: usernameIconPulse 1.4s ease-in-out infinite;
-  }
-
-  @keyframes usernameIconPulse {
-    0%, 100% { opacity: 0.55; transform: scale(0.94); }
-    50% { opacity: 1; transform: scale(1.06); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .username-warning-icon svg {
-      animation: none;
-    }
   }
 
   .username-warning-icon.hidden {
@@ -1297,6 +1285,62 @@
       <tbody id="intake-body"></tbody>
     </table>
   </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Accessibility Review Queue</h2>
+      <span class="panel-count" id="a11y-count">0</span>
+    </div>
+    <p style="font-size: 12px; color: #8b857e; margin: -6px 0 14px;">
+      Issues js/accessibility-remediation.js found but couldn't safely auto-fix on its own —
+      low color contrast, skipped heading levels, or ambiguous labels. These need a real look,
+      not another automated pass.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px;">Last Seen</th>
+          <th style="width:140px;">Page</th>
+          <th style="width:120px;">Type</th>
+          <th>Description</th>
+          <th style="width:60px;">Seen</th>
+          <th style="width:110px;"></th>
+        </tr>
+      </thead>
+      <tbody id="a11y-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Personal Links</h2>
+      <span class="panel-count" id="greet-count">0</span>
+    </div>
+    <p style="font-size: 12px; color: #8b857e; margin: -6px 0 14px;">
+      Create a link that greets one person by name (e.g. "Hi Sarah — welcome") and also opens
+      Tyler AI with their name. Only the name you type here is ever shown to the visitor; opens are
+      counted (time + count only, no IP stored).
+    </p>
+    <form id="greet-form" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+      <input id="greet-name" type="text" maxlength="60" placeholder="Greeting name (e.g. Sarah)" required style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <input id="greet-company" type="text" maxlength="80" placeholder="Company (optional)" style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:110px;">Created</th>
+          <th style="width:160px;">Who</th>
+          <th>Link</th>
+          <th style="width:60px;">Opens</th>
+          <th style="width:110px;">Last Opened</th>
+          <th style="width:150px;"></th>
+        </tr>
+      </thead>
+      <tbody id="greet-body"></tbody>
+    </table>
+  </section>
 </div>
 
 
@@ -1396,7 +1440,10 @@
       bannedRanges: [],
       bannedFingerprints: [],
       injectionAttempts: [],
-      callRequests: []
+      callRequests: [],
+      intakeLog: [],
+      a11yIssues: [],
+      greetLinks: []
     };
 
     document.getElementById("stats-row").innerHTML = "";
@@ -1409,6 +1456,9 @@
     document.getElementById("banned-body").innerHTML = "";
     document.getElementById("banned-ranges-body").innerHTML = "";
     document.getElementById("banned-fingerprints-body").innerHTML = "";
+    document.getElementById("intake-body").innerHTML = "";
+    document.getElementById("a11y-body").innerHTML = "";
+    document.getElementById("greet-body").innerHTML = "";
     document.getElementById("analysis-body").innerHTML = `<p class="empty-row">Click "Generate Insights" to have AI summarize patterns across your visitor conversations.</p>`;
     document.getElementById("kb-textarea").value = "";
     document.getElementById("kb-textarea").placeholder = "Loading current knowledge base...";
@@ -1416,7 +1466,7 @@
 
     // Reset counters shown in panel headers.
     ["conv-count", "resume-count", "call-request-count", "maintenance-log-count", "injection-count", "flagged-count",
-     "banned-count", "banned-ranges-count", "banned-fingerprints-count", "map-count"]
+     "banned-count", "banned-ranges-count", "banned-fingerprints-count", "map-count", "intake-count", "a11y-count", "greet-count"]
       .forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.textContent = "0";
@@ -1550,7 +1600,9 @@
     return String(str)
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;");
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
   }
 
   let currentData = { conversations: [], resumeRequests: [] };
@@ -1942,6 +1994,174 @@
           </tr>
         `).join("")
       : `<tr><td colspan="4" class="empty-row">No intake entries yet.</td></tr>`;
+  }
+
+  function renderA11yIssues() {
+    const issues = (currentData.a11yIssues || []).filter((i) => i.status !== "resolved");
+    const body = document.getElementById("a11y-body");
+
+    document.getElementById("a11y-count").textContent = issues.length;
+
+    body.innerHTML = issues.length
+      ? issues.map((issue) => `
+          <tr>
+            <td class="timestamp">${formatDate(issue.lastSeen)}</td>
+            <td style="font-size: 12px; word-break: break-all;">${escapeHtml(issue.pageUrl || "")}</td>
+            <td><span class="intent-tag">${escapeHtml(issue.type || "")}</span></td>
+            <td style="font-size: 13px;">
+              ${escapeHtml(issue.description || "")}
+              ${issue.elementSnippet ? `<div style="font-family: monospace; font-size: 10.5px; color: #8b857e; margin-top: 4px; word-break: break-all;">${escapeHtml(issue.elementSnippet)}</div>` : ""}
+            </td>
+            <td>${issue.occurrences || 1}</td>
+            <td><button class="small-action-btn" data-resolve-a11y="${escapeHtml(issue.signature)}">Mark Resolved</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="6" class="empty-row">No open accessibility issues — nice.</td></tr>`;
+
+    body.querySelectorAll("[data-resolve-a11y]").forEach((btn) => {
+      btn.addEventListener("click", () => resolveA11yIssue(btn.dataset.resolveA11y));
+    });
+  }
+
+  // ---- Personal links ----
+  const SITE_ORIGIN = "https://tylerjanczak.com";
+
+  function greetLinkUrl(code) {
+    return `${SITE_ORIGIN}/?c=${encodeURIComponent(code)}`;
+  }
+
+  async function greetApi(action, payload) {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) throw new Error("Not signed in.");
+    const res = await fetch(`${API_BASE}/api/dashboard?action=${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Request failed.");
+    return data;
+  }
+
+  function renderGreetLinks() {
+    const links = currentData.greetLinks || [];
+    const body = document.getElementById("greet-body");
+    document.getElementById("greet-count").textContent = links.length;
+
+    body.innerHTML = links.length
+      ? links.map((l) => {
+          const revoked = l.status !== "active";
+          const url = greetLinkUrl(l.code);
+          return `
+          <tr${revoked ? ' style="opacity:.55"' : ""}>
+            <td class="timestamp">${formatDate(l.created)}</td>
+            <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${revoked ? '<br><span class="intent-tag">revoked</span>' : ""}</td>
+            <td><input type="text" readonly value="${escapeHtml(url)}" style="width:100%; font-size:11.5px; padding:5px 7px; border:1px solid #d9d2c4; border-radius:5px; font-family:monospace;"></td>
+            <td>${l.opens || 0}</td>
+            <td class="timestamp">${l.lastOpened ? formatDate(l.lastOpened) : "—"}</td>
+            <td>
+              <button class="small-action-btn" data-greet-copy="${escapeHtml(l.code)}">Copy</button>
+              <button class="small-action-btn${revoked ? "" : " unban"}" data-greet-toggle="${escapeHtml(l.code)}">${revoked ? "Restore" : "Revoke"}</button>
+              <button class="small-action-btn" data-greet-delete="${escapeHtml(l.code)}">Delete</button>
+            </td>
+          </tr>`;
+        }).join("")
+      : `<tr><td colspan="6" class="empty-row">No personal links yet.</td></tr>`;
+
+    body.querySelectorAll("[data-greet-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const url = greetLinkUrl(btn.dataset.greetCopy);
+        try {
+          await navigator.clipboard.writeText(url);
+          btn.textContent = "Copied";
+        } catch {
+          const input = btn.closest("tr").querySelector("input");
+          input.select();
+          btn.textContent = "Select + copy";
+        }
+        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      });
+    });
+
+    body.querySelectorAll("[data-greet-toggle]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const code = btn.dataset.greetToggle;
+        const link = (currentData.greetLinks || []).find((x) => x.code === code);
+        if (!link) return;
+        const next = link.status === "active" ? "revoked" : "active";
+        try {
+          await greetApi("greet-revoke", { code, status: next });
+          link.status = next;
+          renderGreetLinks();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+
+    body.querySelectorAll("[data-greet-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this link permanently? The URL will stop working.")) return;
+        const code = btn.dataset.greetDelete;
+        try {
+          await greetApi("greet-delete", { code });
+          currentData.greetLinks = (currentData.greetLinks || []).filter((x) => x.code !== code);
+          renderGreetLinks();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
+
+  document.getElementById("greet-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = document.getElementById("greet-submit");
+    const name = document.getElementById("greet-name").value.trim();
+    if (!name) return;
+    submit.disabled = true;
+    try {
+      const data = await greetApi("greet-create", {
+        name,
+        company: document.getElementById("greet-company").value.trim(),
+        note: document.getElementById("greet-note").value.trim()
+      });
+      currentData.greetLinks = [data.link, ...(currentData.greetLinks || [])];
+      event.target.reset();
+      renderGreetLinks();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  async function resolveA11yIssue(signature) {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=a11y-resolve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ signature, status: "resolved" })
+      });
+
+      if (res.ok) {
+        currentData.a11yIssues = (currentData.a11yIssues || []).map((issue) =>
+          issue.signature === signature ? { ...issue, status: "resolved" } : issue
+        );
+        renderA11yIssues();
+      } else {
+        alert("Could not update that issue.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not update that issue.");
+    }
   }
 
   function renderMaintenanceLog() {
@@ -2638,7 +2858,9 @@
       bannedFingerprints: data.bannedFingerprints || [],
       injectionAttempts: data.injectionAttempts || [],
       callRequests: data.callRequests || [],
-      intakeLog: data.intakeLog || []
+      intakeLog: data.intakeLog || [],
+      a11yIssues: data.a11yIssues || [],
+      greetLinks: data.greetLinks || []
     };
 
     gate.style.display = "none";
@@ -2654,6 +2876,8 @@
     renderBannedFingerprints();
     renderCallRequests();
     renderIntakeLog();
+    renderA11yIssues();
+    renderGreetLinks();
 
     if (!kbHasLoaded) {
       kbHasLoaded = true;

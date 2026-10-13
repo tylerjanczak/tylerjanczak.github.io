@@ -1236,10 +1236,25 @@
     }
   }
 
+  function getPersonalName() {
+    try {
+      const g = JSON.parse(sessionStorage.getItem("tylerPersonalGreeting") || "null");
+      if (g && typeof g.name === "string") {
+        // plain text only; addAssistantMessage also HTML-escapes
+        return g.name.replace(/[\[\]()<>]/g, "").trim().slice(0, 60);
+      }
+    } catch {
+      /* no personal link this session */
+    }
+    return "";
+  }
+
   async function runInitialMessages() {
+    const personalName = getPersonalName();
+    const hello = personalName ? `${getTimeBasedGreeting()} ${personalName}` : getTimeBasedGreeting();
     const greetingText = isSelfIdentifiedRecruiter()
-      ? `${getTimeBasedGreeting()}, I'm Tyler AI. Since you're a recruiter, I can quickly share what makes Tyler a strong fit, send over his resume, or help set up time to talk directly.`
-      : `${getTimeBasedGreeting()}, I'm Tyler AI. Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
+      ? `${hello}, I'm Tyler AI. Since you're a recruiter, I can quickly share what makes Tyler a strong fit, send over his resume, or help set up time to talk directly.`
+      : `${hello}, I'm Tyler AI. Ask me about Tyler's background, and I can point you to the right part of the site or send his resume.`;
 
     await showInitialMessage(greetingText, "", 300, 1100);
 

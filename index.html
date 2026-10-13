@@ -654,9 +654,9 @@
               <div class="tl-metric"><strong>×<span class="tl-num" data-to="7" data-dec="0" data-prefix="×" data-suffix="">7</span></strong><span>Employee of the Month</span></div>
               <div class="tl-metric"><strong>×<span class="tl-num" data-to="11" data-dec="0" data-prefix="×" data-suffix="">11</span></strong><span>Service Value Award</span></div>
             </div>
-        
+            <p class="tl-lane-note">Dashed line: continuous bedside practice, running alongside every role above.</p>
             <p class="role-body">
-              Maintained continuous medical practice across all corporate roles, keeping frontline
+              Maintained continuous PRN bedside practice across all corporate roles, keeping frontline
               clinical insight informing enterprise healthcare technology and operations work. Operate
               in high-acuity, time-critical environments, making rapid decisions during code and
               rapid-response events. ACLS, BLS, PALS, NRP certified. Employee of the Month (×7),
@@ -783,6 +783,92 @@
     </span>
     </div>
   </footer>
+<!-- Personal greeting: ?c=<code> in the URL shows "Hi <name>". The name is
+     looked up server-side (api/greet); nothing personal is in the URL. -->
+<style>
+  #personal-greeting {
+    position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px);
+    z-index: 9999; max-width: min(560px, calc(100vw - 32px));
+    background: var(--ink); color: var(--bg); padding: 14px 44px 14px 18px;
+    border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5;
+    opacity: 0; transition: opacity .4s ease, transform .4s ease;
+  }
+  #personal-greeting.show { opacity: 1; transform: translate(-50%, 0); }
+  #personal-greeting strong { font-family: 'Fraunces', serif; font-weight: 600; font-size: 16px; }
+  #personal-greeting .pg-note { display: block; margin-top: 4px; opacity: .85; }
+  #personal-greeting button {
+    position: absolute; top: 6px; right: 8px; background: none; border: 0;
+    color: inherit; font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 8px;
+  }
+  @media (prefers-reduced-motion: reduce) { #personal-greeting { transition: none; } }
+</style>
+<script>
+(function () {
+  var API = 'https://tylerjanczak-github-io.vercel.app/api/greet';
+  var KEY = 'tylerPersonalGreeting';
+  var params = new URLSearchParams(window.location.search);
+  var code = params.get('c');
+  var CODE_RE = /^[A-Za-z0-9_-]{6,24}$/;
+
+  function show(g) {
+    if (!g || !g.name) return;
+    try { if (sessionStorage.getItem('tylerGreetingDismissed') === '1') return; } catch (e) {}
+    var box = document.createElement('div');
+    box.id = 'personal-greeting';
+    box.setAttribute('role', 'status');
+    box.setAttribute('data-no-translate', '');
+    var strong = document.createElement('strong');
+    strong.textContent = 'Hi ' + g.name + ' \u2014 welcome.';
+    box.appendChild(strong);
+    var line = document.createElement('span');
+    line.className = 'pg-note';
+    line.textContent = g.note || (g.company
+      ? 'Thanks for stopping by. Here\u2019s a bit about my work.'
+      : 'Thanks for stopping by.');
+    box.appendChild(line);
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.setAttribute('aria-label', 'Dismiss greeting');
+    close.textContent = '\u00d7';
+    close.addEventListener('click', function () {
+      box.classList.remove('show');
+      try { sessionStorage.setItem('tylerGreetingDismissed', '1'); } catch (e) {}
+      setTimeout(function () { box.remove(); }, 450);
+    });
+    box.appendChild(close);
+    document.body.appendChild(box);
+    // wait out the heartbeat intro if it is playing
+    var delay = document.getElementById('heartbeat-intro') ? 3200 : 600;
+    setTimeout(function () { box.classList.add('show'); }, delay);
+    setTimeout(function () { box.classList.remove('show'); }, delay + 14000);
+  }
+
+  var cached = null;
+  try { cached = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
+
+  if (code && CODE_RE.test(code)) {
+    // Remove the code from the address bar / history entry right away.
+    try {
+      params.delete('c');
+      var q = params.toString();
+      history.replaceState(null, '', window.location.pathname + (q ? '?' + q : '') + window.location.hash);
+    } catch (e) {}
+    fetch(API + '?c=' + encodeURIComponent(code) + '&first=1', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.found && d.name) {
+          var g = { name: String(d.name).slice(0, 60), company: String(d.company || '').slice(0, 80), note: String(d.note || '').slice(0, 200) };
+          try { sessionStorage.setItem(KEY, JSON.stringify(g)); } catch (e) {}
+          show(g);
+        }
+      })
+      .catch(function () {});
+  } else if (cached) {
+    show(cached);
+  }
+})();
+</script>
 <script src="js/tyler-ai.js"></script>
 <script src="js/heatmap-disclaimer.js"></script>
 </body>

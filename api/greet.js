@@ -5,7 +5,6 @@ import { kv } from "@vercel/kv";
 // Unknown, revoked and malformed codes all get the same { found:false }
 // response so codes can't be probed. No IP is kept long-term; the rate-limit
 // counter expires after 60 seconds.
-
 const CODE_RE = /^[A-Za-z0-9_-]{6,24}$/;
 const LIMIT_PER_MINUTE = 30;
 

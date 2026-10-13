@@ -485,6 +485,7 @@
 
 
     <section class="hero">
+      <p id="personal-hero-greeting" hidden data-no-translate></p>
       <div class="hero-eyebrow">Healthcare Technology · Implementation · Operations</div>
       <h1>Tyler  Janczak</h1>
        <div class="hero-byline">
@@ -805,25 +806,22 @@
       });
     })();
   </script>
-<!-- Personal greeting: ?c=<code> in the URL shows "Hi <name>". The name is
-     looked up server-side (api/greet); nothing personal is in the URL. -->
+<!-- Personal greeting: ?c=<code> in the URL shows a welcome line above the
+     hero eyebrow. The name is looked up server-side (api/greet); nothing
+     personal is in the URL. -->
 <style>
-  #personal-greeting {
-    position: fixed; left: 50%; bottom: 20px; transform: translate(-50%, 20px);
-    z-index: 9999; max-width: min(560px, calc(100vw - 32px));
-    background: var(--ink); color: var(--bg); padding: 14px 44px 14px 18px;
-    border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.5;
-    opacity: 0; transition: opacity .4s ease, transform .4s ease;
+  #personal-hero-greeting {
+    font-family: var(--display);
+    font-size: clamp(20px, 3vw, 26px);
+    line-height: 1.35;
+    color: var(--ink);
+    margin: 0 0 22px;
+    max-width: 640px;
   }
-  #personal-greeting.show { opacity: 1; transform: translate(-50%, 0); }
-  #personal-greeting strong { font-family: 'Fraunces', serif; font-weight: 600; font-size: 16px; }
-  #personal-greeting .pg-note { display: block; margin-top: 4px; opacity: .85; }
-  #personal-greeting button {
-    position: absolute; top: 6px; right: 8px; background: none; border: 0;
-    color: inherit; font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 8px;
-  }
-  @media (prefers-reduced-motion: reduce) { #personal-greeting { transition: none; } }
+  #personal-hero-greeting strong { font-weight: 500; color: var(--accent); }
+  #personal-hero-greeting.pg-in { animation: pgFade .6s ease both; }
+  @keyframes pgFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { #personal-hero-greeting.pg-in { animation: none; } }
 </style>
 <script>
 (function () {
@@ -834,36 +832,19 @@
   var CODE_RE = /^[A-Za-z0-9_-]{6,24}$/;
 
   function show(g) {
-    if (!g || !g.name) return;
-    try { if (sessionStorage.getItem('tylerGreetingDismissed') === '1') return; } catch (e) {}
-    var box = document.createElement('div');
-    box.id = 'personal-greeting';
-    box.setAttribute('role', 'status');
-    box.setAttribute('data-no-translate', '');
+    var box = document.getElementById('personal-hero-greeting');
+    if (!box || !g || !g.name) return;
+    box.textContent = '';
+    box.appendChild(document.createTextNode('Hi '));
     var strong = document.createElement('strong');
-    strong.textContent = 'Hi ' + g.name + ' \u2014 welcome.';
+    strong.textContent = g.name; // textContent only: the name is never parsed as HTML
     box.appendChild(strong);
-    var line = document.createElement('span');
-    line.className = 'pg-note';
-    line.textContent = g.note || (g.company
-      ? 'Thanks for stopping by. Here\u2019s a bit about my work.'
-      : 'Thanks for stopping by.');
-    box.appendChild(line);
-    var close = document.createElement('button');
-    close.type = 'button';
-    close.setAttribute('aria-label', 'Dismiss greeting');
-    close.textContent = '\u00d7';
-    close.addEventListener('click', function () {
-      box.classList.remove('show');
-      try { sessionStorage.setItem('tylerGreetingDismissed', '1'); } catch (e) {}
-      setTimeout(function () { box.remove(); }, 450);
-    });
-    box.appendChild(close);
-    document.body.appendChild(box);
+    box.appendChild(document.createTextNode(', welcome to my interactive portfolio. If you have questions, please use my AI assistant.'));
+    box.hidden = false;
     // wait out the heartbeat intro if it is playing
-    var delay = document.getElementById('heartbeat-intro') ? 3200 : 600;
-    setTimeout(function () { box.classList.add('show'); }, delay);
-    setTimeout(function () { box.classList.remove('show'); }, delay + 14000);
+    var delay = document.getElementById('heartbeat-intro') ? 3000 : 0;
+    box.style.visibility = 'hidden';
+    setTimeout(function () { box.style.visibility = ''; box.classList.add('pg-in'); }, delay);
   }
 
   var cached = null;

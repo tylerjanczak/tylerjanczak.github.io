@@ -772,7 +772,10 @@
   <footer>
     <div class="container" style="display: flex; justify-content: space-between; width: 100%; flex-wrap: wrap; gap: 12px;">
       <span>© 2026 Tyler Janczak</span>
-      <a href="privacy-policy.html" style="color: inherit; border-bottom: 1px solid var(--rule); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Privacy Policy</a>
+      <div class="footer-links" style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
+        <a href="privacy-policy.html" style="color: inherit; border-bottom: 1px solid var(--rule); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Privacy Policy</a>
+        <button type="button" id="session-info-toggle" aria-expanded="false" aria-controls="session-info-wrap" data-no-translate style="background: none; border: 0; border-bottom: 1px solid var(--rule); padding: 0; margin: 0; cursor: pointer; font: inherit; color: inherit; text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Session Info</button>
+      </div>
       <span class="secure-badge">
       <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -781,8 +784,27 @@
       </svg>
       Secure Session
     </span>
+      <div id="session-info-wrap" hidden style="flex-basis: 100%; max-width: 620px;">
+        <div id="session-info-inline" data-no-translate></div>
+      </div>
     </div>
   </footer>
+  <script>
+    (function () {
+      var btn = document.getElementById('session-info-toggle');
+      var wrap = document.getElementById('session-info-wrap');
+      if (!btn || !wrap) return;
+      btn.addEventListener('click', function () {
+        var open = wrap.hasAttribute('hidden');
+        if (open) wrap.removeAttribute('hidden'); else wrap.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          if (window.TylerSessionInfo && window.TylerSessionInfo.refresh) window.TylerSessionInfo.refresh();
+          wrap.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
+        }
+      });
+    })();
+  </script>
 <!-- Personal greeting: ?c=<code> in the URL shows "Hi <name>". The name is
      looked up server-side (api/greet); nothing personal is in the URL. -->
 <style>
@@ -870,6 +892,7 @@
 })();
 </script>
 <script src="js/accessibility.js" defer></script>
+<script src="js/session-info.js" defer></script>
 <script src="js/tyler-ai.js"></script>
 <script src="js/heatmap-disclaimer.js"></script>
 </body>

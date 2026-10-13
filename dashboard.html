@@ -1051,6 +1051,37 @@
 
   <div class="stats-row" id="stats-row"></div>
 
+  <section class="panel" id="greet-panel">
+    <div class="panel-header">
+      <h2>Personal Links</h2>
+      <span class="panel-count" id="greet-count">0</span>
+    </div>
+    <p style="font-size: 12px; color: #8b857e; margin: -6px 0 14px;">
+      Create a link that greets one person by name (e.g. "Hi Sarah — welcome"). The <strong>Site link</strong> opens
+      the portfolio with the greeting; the <strong>Chat link</strong> opens Tyler AI directly, skipping the getdetails.do intake gate. Only the name you type here is ever shown to the visitor; opens are
+      counted (time + count only, no IP stored).
+    </p>
+    <form id="greet-form" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+      <input id="greet-name" type="text" maxlength="60" placeholder="Greeting name (e.g. Sarah)" required style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <input id="greet-company" type="text" maxlength="80" placeholder="Company (optional)" style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:110px;">Created</th>
+          <th style="width:160px;">Who</th>
+          <th>Links</th>
+          <th style="width:60px;">Opens</th>
+          <th style="width:110px;">Last Opened</th>
+          <th style="width:130px;"></th>
+        </tr>
+      </thead>
+      <tbody id="greet-body"></tbody>
+    </table>
+  </section>
+
   <section class="panel" id="status-panel">
     <div class="panel-header">
       <h2>System Status</h2>
@@ -1262,6 +1293,7 @@
           <th>Name</th>
           <th>Phone</th>
           <th>Email</th>
+          <th style="width:40px;"></th>
         </tr>
       </thead>
       <tbody id="call-request-body"></tbody>
@@ -1280,6 +1312,7 @@
           <th style="width:110px;">IP</th>
           <th>Device Fingerprint</th>
           <th style="width:100px;">Recruiter?</th>
+          <th style="width:40px;"></th>
         </tr>
       </thead>
       <tbody id="intake-body"></tbody>
@@ -1311,36 +1344,6 @@
     </table>
   </section>
 
-  <section class="panel">
-    <div class="panel-header">
-      <h2>Personal Links</h2>
-      <span class="panel-count" id="greet-count">0</span>
-    </div>
-    <p style="font-size: 12px; color: #8b857e; margin: -6px 0 14px;">
-      Create a link that greets one person by name (e.g. "Hi Sarah — welcome") and also opens
-      Tyler AI with their name. Only the name you type here is ever shown to the visitor; opens are
-      counted (time + count only, no IP stored).
-    </p>
-    <form id="greet-form" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
-      <input id="greet-name" type="text" maxlength="60" placeholder="Greeting name (e.g. Sarah)" required style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
-      <input id="greet-company" type="text" maxlength="80" placeholder="Company (optional)" style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
-      <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
-      <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
-    </form>
-    <table>
-      <thead>
-        <tr>
-          <th style="width:110px;">Created</th>
-          <th style="width:160px;">Who</th>
-          <th>Link</th>
-          <th style="width:60px;">Opens</th>
-          <th style="width:110px;">Last Opened</th>
-          <th style="width:150px;"></th>
-        </tr>
-      </thead>
-      <tbody id="greet-body"></tbody>
-    </table>
-  </section>
 </div>
 
 
@@ -1967,15 +1970,18 @@
     document.getElementById("call-request-count").textContent = requests.length;
 
     body.innerHTML = requests.length
-      ? requests.map((r) => `
+      ? requests.map((r, i) => `
           <tr>
             <td class="timestamp">${formatDate(r.timestamp)}</td>
             <td>${escapeHtml(r.name || "")}</td>
             <td>${escapeHtml(r.phone || "")}</td>
             <td>${escapeHtml(r.email || "")}</td>
+            <td><button class="delete-btn" data-type="callRequest" data-index="${i}" title="Delete">&times;</button></td>
           </tr>
         `).join("")
-      : `<tr><td colspan="4" class="empty-row">No call requests yet.</td></tr>`;
+      : `<tr><td colspan="5" class="empty-row">No call requests yet.</td></tr>`;
+
+    body.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", handleDelete));
   }
 
   function renderIntakeLog() {
@@ -1985,15 +1991,18 @@
     document.getElementById("intake-count").textContent = entries.length;
 
     body.innerHTML = entries.length
-      ? entries.map((e) => `
+      ? entries.map((e, i) => `
           <tr>
             <td class="timestamp">${formatDate(e.timestamp)}</td>
             <td>${escapeHtml(e.ip || "unknown")}</td>
-            <td style="font-family: monospace; font-size: 11px;">${e.fingerprint ? escapeHtml(e.fingerprint.slice(0, 24)) + "..." : "—"}</td>
+            <td style="font-family: monospace; font-size: 11px;">${e.personalLink ? `<span class="intent-tag">Personal link: ${escapeHtml(e.personalLink)}</span>` : e.fingerprint ? escapeHtml(e.fingerprint.slice(0, 24)) + "..." : "—"}</td>
             <td>${e.isRecruiter === true ? '<span class="intent-tag">Yes</span>' : e.isRecruiter === false ? "No" : "—"}</td>
+            <td><button class="delete-btn" data-type="intake" data-index="${i}" title="Delete">&times;</button></td>
           </tr>
         `).join("")
-      : `<tr><td colspan="4" class="empty-row">No intake entries yet.</td></tr>`;
+      : `<tr><td colspan="5" class="empty-row">No intake entries yet.</td></tr>`;
+
+    body.querySelectorAll(".delete-btn").forEach((btn) => btn.addEventListener("click", handleDelete));
   }
 
   function renderA11yIssues() {
@@ -2026,8 +2035,14 @@
   // ---- Personal links ----
   const SITE_ORIGIN = "https://tylerjanczak.com";
 
+  const CHAT_ORIGIN = "https://bridges.tylerjanczak.com";
+
   function greetLinkUrl(code) {
     return `${SITE_ORIGIN}/?c=${encodeURIComponent(code)}`;
+  }
+
+  function greetChatUrl(code) {
+    return `${CHAT_ORIGIN}/?c=${encodeURIComponent(code)}`;
   }
 
   async function greetApi(action, payload) {
@@ -2056,11 +2071,21 @@
           <tr${revoked ? ' style="opacity:.55"' : ""}>
             <td class="timestamp">${formatDate(l.created)}</td>
             <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${revoked ? '<br><span class="intent-tag">revoked</span>' : ""}</td>
-            <td><input type="text" readonly value="${escapeHtml(url)}" style="width:100%; font-size:11.5px; padding:5px 7px; border:1px solid #d9d2c4; border-radius:5px; font-family:monospace;"></td>
+            <td style="font-size:11.5px;">
+              <div style="display:flex; gap:6px; align-items:center; margin-bottom:5px;">
+                <span style="width:34px; color:#8b857e;">Site</span>
+                <input type="text" readonly value="${escapeHtml(url)}" style="flex:1; min-width:0; font-size:11px; padding:4px 6px; border:1px solid #d9d2c4; border-radius:5px; font-family:monospace;">
+                <button class="small-action-btn" data-greet-copy="${escapeHtml(l.code)}" data-greet-kind="site">Copy</button>
+              </div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <span style="width:34px; color:#8b857e;">Chat</span>
+                <input type="text" readonly value="${escapeHtml(greetChatUrl(l.code))}" style="flex:1; min-width:0; font-size:11px; padding:4px 6px; border:1px solid #d9d2c4; border-radius:5px; font-family:monospace;">
+                <button class="small-action-btn" data-greet-copy="${escapeHtml(l.code)}" data-greet-kind="chat">Copy</button>
+              </div>
+            </td>
             <td>${l.opens || 0}</td>
             <td class="timestamp">${l.lastOpened ? formatDate(l.lastOpened) : "—"}</td>
             <td>
-              <button class="small-action-btn" data-greet-copy="${escapeHtml(l.code)}">Copy</button>
               <button class="small-action-btn${revoked ? "" : " unban"}" data-greet-toggle="${escapeHtml(l.code)}">${revoked ? "Restore" : "Revoke"}</button>
               <button class="small-action-btn" data-greet-delete="${escapeHtml(l.code)}">Delete</button>
             </td>
@@ -2070,12 +2095,14 @@
 
     body.querySelectorAll("[data-greet-copy]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const url = greetLinkUrl(btn.dataset.greetCopy);
+        const url = btn.dataset.greetKind === "chat"
+          ? greetChatUrl(btn.dataset.greetCopy)
+          : greetLinkUrl(btn.dataset.greetCopy);
         try {
           await navigator.clipboard.writeText(url);
           btn.textContent = "Copied";
         } catch {
-          const input = btn.closest("tr").querySelector("input");
+          const input = btn.parentElement.querySelector("input");
           input.select();
           btn.textContent = "Select + copy";
         }
@@ -2101,8 +2128,23 @@
 
     body.querySelectorAll("[data-greet-delete]").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        if (!confirm("Delete this link permanently? The URL will stop working.")) return;
         const code = btn.dataset.greetDelete;
+        const link = (currentData.greetLinks || []).find((x) => x.code === code);
+        const who = link ? link.name : "this person";
+        const confirmed = await showHardStop({
+          risk: "MEDIUM",
+          title: `Confirm: Delete Personal Link for ${who}`,
+          detail: `This will permanently delete the personal link for <strong>${escapeHtml(who)}</strong>${link && link.company ? ` (${escapeHtml(link.company)})` : ""}.`,
+          associated: [
+            "Personal link (site + chat URLs)",
+            "Open count and last-opened history",
+            "Greeting shown to this visitor"
+          ],
+          warning: "Anyone who has this link will no longer see their greeting, and the chat link will stop letting them in.",
+          riskLevel: "medium",
+          confirmLabel: "Delete Link"
+        });
+        if (!confirmed) return;
         try {
           await greetApi("greet-delete", { code });
           currentData.greetLinks = (currentData.greetLinks || []).filter((x) => x.code !== code);

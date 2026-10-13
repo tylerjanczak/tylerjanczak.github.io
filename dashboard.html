@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard — Tyler Janczak</title>
 <meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@simplewebauthn/browser@13/dist/bundle/index.umd.min.js"></script>
+<!-- Self-hosted (pinned 13.2.2) so no third-party script ever runs on the admin page. -->
+<script src="js/vendor/simplewebauthn-browser-13.2.2.umd.min.js"></script>
 <style>
   :root {
     --bg: #F7F4EE;
@@ -1431,6 +1433,15 @@
   });
 
   document.getElementById("sign-out").addEventListener("click", () => {
+    // End the session on the server too, so a copied token stops working.
+    const tokenToRevoke = localStorage.getItem(SESSION_KEY);
+    if (tokenToRevoke) {
+      fetch(`${API_BASE}/api/dashboard?action=logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${tokenToRevoke}` },
+        keepalive: true
+      }).catch(() => {});
+    }
     localStorage.removeItem(SESSION_KEY);
 
     // Wipe every table, panel, and cached value — not just hide the
@@ -1506,7 +1517,11 @@
     try {
       const optionsRes = await fetch(`${API_BASE}/api/webauthn?action=register-options`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${password}` }
+        headers: {
+          Authorization: `Bearer ${password}`,
+          // If you're already signed in (adding a second device), prove it.
+          "X-Dashboard-Session": localStorage.getItem(SESSION_KEY) || ""
+        }
       });
 
       const options = await optionsRes.json();
@@ -1526,9 +1541,10 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${password}`
+          Authorization: `Bearer ${password}`,
+          "X-Dashboard-Session": localStorage.getItem(SESSION_KEY) || ""
         },
-        body: JSON.stringify({ response: attResp })
+        body: JSON.stringify({ response: attResp, challengeId: options.challengeId })
       });
 
       const verifyData = await verifyRes.json();
@@ -1570,7 +1586,7 @@
       const verifyRes = await fetch(`${API_BASE}/api/webauthn?action=auth-verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ response: authResp })
+        body: JSON.stringify({ response: authResp, challengeId: options.challengeId })
       });
 
       const verifyData = await verifyRes.json();
@@ -2745,7 +2761,7 @@
 
   async function checkWebsite() {
     try {
-      const res = await fetch(`${window.location.origin}/index.html`, { cache: "no-store" });
+      const res = await fetch("https://tylerjanczak.com/", { cache: "no-store" });
       setStatusRow("website", res.ok ? "operational" : "down", res.ok ? "Operational" : `Error ${res.status}`);
     } catch {
       setStatusRow("website", "down", "Unreachable");

@@ -6,7 +6,6 @@
   "use strict";
   if (window.__tylerSessionInfoInit) return;
   window.__tylerSessionInfoInit = true;
-
   var SESSION_KEY = "tylerSessionInfo";
   var VISITOR_KEY = "tylerVisitorInfo";
 

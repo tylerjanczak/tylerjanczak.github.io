@@ -1,4 +1,5 @@
 import { kv } from "@vercel/kv";
+import { randomBytes } from "crypto";
 
 const KEYS = {
   conversation: "tyler_ai_conversations",
@@ -14,6 +15,7 @@ async function requireSession(req, res) {
   }
 
   const sessionValid = await kv.get(`webauthn_session_${sessionToken}`);
+
   if (!sessionValid) {
     res.status(401).json({ error: "Session expired. Please sign in again." });
     return null;
@@ -36,7 +38,7 @@ async function handleData(req, res) {
   if (!(await requireSession(req, res))) return;
 
   try {
-    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps, bannedRanges, bannedFingerprints, rawInjectionAttempts, rawCallRequests] = await Promise.all([
+    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps, bannedRanges, bannedFingerprints, rawInjectionAttempts, rawCallRequests, rawIntakeLog, rawA11yIssues, rawGreetLinks] = await Promise.all([
       kv.lrange("tyler_ai_conversations", 0, 199),
       kv.lrange("tyler_ai_resume_requests", 0, 199),
       kv.lrange("site_maintenance_log", 0, 49),
@@ -45,8 +47,34 @@ async function handleData(req, res) {
       kv.smembers("banned_ranges"),
       kv.smembers("banned_fingerprints"),
       kv.lrange("injection_attempts", 0, 49),
-      kv.lrange("tyler_ai_call_requests", 0, 99)
+      kv.lrange("tyler_ai_call_requests", 0, 99),
+      kv.lrange("visitor_intake_log", 0, 99),
+      kv.hgetall("a11y_issues"),
+      kv.hgetall("greet_links")
     ]);
+
+    const greetLinks = Object.values(rawGreetLinks || {})
+      .map((value) => {
+        try {
+          return typeof value === "string" ? JSON.parse(value) : value;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.created) - new Date(a.created));
+
+    const a11yIssues = Object.entries(rawA11yIssues || {})
+      .map(([signature, value]) => {
+        try {
+          const record = typeof value === "string" ? JSON.parse(value) : value;
+          return { signature, ...record };
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
 
     return res.status(200).json({
       success: true,
@@ -58,7 +86,10 @@ async function handleData(req, res) {
       bannedRanges: bannedRanges || [],
       bannedFingerprints: bannedFingerprints || [],
       injectionAttempts: parseEntries(rawInjectionAttempts),
-      callRequests: parseEntries(rawCallRequests)
+      callRequests: parseEntries(rawCallRequests),
+      intakeLog: parseEntries(rawIntakeLog),
+      a11yIssues,
+      greetLinks
     });
   } catch (err) {
     console.error(err);
@@ -348,6 +379,109 @@ Keep the total response under 200 words, written directly to Tyler in a helpful,
   }
 }
 
+async function handleA11yResolve(req, res) {
+  if (!(await requireSession(req, res))) return;
+
+  try {
+    const { signature, status } = req.body;
+
+    if (!signature || typeof signature !== "string") {
+      return res.status(400).json({ error: "No issue signature provided." });
+    }
+
+    const raw = await kv.hget("a11y_issues", signature);
+    if (!raw) {
+      return res.status(404).json({ error: "Issue not found." });
+    }
+
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    record.status = status === "open" ? "open" : "resolved";
+    record.resolvedAt = record.status === "resolved" ? new Date().toISOString() : null;
+
+    await kv.hset("a11y_issues", { [signature]: JSON.stringify(record) });
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+// ---- Personal links (greeting by name) ----
+const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // no look-alike chars
+
+function makeCode(len = 10) {
+  const bytes = randomBytes(len);
+  let out = "";
+  for (let i = 0; i < len; i++) out += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
+  return out;
+}
+
+function cleanText(value, max) {
+  if (typeof value !== "string") return "";
+  // strip control chars and angle brackets; collapse whitespace
+  return value.replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001F\u007F<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+async function handleGreetCreate(req, res) {
+  if (!(await requireSession(req, res))) return;
+  try {
+    const name = cleanText(req.body?.name, 60);
+    const company = cleanText(req.body?.company, 80);
+    const note = cleanText(req.body?.note, 200);
+    if (!name) return res.status(400).json({ error: "A greeting name is required." });
+
+    let code = makeCode();
+    for (let i = 0; i < 5 && (await kv.hget("greet_links", code)); i++) code = makeCode();
+
+    const record = {
+      code, name, company, note,
+      status: "active",
+      created: new Date().toISOString(),
+      opens: 0, firstOpened: null, lastOpened: null
+    };
+    await kv.hset("greet_links", { [code]: JSON.stringify(record) });
+    return res.status(200).json({ success: true, link: record });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleGreetRevoke(req, res) {
+  if (!(await requireSession(req, res))) return;
+  try {
+    const { code, status } = req.body || {};
+    if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
+      return res.status(400).json({ error: "Invalid code." });
+    }
+    const raw = await kv.hget("greet_links", code);
+    if (!raw) return res.status(404).json({ error: "Link not found." });
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    record.status = status === "active" ? "active" : "revoked";
+    await kv.hset("greet_links", { [code]: JSON.stringify(record) });
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleGreetDelete(req, res) {
+  if (!(await requireSession(req, res))) return;
+  try {
+    const { code } = req.body || {};
+    if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
+      return res.status(400).json({ error: "Invalid code." });
+    }
+    await kv.hdel("greet_links", code);
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -397,6 +531,22 @@ export default async function handler(req, res) {
 
   if (req.method === "POST" && action === "reset-strikes") {
     return handleResetStrikes(req, res);
+  }
+
+  if (req.method === "POST" && action === "a11y-resolve") {
+    return handleA11yResolve(req, res);
+  }
+
+  if (req.method === "POST" && action === "greet-create") {
+    return handleGreetCreate(req, res);
+  }
+
+  if (req.method === "POST" && action === "greet-revoke") {
+    return handleGreetRevoke(req, res);
+  }
+
+  if (req.method === "POST" && action === "greet-delete") {
+    return handleGreetDelete(req, res);
   }
 
   return res.status(400).json({ error: "Unknown or missing action." });

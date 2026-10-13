@@ -17,6 +17,7 @@ function ipInCidr(ip, cidr) {
     return false;
   }
 }
+
 async function isVisitorBlocked(ip, fingerprint) {
   const [isDirectlyBanned, bannedRanges, isFingerprintBanned] = await Promise.all([
     kv.sismember("banned_ips", ip),
@@ -206,6 +207,66 @@ async function handleLogIntake(req, res) {
   }
 }
 
+// Personal link on the chat subdomain: bridges.tylerjanczak.com/?c=<code>
+// skips the getdetails.do intake gate. The code is checked server-side
+// against the links created in the dashboard, and a normal single-use
+// session token is minted, so everything after this is unchanged.
+async function handleGreetSession(req, res) {
+  const miss = () => res.status(200).json({ success: false });
+  try {
+    const code = typeof req.body?.code === "string" ? req.body.code : "";
+    if (!/^[A-Za-z0-9_-]{6,24}$/.test(code)) return miss();
+
+    const clientIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      "unknown";
+
+    const rlKey = `greet_rl_${clientIp}`;
+    const hits = await kv.incr(rlKey);
+    if (hits === 1) await kv.expire(rlKey, 60);
+    if (hits > 30) return miss();
+
+    const raw = await kv.hget("greet_links", code);
+    if (!raw) return miss();
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (record.status !== "active") return miss();
+
+    const now = new Date().toISOString();
+    record.opens = (record.opens || 0) + 1;
+    record.firstOpened = record.firstOpened || now;
+    record.lastOpened = now;
+    await kv.hset("greet_links", { [code]: JSON.stringify(record) });
+
+    // Still shows up in Visitor Intake so you can see the visit.
+    await kv.lpush(
+      "visitor_intake_log",
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        ip: clientIp,
+        fingerprint: null,
+        isRecruiter: null,
+        personalLink: record.name || "",
+        timestamp: now
+      })
+    );
+
+    const sessionToken = crypto.randomUUID();
+    await kv.set(`bridges_session_${sessionToken}`, "true", { ex: 600 });
+
+    return res.status(200).json({
+      success: true,
+      sessionId: sessionToken,
+      name: record.name || "",
+      company: record.company || "",
+      note: record.note || ""
+    });
+  } catch (err) {
+    console.error("greet-session failed:", err);
+    return miss();
+  }
+}
+
 async function handleValidateSession(req, res) {
   try {
     const { sessionId } = req.body;
@@ -275,6 +336,10 @@ export default async function handler(req, res) {
 
     // Validates the single-use session token minted by getdetails.do —
     // the only legitimate way into the full-screen chat.
+    if (req.body.action === "greet-session") {
+      return handleGreetSession(req, res);
+    }
+
     if (req.body.action === "validate-session") {
       return handleValidateSession(req, res);
     }
@@ -839,7 +904,7 @@ Clinical certifications listed in the portfolio include:
 - ACLS
 - PALS
 - NRP
-
+- PMP
 This experience supports Tyler's perspective that healthcare technology must
 work for the people using it at the bedside and on the floor.
 
@@ -864,6 +929,7 @@ CERTIFICATIONS
 ==================================================
 
 The portfolio lists:
+- Project Management Professional (PMP)
 - Six Sigma Black Belt
 - Prosci Change Management / ADKAR
 - CPHIMS

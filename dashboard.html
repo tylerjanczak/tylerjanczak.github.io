@@ -1065,13 +1065,15 @@
       <input id="greet-name" type="text" maxlength="60" placeholder="Greeting name (e.g. Sarah)" required style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
       <input id="greet-company" type="text" maxlength="80" placeholder="Company (optional)" style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
       <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <select id="greet-permission" aria-label="Permission level" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
+      <select id="greet-template" aria-label="Template view" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
       <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
     </form>
     <table>
       <thead>
         <tr>
           <th style="width:110px;">Created</th>
-          <th style="width:160px;">Who</th>
+          <th style="width:190px;">Who / Access</th>
           <th>Links</th>
           <th style="width:60px;">Opens</th>
           <th style="width:110px;">Last Opened</th>
@@ -2037,6 +2039,26 @@
 
   const CHAT_ORIGIN = "https://bridges.tylerjanczak.com";
 
+  // Permission level (access class) and template view for a personal link.
+  // These are labels the visitor sees in Session Info; they don't unlock
+  // anything beyond what the public site already shows.
+  const GREET_PERMISSIONS = [
+    ["GUEST", "Guest"], ["RECRUITER", "Recruiter"],
+    ["HIRING_MANAGER", "Hiring Manager"], ["COLLEAGUE", "Colleague"]
+  ];
+  const GREET_TEMPLATES = [
+    ["PROD_VIEW", "PROD View"], ["PROD_MANAGER", "PROD Manager"],
+    ["PROD_SUPPORT", "PROD Support"], ["TEST_VIEW", "TEST View"]
+  ];
+
+  function optionsHtml(list, selected) {
+    return list.map(([value, label]) =>
+      `<option value="${value}"${value === selected ? " selected" : ""}>${label}</option>`).join("");
+  }
+
+  document.getElementById("greet-permission").innerHTML = optionsHtml(GREET_PERMISSIONS, "GUEST");
+  document.getElementById("greet-template").innerHTML = optionsHtml(GREET_TEMPLATES, "PROD_VIEW");
+
   function greetLinkUrl(code) {
     return `${SITE_ORIGIN}/?c=${encodeURIComponent(code)}`;
   }
@@ -2070,7 +2092,12 @@
           return `
           <tr${revoked ? ' style="opacity:.55"' : ""}>
             <td class="timestamp">${formatDate(l.created)}</td>
-            <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${revoked ? '<br><span class="intent-tag">revoked</span>' : ""}</td>
+            <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${revoked ? '<br><span class="intent-tag">revoked</span>' : ""}
+              <div style="display:flex; flex-direction:column; gap:4px; margin-top:6px;">
+                <select data-greet-perm="${escapeHtml(l.code)}" aria-label="Permission level for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;">${optionsHtml(GREET_PERMISSIONS, l.permission || "GUEST")}</select>
+                <select data-greet-tpl="${escapeHtml(l.code)}" aria-label="Template view for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;">${optionsHtml(GREET_TEMPLATES, l.template || "PROD_VIEW")}</select>
+              </div>
+            </td>
             <td style="font-size:11.5px;">
               <div style="display:flex; gap:6px; align-items:center; margin-bottom:5px;">
                 <span style="width:34px; color:#8b857e;">Site</span>
@@ -2107,6 +2134,27 @@
           btn.textContent = "Select + copy";
         }
         setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      });
+    });
+
+    body.querySelectorAll("[data-greet-perm], [data-greet-tpl]").forEach((select) => {
+      select.addEventListener("change", async () => {
+        const isPerm = select.hasAttribute("data-greet-perm");
+        const code = isPerm ? select.dataset.greetPerm : select.dataset.greetTpl;
+        const link = (currentData.greetLinks || []).find((x) => x.code === code);
+        if (!link) return;
+        const field = isPerm ? "permission" : "template";
+        const previous = link[field] || (isPerm ? "GUEST" : "PROD_VIEW");
+        select.disabled = true;
+        try {
+          await greetApi("greet-update", { code, [field]: select.value });
+          link[field] = select.value;
+        } catch (err) {
+          select.value = previous;
+          alert(err.message);
+        } finally {
+          select.disabled = false;
+        }
       });
     });
 
@@ -2166,10 +2214,14 @@
       const data = await greetApi("greet-create", {
         name,
         company: document.getElementById("greet-company").value.trim(),
-        note: document.getElementById("greet-note").value.trim()
+        note: document.getElementById("greet-note").value.trim(),
+        permission: document.getElementById("greet-permission").value,
+        template: document.getElementById("greet-template").value
       });
       currentData.greetLinks = [data.link, ...(currentData.greetLinks || [])];
       event.target.reset();
+      document.getElementById("greet-permission").value = "GUEST";
+      document.getElementById("greet-template").value = "PROD_VIEW";
       renderGreetLinks();
     } catch (err) {
       alert(err.message);

@@ -231,6 +231,7 @@ async function handleGreetSession(req, res) {
     if (!raw) return miss();
     const record = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (record.status !== "active") return miss();
+    if (record.expiresAt && Date.parse(record.expiresAt) <= Date.now()) return miss();
 
     const now = new Date().toISOString();
     record.opens = (record.opens || 0) + 1;
@@ -295,11 +296,46 @@ async function handleValidateSession(req, res) {
   }
 }
 
+const PUBLIC_ORIGINS = new Set([
+  "https://tylerjanczak.com",
+  "https://www.tylerjanczak.com",
+  "https://bridges.tylerjanczak.com",
+  "https://tylerjanczak.github.io",
+  "https://tylerjanczak-github-io.vercel.app"
+]);
+
+// Per-IP limits for the actions that send email or write to the log. On a
+// counter-store error this fails OPEN so a KV hiccup never breaks the site.
+async function underLimit(bucket, id, limit, windowSec) {
+  try {
+    const key = `rl_${bucket}_${id}`;
+    const n = await kv.incr(key);
+    if (n === 1) await kv.expire(key, windowSec);
+    return n <= limit;
+  } catch (err) {
+    console.error("Rate limiter unavailable:", err);
+    return true;
+  }
+}
+
+const ACTION_LIMITS = {
+  "request-booking": [5, 3600],
+  "log-call-request": [10, 3600],
+  "log-intake": [30, 3600],
+  "get-availability": [30, 600],
+  "validate-session": [60, 600]
+};
+
 export default async function handler(req, res) {
-  // Allow requests from your website
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // Only this site's own pages may call the API from a browser.
+  const origin = req.headers.origin;
+  if (origin && PUBLIC_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("X-Content-Type-Options", "nosniff");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -310,6 +346,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    const limitForAction = ACTION_LIMITS[req.body?.action];
+    if (limitForAction) {
+      const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+      if (!(await underLimit(`chat_${req.body.action}`, ip, limitForAction[0], limitForAction[1]))) {
+        return res.status(429).json({ error: "Too many requests. Please try again later." });
+      }
+    }
+
     // Calendar availability lookup — a separate flow from normal Q&A,
     // triggered when a visitor wants to schedule a call. Pulls real open
     // times from Calendly rather than answering from the knowledge base.
@@ -1169,7 +1213,7 @@ When one of these pages is directly relevant to the visitor's question (they ask
       try {
         const rawLink = await kv.hget("greet_links", personalCode);
         const link = rawLink ? (typeof rawLink === "string" ? JSON.parse(rawLink) : rawLink) : null;
-        if (link && link.status === "active") {
+        if (link && link.status === "active" && !(link.expiresAt && Date.parse(link.expiresAt) <= Date.now())) {
           visitorIdentity = {
             name: link.name || "",
             company: link.company || "",

@@ -500,7 +500,8 @@
               } catch (e) {}
               validateSession(data.sessionId);
             } else {
-              showInvalidSession();
+              // Revoked, deleted or mistyped code: use the normal intake gate.
+              window.location.replace("/getdetails.do");
             }
           });
         return;

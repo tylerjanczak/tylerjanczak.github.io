@@ -5,10 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Dashboard — Tyler Janczak</title>
 <meta name="robots" content="noindex, nofollow" />
+<meta name="referrer" content="no-referrer" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/@simplewebauthn/browser@13/dist/bundle/index.umd.min.js"></script>
+<!-- @simplewebauthn/browser 13.2.2, embedded so no third-party script ever runs on the admin page. -->
+<script>
+/* [@simplewebauthn/browser@13.2.2] */
+!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).SimpleWebAuthnBrowser={})}(this,(function(e){"use strict";function t(e){const t=new Uint8Array(e);let r="";for(const e of t)r+=String.fromCharCode(e);return btoa(r).replace(/\+/g,"-").replace(/\//g,"_").replace(/=/g,"")}function r(e){const t=e.replace(/-/g,"+").replace(/_/g,"/"),r=(4-t.length%4)%4,n=t.padEnd(t.length+r,"="),o=atob(n),i=new ArrayBuffer(o.length),a=new Uint8Array(i);for(let e=0;e<o.length;e++)a[e]=o.charCodeAt(e);return i}function n(){return o.stubThis(void 0!==globalThis?.PublicKeyCredential&&"function"==typeof globalThis.PublicKeyCredential)}const o={stubThis:e=>e};function i(e){const{id:t}=e;return{...e,id:r(t),transports:e.transports}}function a(e){return"localhost"===e||/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i.test(e)}class s extends Error{constructor({message:e,code:t,cause:r,name:n}){super(e,{cause:r}),Object.defineProperty(this,"code",{enumerable:!0,configurable:!0,writable:!0,value:void 0}),this.name=n??r.name,this.code=t}}const l=new class{constructor(){Object.defineProperty(this,"controller",{enumerable:!0,configurable:!0,writable:!0,value:void 0})}createNewAbortSignal(){if(this.controller){const e=new Error("Cancelling existing WebAuthn API call for new one");e.name="AbortError",this.controller.abort(e)}const e=new AbortController;return this.controller=e,e.signal}cancelCeremony(){if(this.controller){const e=new Error("Manually cancelling existing WebAuthn API call");e.name="AbortError",this.controller.abort(e),this.controller=void 0}}},c=["cross-platform","platform"];function u(e){if(e&&!(c.indexOf(e)<0))return e}function d(e,t){console.warn(`The browser extension that intercepted this WebAuthn API call incorrectly implemented ${e}. You should report this error to them.\n`,t)}function h(){if(!n())return p.stubThis(new Promise((e=>e(!1))));const e=globalThis.PublicKeyCredential;return void 0===e?.isConditionalMediationAvailable?p.stubThis(new Promise((e=>e(!1)))):p.stubThis(e.isConditionalMediationAvailable())}const p={stubThis:e=>e};e.WebAuthnAbortService=l,e.WebAuthnError=s,e._browserSupportsWebAuthnAutofillInternals=p,e._browserSupportsWebAuthnInternals=o,e.base64URLStringToBuffer=r,e.browserSupportsWebAuthn=n,e.browserSupportsWebAuthnAutofill=h,e.bufferToBase64URLString=t,e.platformAuthenticatorIsAvailable=function(){return n()?PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable():new Promise((e=>e(!1)))},e.startAuthentication=async function(e){!e.optionsJSON&&e.challenge&&(console.warn("startAuthentication() was not called correctly. It will try to continue with the provided options, but this call should be refactored to use the expected call structure instead. See https://simplewebauthn.dev/docs/packages/browser#typeerror-cannot-read-properties-of-undefined-reading-challenge for more information."),e={optionsJSON:e});const{optionsJSON:o,useBrowserAutofill:c=!1,verifyBrowserAutofillInput:d=!0}=e;if(!n())throw new Error("WebAuthn is not supported in this browser");let p;0!==o.allowCredentials?.length&&(p=o.allowCredentials?.map(i));const f={...o,challenge:r(o.challenge),allowCredentials:p},b={};if(c){if(!await h())throw Error("Browser does not support WebAuthn autofill");if(document.querySelectorAll("input[autocomplete$='webauthn']").length<1&&d)throw Error('No <input> with "webauthn" as the only or last value in its `autocomplete` attribute was detected');b.mediation="conditional",f.allowCredentials=[]}let R;b.publicKey=f,b.signal=l.createNewAbortSignal();try{R=await navigator.credentials.get(b)}catch(e){throw function({error:e,options:t}){const{publicKey:r}=t;if(!r)throw Error("options was missing required publicKey property");if("AbortError"===e.name){if(t.signal instanceof AbortSignal)return new s({message:"Authentication ceremony was sent an abort signal",code:"ERROR_CEREMONY_ABORTED",cause:e})}else{if("NotAllowedError"===e.name)return new s({message:e.message,code:"ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY",cause:e});if("SecurityError"===e.name){const t=globalThis.location.hostname;if(!a(t))return new s({message:`${globalThis.location.hostname} is an invalid domain`,code:"ERROR_INVALID_DOMAIN",cause:e});if(r.rpId!==t)return new s({message:`The RP ID "${r.rpId}" is invalid for this domain`,code:"ERROR_INVALID_RP_ID",cause:e})}else if("UnknownError"===e.name)return new s({message:"The authenticator was unable to process the specified options, or could not create a new assertion signature",code:"ERROR_AUTHENTICATOR_GENERAL_ERROR",cause:e})}return e}({error:e,options:b})}if(!R)throw new Error("Authentication was not completed");const{id:g,rawId:w,response:A,type:E}=R;let m;return A.userHandle&&(m=t(A.userHandle)),{id:g,rawId:t(w),response:{authenticatorData:t(A.authenticatorData),clientDataJSON:t(A.clientDataJSON),signature:t(A.signature),userHandle:m},type:E,clientExtensionResults:R.getClientExtensionResults(),authenticatorAttachment:u(R.authenticatorAttachment)}},e.startRegistration=async function(e){!e.optionsJSON&&e.challenge&&(console.warn("startRegistration() was not called correctly. It will try to continue with the provided options, but this call should be refactored to use the expected call structure instead. See https://simplewebauthn.dev/docs/packages/browser#typeerror-cannot-read-properties-of-undefined-reading-challenge for more information."),e={optionsJSON:e});const{optionsJSON:o,useAutoRegister:c=!1}=e;if(!n())throw new Error("WebAuthn is not supported in this browser");const h={...o,challenge:r(o.challenge),user:{...o.user,id:r(o.user.id)},excludeCredentials:o.excludeCredentials?.map(i)},p={};let f;c&&(p.mediation="conditional"),p.publicKey=h,p.signal=l.createNewAbortSignal();try{f=await navigator.credentials.create(p)}catch(e){throw function({error:e,options:t}){const{publicKey:r}=t;if(!r)throw Error("options was missing required publicKey property");if("AbortError"===e.name){if(t.signal instanceof AbortSignal)return new s({message:"Registration ceremony was sent an abort signal",code:"ERROR_CEREMONY_ABORTED",cause:e})}else if("ConstraintError"===e.name){if(!0===r.authenticatorSelection?.requireResidentKey)return new s({message:"Discoverable credentials were required but no available authenticator supported it",code:"ERROR_AUTHENTICATOR_MISSING_DISCOVERABLE_CREDENTIAL_SUPPORT",cause:e});if("conditional"===t.mediation&&"required"===r.authenticatorSelection?.userVerification)return new s({message:"User verification was required during automatic registration but it could not be performed",code:"ERROR_AUTO_REGISTER_USER_VERIFICATION_FAILURE",cause:e});if("required"===r.authenticatorSelection?.userVerification)return new s({message:"User verification was required but no available authenticator supported it",code:"ERROR_AUTHENTICATOR_MISSING_USER_VERIFICATION_SUPPORT",cause:e})}else{if("InvalidStateError"===e.name)return new s({message:"The authenticator was previously registered",code:"ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED",cause:e});if("NotAllowedError"===e.name)return new s({message:e.message,code:"ERROR_PASSTHROUGH_SEE_CAUSE_PROPERTY",cause:e});if("NotSupportedError"===e.name)return 0===r.pubKeyCredParams.filter((e=>"public-key"===e.type)).length?new s({message:'No entry in pubKeyCredParams was of type "public-key"',code:"ERROR_MALFORMED_PUBKEYCREDPARAMS",cause:e}):new s({message:"No available authenticator supported any of the specified pubKeyCredParams algorithms",code:"ERROR_AUTHENTICATOR_NO_SUPPORTED_PUBKEYCREDPARAMS_ALG",cause:e});if("SecurityError"===e.name){const t=globalThis.location.hostname;if(!a(t))return new s({message:`${globalThis.location.hostname} is an invalid domain`,code:"ERROR_INVALID_DOMAIN",cause:e});if(r.rp.id!==t)return new s({message:`The RP ID "${r.rp.id}" is invalid for this domain`,code:"ERROR_INVALID_RP_ID",cause:e})}else if("TypeError"===e.name){if(r.user.id.byteLength<1||r.user.id.byteLength>64)return new s({message:"User ID was not between 1 and 64 characters",code:"ERROR_INVALID_USER_ID_LENGTH",cause:e})}else if("UnknownError"===e.name)return new s({message:"The authenticator was unable to process the specified options, or could not create a new credential",code:"ERROR_AUTHENTICATOR_GENERAL_ERROR",cause:e})}return e}({error:e,options:p})}if(!f)throw new Error("Registration was not completed");const{id:b,rawId:R,response:g,type:w}=f;let A,E,m,y;if("function"==typeof g.getTransports&&(A=g.getTransports()),"function"==typeof g.getPublicKeyAlgorithm)try{E=g.getPublicKeyAlgorithm()}catch(e){d("getPublicKeyAlgorithm()",e)}if("function"==typeof g.getPublicKey)try{const e=g.getPublicKey();null!==e&&(m=t(e))}catch(e){d("getPublicKey()",e)}if("function"==typeof g.getAuthenticatorData)try{y=t(g.getAuthenticatorData())}catch(e){d("getAuthenticatorData()",e)}return{id:b,rawId:t(R),response:{attestationObject:t(g.attestationObject),clientDataJSON:t(g.clientDataJSON),transports:A,publicKeyAlgorithm:E,publicKey:m,authenticatorData:y},type:w,clientExtensionResults:f.getClientExtensionResults(),authenticatorAttachment:u(f.authenticatorAttachment)}}}));
+</script>
 <style>
   :root {
     --bg: #F7F4EE;
@@ -1067,6 +1072,7 @@
       <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
       <select id="greet-permission" aria-label="Permission level" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
       <select id="greet-template" aria-label="Template view" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
+      <select id="greet-duration" aria-label="Link time limit" style="flex:1 1 150px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit; background:#fff;"></select>
       <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
     </form>
     <table>
@@ -1352,6 +1358,112 @@
 <script>
   const API_BASE = "https://tylerjanczak-github-io.vercel.app";
   const SESSION_KEY = "tylerDashboardSession";
+
+  // ---- Device-bound session ------------------------------------------
+  // At sign-in this browser creates a signing key that can NEVER be
+  // exported (WebCrypto non-extractable, kept in IndexedDB). The server
+  // binds the session to its public half, and every request to the API is
+  // signed with it. A session token copied to another device or script
+  // can't produce valid signatures, so it's useless there.
+  const DeviceKey = (() => {
+    const DB_NAME = "tylerDashDevice";
+    const STORE = "keys";
+    const KEY_ID = "signing-key";
+    let memoryKey = null; // fallback if IndexedDB is unavailable (lost on reload)
+
+    function openDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    async function idb(mode, run) {
+      const db = await openDb();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, mode);
+        const request = run(tx.objectStore(STORE));
+        tx.oncomplete = () => { db.close(); resolve(request ? request.result : undefined); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+      });
+    }
+
+    async function create() {
+      const pair = await crypto.subtle.generateKey(
+        { name: "ECDSA", namedCurve: "P-256" }, false, ["sign", "verify"]
+      );
+      try {
+        await idb("readwrite", (store) => store.put(pair.privateKey, KEY_ID));
+        memoryKey = null;
+      } catch {
+        memoryKey = pair.privateKey;
+      }
+      const jwk = await crypto.subtle.exportKey("jwk", pair.publicKey);
+      return { kty: "EC", crv: "P-256", x: jwk.x, y: jwk.y };
+    }
+
+    async function get() {
+      if (memoryKey) return memoryKey;
+      try {
+        return (await idb("readonly", (store) => store.get(KEY_ID))) || null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function remove() {
+      memoryKey = null;
+      try { await idb("readwrite", (store) => store.delete(KEY_ID)); } catch { /* nothing to remove */ }
+    }
+
+    const toB64Url = (buf) =>
+      btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    const toHex = (buf) =>
+      Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+
+    async function proofFor(method, pathAndQuery, token) {
+      const key = await get();
+      if (!key) return null;
+      const ts = String(Date.now());
+      const nonce = toHex(crypto.getRandomValues(new Uint8Array(16)));
+      const tokenHash = toHex(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)));
+      const message = `${method}\n${pathAndQuery}\n${ts}\n${nonce}\n${tokenHash}`;
+      const sig = await crypto.subtle.sign(
+        { name: "ECDSA", hash: "SHA-256" }, key, new TextEncoder().encode(message)
+      );
+      return `${ts}.${nonce}.${toB64Url(sig)}`;
+    }
+
+    return { create, remove, proofFor };
+  })();
+
+  // Every call to the API with a session token gets a fresh signature.
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async (input, init = {}) => {
+    try {
+      if (typeof input === "string") {
+        const url = new URL(input, window.location.href);
+        if (url.origin === new URL(API_BASE).origin) {
+          const headers = new Headers(init.headers || {});
+          let token = headers.get("X-Dashboard-Session") || "";
+          if (!token && url.pathname !== "/api/webauthn") {
+            const auth = headers.get("Authorization") || "";
+            if (auth.startsWith("Bearer ")) token = auth.slice(7);
+          }
+          if (token) {
+            const proof = await DeviceKey.proofFor((init.method || "GET").toUpperCase(), url.pathname + url.search, token);
+            if (proof) headers.set("X-Dashboard-Proof", proof);
+          }
+          return nativeFetch(input, { ...init, headers });
+        }
+      }
+    } catch (err) {
+      console.error("Could not sign request:", err);
+    }
+    return nativeFetch(input, init);
+  };
   const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
 
   const gate = document.getElementById("gate");
@@ -1431,6 +1543,16 @@
   });
 
   document.getElementById("sign-out").addEventListener("click", () => {
+    // End the session on the server too, so a copied token stops working.
+    const tokenToRevoke = localStorage.getItem(SESSION_KEY);
+    if (tokenToRevoke) {
+      fetch(`${API_BASE}/api/dashboard?action=logout`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${tokenToRevoke}` }
+      }).catch(() => {}).finally(() => DeviceKey.remove());
+    } else {
+      DeviceKey.remove();
+    }
     localStorage.removeItem(SESSION_KEY);
 
     // Wipe every table, panel, and cached value — not just hide the
@@ -1506,7 +1628,11 @@
     try {
       const optionsRes = await fetch(`${API_BASE}/api/webauthn?action=register-options`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${password}` }
+        headers: {
+          Authorization: `Bearer ${password}`,
+          // If you're already signed in (adding a second device), prove it.
+          "X-Dashboard-Session": localStorage.getItem(SESSION_KEY) || ""
+        }
       });
 
       const options = await optionsRes.json();
@@ -1526,9 +1652,10 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${password}`
+          Authorization: `Bearer ${password}`,
+          "X-Dashboard-Session": localStorage.getItem(SESSION_KEY) || ""
         },
-        body: JSON.stringify({ response: attResp })
+        body: JSON.stringify({ response: attResp, challengeId: options.challengeId })
       });
 
       const verifyData = await verifyRes.json();
@@ -1566,11 +1693,13 @@
 
       authOverlay.classList.add("visible");
       const authResp = await startAuthentication({ optionsJSON: options });
+      // New signing key for this device; the session will be bound to it.
+      const devicePublicKey = await DeviceKey.create();
 
       const verifyRes = await fetch(`${API_BASE}/api/webauthn?action=auth-verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ response: authResp })
+        body: JSON.stringify({ response: authResp, challengeId: options.challengeId, devicePublicKey })
       });
 
       const verifyData = await verifyRes.json();
@@ -2051,12 +2180,29 @@
     ["PROD_SUPPORT", "PROD Support"], ["TEST_VIEW", "TEST View"]
   ];
 
+  const GREET_DURATIONS = [
+    ["12h", "12 hours"], ["1d", "1 day"], ["3d", "3 days"],
+    ["1w", "1 week"], ["1m", "1 month"]
+  ];
+
+  function expiryInfo(l) {
+    if (!l.expiresAt) return { expired: false, text: "No limit (legacy)" };
+    const ms = Date.parse(l.expiresAt) - Date.now();
+    if (ms <= 0) return { expired: true, text: "Expired" };
+    const h = Math.floor(ms / 3600000);
+    const text = h >= 48 ? Math.floor(h / 24) + " days left"
+      : h >= 1 ? h + "h " + Math.floor((ms % 3600000) / 60000) + "m left"
+      : Math.max(1, Math.floor(ms / 60000)) + "m left";
+    return { expired: false, text };
+  }
+
   function optionsHtml(list, selected) {
     return list.map(([value, label]) =>
       `<option value="${value}"${value === selected ? " selected" : ""}>${label}</option>`).join("");
   }
 
   document.getElementById("greet-permission").innerHTML = optionsHtml(GREET_PERMISSIONS, "GUEST");
+  document.getElementById("greet-duration").innerHTML = optionsHtml(GREET_DURATIONS, "1w");
   document.getElementById("greet-template").innerHTML = optionsHtml(GREET_TEMPLATES, "PROD_VIEW");
 
   function greetLinkUrl(code) {
@@ -2087,15 +2233,17 @@
 
     body.innerHTML = links.length
       ? links.map((l) => {
-          const revoked = l.status !== "active";
+          const exp = expiryInfo(l);
+          const revoked = l.status !== "active" || exp.expired;
           const url = greetLinkUrl(l.code);
           return `
           <tr${revoked ? ' style="opacity:.55"' : ""}>
             <td class="timestamp">${formatDate(l.created)}</td>
-            <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${revoked ? '<br><span class="intent-tag">revoked</span>' : ""}
+            <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${exp.expired ? '<br><span class="intent-tag">expired</span>' : (l.status !== "active" ? '<br><span class="intent-tag">revoked</span>' : "")}
               <div style="display:flex; flex-direction:column; gap:4px; margin-top:6px;">
                 <select data-greet-perm="${escapeHtml(l.code)}" aria-label="Permission level for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;">${optionsHtml(GREET_PERMISSIONS, l.permission || "GUEST")}</select>
                 <select data-greet-tpl="${escapeHtml(l.code)}" aria-label="Template view for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;">${optionsHtml(GREET_TEMPLATES, l.template || "PROD_VIEW")}</select>
+                <select data-greet-dur="${escapeHtml(l.code)}" aria-label="Reset time limit for ${escapeHtml(l.name || "")}" style="font-size:11.5px; padding:3px 4px; border:1px solid #d9d2c4; border-radius:5px; background:#fff;"><option value="">⏱ ${escapeHtml(exp.text)}</option>${GREET_DURATIONS.map(([v, t]) => `<option value="${v}">Reset to ${t}</option>`).join("")}</select>
               </div>
             </td>
             <td style="font-size:11.5px;">
@@ -2113,7 +2261,7 @@
             <td>${l.opens || 0}</td>
             <td class="timestamp">${l.lastOpened ? formatDate(l.lastOpened) : "—"}</td>
             <td>
-              <button class="small-action-btn${revoked ? "" : " unban"}" data-greet-toggle="${escapeHtml(l.code)}">${revoked ? "Restore" : "Revoke"}</button>
+              <button class="small-action-btn${l.status !== "active" ? "" : " unban"}" data-greet-toggle="${escapeHtml(l.code)}">${l.status !== "active" ? "Restore" : "Revoke"}</button>
               <button class="small-action-btn" data-greet-delete="${escapeHtml(l.code)}">Delete</button>
             </td>
           </tr>`;
@@ -2145,6 +2293,35 @@
         if (!link) return;
         const field = isPerm ? "permission" : "template";
         const previous = link[field] || (isPerm ? "GUEST" : "PROD_VIEW");
+        if (select.value === previous) return;
+
+        const labelOf = (list, v) => (list.find((x) => x[0] === v) || [v, v])[1];
+        const oldPerm = isPerm ? previous : (link.permission || "GUEST");
+        const newPerm = isPerm ? select.value : oldPerm;
+        const oldTpl = isPerm ? (link.template || "PROD_VIEW") : previous;
+        const newTpl = isPerm ? oldTpl : select.value;
+        const change = (a, b, list) => a === b
+          ? labelOf(list, b)
+          : `${labelOf(list, a)} → ${labelOf(list, b)}`;
+        const displayName = link.name || "(unnamed)";
+
+        const confirmed = await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: Modify Access for " + displayName,
+          detail: "You are changing the access level shown to <strong>" + escapeHtml(displayName) +
+            "</strong> on their personal link. Review the details below before applying.",
+          associated: [
+            "Greeting Name: " + displayName,
+            "Status: " + change(oldPerm, newPerm, GREET_PERMISSIONS),
+            "PROD Group: " + change(oldTpl, newTpl, GREET_TEMPLATES),
+            "Security: label only. Does not grant access to protected data or the dashboard."
+          ],
+          warning: "This changes the profile and template this visitor sees in Session Information and how Bridges identifies them.",
+          riskLevel: "medium",
+          confirmLabel: "Apply Change"
+        });
+        if (!confirmed) { select.value = previous; return; }
+
         select.disabled = true;
         try {
           await greetApi("greet-update", { code, [field]: select.value });
@@ -2153,6 +2330,41 @@
           select.value = previous;
           alert(err.message);
         } finally {
+          select.disabled = false;
+        }
+      });
+    });
+
+    body.querySelectorAll("[data-greet-dur]").forEach((select) => {
+      select.addEventListener("change", async () => {
+        const code = select.dataset.greetDur;
+        const value = select.value;
+        const link = (currentData.greetLinks || []).find((x) => x.code === code);
+        if (!link || !value) return;
+        const label = (GREET_DURATIONS.find((x) => x[0] === value) || [0, value])[1];
+        const confirmed = await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: Reset Time Limit for " + (link.name || "(unnamed)"),
+          detail: "The link will work for <strong>" + escapeHtml(label) + "</strong> starting now, replacing the current limit.",
+          associated: [
+            "Greeting Name: " + (link.name || "(unnamed)"),
+            "Current: " + expiryInfo(link).text,
+            "New limit: " + label + " from now",
+            "Security: shorter limits reduce the window if a link is forwarded."
+          ],
+          warning: "After the limit passes, the link stops greeting and identifying this visitor automatically.",
+          riskLevel: "medium",
+          confirmLabel: "Reset Limit"
+        });
+        if (!confirmed) { select.selectedIndex = 0; return; }
+        select.disabled = true;
+        try {
+          const data = await greetApi("greet-update", { code, duration: value });
+          Object.assign(link, data.link || {});
+          renderGreetLinks();
+        } catch (err) {
+          select.selectedIndex = 0;
+          alert(err.message);
           select.disabled = false;
         }
       });
@@ -2216,12 +2428,14 @@
         company: document.getElementById("greet-company").value.trim(),
         note: document.getElementById("greet-note").value.trim(),
         permission: document.getElementById("greet-permission").value,
-        template: document.getElementById("greet-template").value
+        template: document.getElementById("greet-template").value,
+        duration: document.getElementById("greet-duration").value
       });
       currentData.greetLinks = [data.link, ...(currentData.greetLinks || [])];
       event.target.reset();
       document.getElementById("greet-permission").value = "GUEST";
       document.getElementById("greet-template").value = "PROD_VIEW";
+      document.getElementById("greet-duration").value = "1w";
       renderGreetLinks();
     } catch (err) {
       alert(err.message);
@@ -2745,7 +2959,7 @@
 
   async function checkWebsite() {
     try {
-      const res = await fetch(`${window.location.origin}/index.html`, { cache: "no-store" });
+      const res = await fetch("https://tylerjanczak.com/", { cache: "no-store" });
       setStatusRow("website", res.ok ? "operational" : "down", res.ok ? "Operational" : `Error ${res.status}`);
     } catch {
       setStatusRow("website", "down", "Unreachable");

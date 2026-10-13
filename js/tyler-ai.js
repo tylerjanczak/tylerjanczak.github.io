@@ -6,6 +6,7 @@
    * Frontend website: GitHub Pages / Vercel static hosting
    * Backend API: Vercel serverless function
    */
+
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-config",
@@ -1235,6 +1236,15 @@
     }
   }
 
+  function getPersonalCode() {
+    try {
+      const code = sessionStorage.getItem("tylerPersonalCode");
+      return code && /^[A-Za-z0-9_-]{6,24}$/.test(code) ? code : null;
+    } catch {
+      return null;
+    }
+  }
+
   function getPersonalName() {
     try {
       const g = JSON.parse(sessionStorage.getItem("tylerPersonalGreeting") || "null");
@@ -1354,19 +1364,34 @@
 
   window.setTimeout(maybeShowNudge, 15000);
 
-  const BRIDGES_URL = "https://bridges.tylerjanczak.com/getdetails.do";
+  const BRIDGES_GATE_URL = "https://bridges.tylerjanczak.com/getdetails.do";
+
+  // Visitors who arrived on a personal link skip the intake gate: the chat
+  // page re-checks their code server-side and falls back to the gate if the
+  // link has since been revoked.
+  function getBridgesUrl() {
+    try {
+      const code = sessionStorage.getItem("tylerPersonalCode");
+      if (code && /^[A-Za-z0-9_-]{6,24}$/.test(code)) {
+        return "https://bridges.tylerjanczak.com/?c=" + encodeURIComponent(code);
+      }
+    } catch {
+      /* storage blocked — use the normal gate */
+    }
+    return BRIDGES_GATE_URL;
+  }
 
   nudgeEl.addEventListener("click", (event) => {
     if (event.target === nudgeCloseBtn) return;
     hideNudge();
-    window.location.href = BRIDGES_URL;
+    window.location.href = getBridgesUrl();
   });
 
   nudgeEl.addEventListener("keydown", (event) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       hideNudge();
-      window.location.href = BRIDGES_URL;
+      window.location.href = getBridgesUrl();
     }
   });
 
@@ -1382,7 +1407,7 @@
 
   launcher.addEventListener("click", () => {
     hideNudge();
-    window.location.href = BRIDGES_URL;
+    window.location.href = getBridgesUrl();
   });
 
   closeButton.addEventListener("click", closeChat);
@@ -1584,6 +1609,7 @@
           question: question,
           page: window.location.pathname,
           sessionId: conversationSessionId,
+          personalCode: getPersonalCode(),
           fingerprint: deviceFingerprint,
           history: conversationHistory
         }),
@@ -1741,6 +1767,7 @@
           question: TOUR_STEPS[tourStepIndex],
           page: window.location.pathname,
           sessionId: conversationSessionId,
+          personalCode: getPersonalCode(),
           fingerprint: deviceFingerprint,
           history: conversationHistory
         }),

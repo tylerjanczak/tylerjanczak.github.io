@@ -1,5 +1,43 @@
 import { kv } from "@vercel/kv";
 
+// ---- shared hardening helpers (public endpoint) ----
+const PUBLIC_ORIGINS = new Set([
+  "https://tylerjanczak.com",
+  "https://www.tylerjanczak.com",
+  "https://bridges.tylerjanczak.com",
+  "https://tylerjanczak.github.io",
+  "https://tylerjanczak-github-io.vercel.app"
+]);
+
+function setCors(req, res, methods, headers) {
+  const origin = req.headers.origin;
+  if (origin && PUBLIC_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", methods);
+  res.setHeader("Access-Control-Allow-Headers", headers);
+  res.setHeader("X-Content-Type-Options", "nosniff");
+}
+
+function ipOf(req) {
+  return String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+}
+
+// true = under the limit. On a counter-store error, fails OPEN so a KV
+// hiccup never breaks the visitor-facing site.
+async function underLimit(bucket, id, limit, windowSec) {
+  try {
+    const key = `rl_${bucket}_${id}`;
+    const n = await kv.incr(key);
+    if (n === 1) await kv.expire(key, windowSec);
+    return n <= limit;
+  } catch (err) {
+    console.error("Rate limiter unavailable:", err);
+    return true;
+  }
+}
+
 // Public endpoint — resolves a personal-link code (?c=...) to the greeting
 // name Tyler typed in the dashboard. Returns only name/company/note.
 // Unknown, revoked and malformed codes all get the same { found:false }
@@ -10,8 +48,7 @@ const CODE_RE = /^[A-Za-z0-9_-]{6,24}$/;
 const LIMIT_PER_MINUTE = 30;
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  setCors(req, res, "GET, OPTIONS", "Content-Type");
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method === "OPTIONS") return res.status(200).end();
@@ -33,6 +70,7 @@ export default async function handler(req, res) {
     if (!raw) return miss();
     const record = typeof raw === "string" ? JSON.parse(raw) : raw;
     if (record.status !== "active") return miss();
+    if (record.expiresAt && Date.parse(record.expiresAt) <= Date.now()) return miss();
 
     // Count the open only when the page says it's the first lookup this
     // session (?first=1), so reloads don't inflate the number.

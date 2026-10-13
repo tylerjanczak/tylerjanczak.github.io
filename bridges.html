@@ -496,6 +496,9 @@
                 }));
                 // Greeting is by name only; leave recruiter status unset.
                 sessionStorage.removeItem("tylerAiIsRecruiter");
+                // Sent with each chat message so the server can identify the
+                // person from the dashboard record (it re-checks the code).
+                sessionStorage.setItem("tylerPersonalCode", personalCode);
               } catch (e) {}
               try {
                 history.replaceState(null, "", "/?sid=" + encodeURIComponent(data.sessionId));

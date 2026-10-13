@@ -3148,10 +3148,11 @@
     });
 
     if (!res.ok) {
+      const why = await res.json().then((d) => d.reason).catch(() => null);
       localStorage.removeItem(SESSION_KEY);
       gate.style.display = "block";
       dashboard.style.display = "none";
-      gateError.textContent = "Session expired. Please sign in again.";
+      gateError.textContent = "Session expired. Please sign in again." + (why ? " (" + why + ")" : " (HTTP " + res.status + ")");
       clearInterval(autoRefreshTimer);
       return;
     }

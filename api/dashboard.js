@@ -410,6 +410,9 @@ async function handleA11yResolve(req, res) {
 }
 
 // ---- Personal links (greeting by name) ----
+const GREET_PERMISSIONS = ["GUEST", "RECRUITER", "HIRING_MANAGER", "COLLEAGUE"];
+const GREET_TEMPLATES = ["PROD_VIEW", "PROD_MANAGER", "PROD_SUPPORT", "TEST_VIEW"];
+
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // no look-alike chars
 
 function makeCode(len = 10) {
@@ -432,16 +435,44 @@ async function handleGreetCreate(req, res) {
     const company = cleanText(req.body?.company, 80);
     const note = cleanText(req.body?.note, 200);
     if (!name) return res.status(400).json({ error: "A greeting name is required." });
+    const permission = GREET_PERMISSIONS.includes(req.body?.permission) ? req.body.permission : "GUEST";
+    const template = GREET_TEMPLATES.includes(req.body?.template) ? req.body.template : "PROD_VIEW";
 
     let code = makeCode();
     for (let i = 0; i < 5 && (await kv.hget("greet_links", code)); i++) code = makeCode();
 
     const record = {
-      code, name, company, note,
+      code, name, company, note, permission, template,
       status: "active",
       created: new Date().toISOString(),
       opens: 0, firstOpened: null, lastOpened: null
     };
+    await kv.hset("greet_links", { [code]: JSON.stringify(record) });
+    return res.status(200).json({ success: true, link: record });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+}
+
+async function handleGreetUpdate(req, res) {
+  if (!(await requireSession(req, res))) return;
+  try {
+    const { code, permission, template } = req.body || {};
+    if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
+      return res.status(400).json({ error: "Invalid code." });
+    }
+    if (permission !== undefined && !GREET_PERMISSIONS.includes(permission)) {
+      return res.status(400).json({ error: "Invalid permission level." });
+    }
+    if (template !== undefined && !GREET_TEMPLATES.includes(template)) {
+      return res.status(400).json({ error: "Invalid template." });
+    }
+    const raw = await kv.hget("greet_links", code);
+    if (!raw) return res.status(404).json({ error: "Link not found." });
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (permission !== undefined) record.permission = permission;
+    if (template !== undefined) record.template = template;
     await kv.hset("greet_links", { [code]: JSON.stringify(record) });
     return res.status(200).json({ success: true, link: record });
   } catch (err) {
@@ -541,6 +572,10 @@ export default async function handler(req, res) {
 
   if (req.method === "POST" && action === "greet-create") {
     return handleGreetCreate(req, res);
+  }
+
+  if (req.method === "POST" && action === "greet-update") {
+    return handleGreetUpdate(req, res);
   }
 
   if (req.method === "POST" && action === "greet-revoke") {

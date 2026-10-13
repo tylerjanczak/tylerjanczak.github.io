@@ -880,7 +880,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (d && d.found && d.name) {
-          var g = { name: String(d.name).slice(0, 60), company: String(d.company || '').slice(0, 80), note: String(d.note || '').slice(0, 200) };
+          var g = { name: String(d.name).slice(0, 60), company: String(d.company || '').slice(0, 80), note: String(d.note || '').slice(0, 200), permission: String(d.permission || 'GUEST').slice(0, 24), template: String(d.template || 'PROD_VIEW').slice(0, 24) };
           try { sessionStorage.setItem(KEY, JSON.stringify(g)); sessionStorage.setItem('tylerPersonalCode', code); } catch (e) {}
           show(g);
         }

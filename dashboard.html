@@ -2321,7 +2321,8 @@
     const thread = document.getElementById("conversation-detail-thread");
     const meta = document.getElementById("conversation-detail-meta");
 
-    meta.textContent = `${session.count} message${session.count === 1 ? "" : "s"}${session.page ? " · " + session.page : ""}`;
+    const known = session.messages.find((m) => m.visitorName);
+    meta.textContent = `${known ? known.visitorName + (known.visitorCompany ? " (" + known.visitorCompany + ")" : "") + (known.visitorTemplate ? " · " + known.visitorTemplate : "") + " · " : ""}${session.count} message${session.count === 1 ? "" : "s"}${session.page ? " · " + session.page : ""}`;
 
     thread.innerHTML = session.messages.map(m => `
       <div class="conv-bubble-row user">

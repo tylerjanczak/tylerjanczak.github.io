@@ -1,552 +1,2899 @@
-import { kv } from "@vercel/kv";
-import { randomBytes } from "crypto";
-
-const KEYS = {
-  conversation: "tyler_ai_conversations",
-  resume: "tyler_ai_resume_requests"
-};
-async function requireSession(req, res) {
-  const sessionToken = req.headers.authorization?.replace("Bearer ", "");
-
-  if (!sessionToken) {
-    res.status(401).json({ error: "Not signed in." });
-    return null;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Tyler Janczak</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@simplewebauthn/browser@13/dist/bundle/index.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #F7F4EE;
+    --bg-subtle: #EFEAE0;
+    --ink: #1B1B1B;
+    --ink-soft: #4A4A48;
+    --rule: #D9D2C4;
+    --accent: #6B1F1F;
+    --display: "Fraunces", Georgia, serif;
+    --body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 48px 28px 100px; }
+  h1 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 32px;
+    margin-bottom: 6px;
+  }
+  .subtitle {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 40px;
   }
 
-  const sessionValid = await kv.get(`webauthn_session_${sessionToken}`);
-
-  if (!sessionValid) {
-    res.status(401).json({ error: "Session expired. Please sign in again." });
-    return null;
+  /* Gate screens */
+  #gate {
+    max-width: 420px;
+    margin: 80px auto 0;
+    text-align: center;
+    padding: 40px 32px;
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+  }
+  #gate h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  #gate p {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 22px;
+  }
+  input[type="password"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 15px;
+    margin-bottom: 14px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  input[type="password"]:focus {
+    outline: none;
+    border-color: var(--accent);
   }
 
-  return sessionToken;
-}
+  .username-input-row {
+    position: relative;
+    margin-bottom: 14px;
+  }
 
-function parseEntries(entries) {
-  return (entries || []).map((entry) => {
-    try {
-      return typeof entry === "string" ? JSON.parse(entry) : entry;
-    } catch {
-      return { raw: entry };
+  .username-input-row input[type="text"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--ink);
+    text-align: center;
+  }
+
+  .username-input-row input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .username-warning-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+  }
+
+  .username-warning-icon svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .username-warning-icon.hidden {
+    display: none;
+  }
+  button.primary {
+    width: 100%;
+    padding: 13px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  button.primary:hover { background: #551818; }
+  button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  #gate-error {
+    color: var(--accent);
+    font-size: 13px;
+    margin-top: 12px;
+    min-height: 18px;
+  }
+  .gate-toggle {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .gate-toggle a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  /* Dashboard content */
+  #dashboard { display: none; }
+  section.panel {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .panel-header h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 18px;
+  }
+  .panel-count {
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--bg-subtle);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    padding: 10px 22px;
+    background: var(--bg-subtle);
+  }
+  td {
+    padding: 12px 22px;
+    font-size: 13.5px;
+    border-top: 1px solid var(--rule);
+    vertical-align: top;
+  }
+  td.timestamp {
+    white-space: nowrap;
+    color: var(--ink-soft);
+    font-size: 12.5px;
+  }
+  .empty-row {
+    padding: 28px 22px;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    text-align: center;
+  }
+  #secure-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+  }
+  #secure-badge svg {
+    width: 11px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+  #sign-out {
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--accent);
+  }
+
+  #sign-out:hover {
+    opacity: 0.75;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .stat-card .stat-value {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 26px;
+    color: var(--accent);
+  }
+  .stat-card .stat-label {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+
+  /* Controls row */
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  #search-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 9px 12px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 13.5px;
+    background: #fff;
+    color: var(--ink);
+  }
+  #search-input:focus { outline: none; border-color: var(--accent); }
+  #date-filter {
+    padding: 9px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--ink);
+  }
+  .mini-btn {
+    padding: 9px 14px;
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--accent);
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .mini-btn:hover { background: rgba(107,31,31,0.06); }
+  .mini-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auto-refresh-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* Analysis panel */
+  #analysis-panel { margin-bottom: 20px; }
+
+  #kb-panel { margin-bottom: 24px; }
+  .kb-body { padding: 18px 22px; }
+  .kb-hint {
+    font-size: 13px;
+    color: var(--ink-soft);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  #kb-textarea {
+    width: 100%;
+    min-height: 320px;
+    padding: 14px;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+  #kb-textarea:focus { outline: none; border-color: var(--accent); }
+  .kb-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .mini-btn.primary-mini {
+    background: var(--accent);
+    color: #fff;
+  }
+  .mini-btn.primary-mini:hover { background: #551818; }
+  .kb-char-count {
+    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+  .kb-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .kb-status.saved { background: #e6f2e8; color: #2e7d32; }
+  .kb-status.custom { background: rgba(107,31,31,0.08); color: var(--accent); }
+  .kb-status.default { background: var(--bg-subtle); color: var(--ink-soft); }
+
+  /* Authentication overlay */
+  #auth-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 15, 10, 0.12);
+  }
+  #auth-overlay.visible {
+    display: flex;
+  }
+  .auth-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 34px 46px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(20, 15, 10, 0.18);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .auth-heart {
+    width: 60px;
+    height: 60px;
+  }
+  .auth-heart .heart-fill {
+    fill: var(--accent);
+  }
+  .auth-text {
+    font-family: var(--display);
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* Chat toggle switch */
+  .chat-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+  #chat-toggle-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 21px;
+    flex-shrink: 0;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .switch-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #c9c2b3;
+    border-radius: 999px;
+    transition: background 160ms ease;
+  }
+  .switch-slider::before {
+    content: "";
+    position: absolute;
+    height: 15px;
+    width: 15px;
+    left: 3px;
+    bottom: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 160ms ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .switch input:checked + .switch-slider {
+    background: #2e7d32;
+  }
+  .switch input:checked + .switch-slider::before {
+    transform: translateX(17px);
+  }
+  .switch input:disabled + .switch-slider {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .maintenance-slider { background: #c9c2b3; }
+  .switch input:checked + .maintenance-slider { background: #b3261e; }
+
+  /* Hard Stop confirmation modal */
+  #hardstop-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 15, 10, 0.5);
+    padding: 20px;
+  }
+  #hardstop-overlay.visible { display: flex; }
+
+  .hardstop-card {
+    width: min(560px, 100%);
+    background: #fff;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  }
+
+  .hardstop-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    background: #b3261e;
+    color: #fff;
+  }
+
+  .hardstop-icon-wrap {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .hardstop-icon-stripes {
+    width: 100%;
+    height: 32px;
+    background: repeating-linear-gradient(
+      -45deg,
+      #d94a40,
+      #d94a40 4px,
+      #b3261e 4px,
+      #b3261e 8px
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hardstop-icon-stripes svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .hardstop-risk-label {
+    width: 100%;
+    background: #7a1a14;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.03em;
+    padding: 2px 0;
+  }
+
+  .hardstop-title-block { flex: 1; }
+
+  .hardstop-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .hardstop-detail {
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .hardstop-detail strong { font-weight: 700; }
+
+  .hardstop-body {
+    padding: 18px 20px;
+  }
+
+  .hardstop-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .hardstop-associated {
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+
+  .hardstop-associated-item {
+    font-size: 13.5px;
+    padding: 4px 0;
+    color: var(--ink);
+  }
+
+  .hardstop-associated-item::before {
+    content: "•";
+    color: var(--accent);
+    margin-right: 8px;
+  }
+
+  .hardstop-warning-text {
+    font-size: 12.5px;
+    color: #b3261e;
+    font-weight: 600;
+    margin-bottom: 18px;
+  }
+
+  .hardstop-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  .hardstop-btn {
+    padding: 10px 18px;
+    border-radius: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--rule);
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .hardstop-btn.confirm {
+    background: #b3261e;
+    border-color: #b3261e;
+    color: #fff;
+  }
+
+  .hardstop-btn.confirm:hover { background: #8f1e17; }
+  .hardstop-btn:hover { background: var(--bg-subtle); }
+
+  /* Medium-risk (amber) variant of the Hard Stop dialog */
+  .hardstop-card.risk-medium .hardstop-banner {
+    background: #c9860f;
+  }
+  .hardstop-card.risk-medium .hardstop-icon-stripes {
+    background: repeating-linear-gradient(
+      -45deg,
+      #e3aa4a,
+      #e3aa4a 4px,
+      #c9860f 4px,
+      #c9860f 8px
+    );
+  }
+  .hardstop-card.risk-medium .hardstop-risk-label {
+    background: #9c690a;
+  }
+  .hardstop-card.risk-medium .hardstop-warning-text {
+    color: #9c690a;
+  }
+  .hardstop-card.risk-medium .hardstop-btn.confirm {
+    background: #c9860f;
+    border-color: #c9860f;
+  }
+  .hardstop-card.risk-medium .hardstop-btn.confirm:hover {
+    background: #a66f0c;
+  }
+
+  /* Maintenance log */
+  #maintenance-log-panel { margin-bottom: 24px; }
+
+  #flagged-panel { margin-bottom: 24px; }
+
+  /* Conversation detail modal */
+  #conversation-detail-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999997;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 15, 10, 0.5);
+    padding: 20px;
+  }
+  #conversation-detail-overlay.visible { display: flex; }
+
+  .conversation-detail-card {
+    width: min(640px, 100%);
+    height: min(640px, 85vh);
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+  }
+
+  .conversation-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg-subtle);
+  }
+
+  .conversation-detail-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 18px;
+  }
+
+  .conversation-detail-meta {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  #conversation-detail-close {
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  #conversation-detail-close:hover { color: var(--ink); }
+
+  .conversation-detail-thread {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px;
+    background: var(--bg);
+  }
+
+  .conv-bubble-row {
+    display: flex;
+    margin-bottom: 14px;
+  }
+  .conv-bubble-row.user { justify-content: flex-end; }
+
+  .conv-bubble {
+    max-width: 78%;
+    padding: 11px 14px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .conv-bubble.question {
+    background: var(--accent);
+    color: #fff;
+  }
+  .conv-bubble.answer {
+    background: #fff;
+    border: 1px solid var(--rule);
+    color: var(--ink);
+  }
+  .conv-bubble-timestamp {
+    display: block;
+    font-size: 10.5px;
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+
+  .conversation-row {
+    cursor: pointer;
+  }
+  .conversation-row:hover {
+    background: var(--bg-subtle);
+  }
+  #banned-panel { margin-bottom: 24px; }
+
+  .small-action-btn {
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .small-action-btn:hover { background: rgba(107,31,31,0.06); }
+  .small-action-btn.unban { border-color: #2e7d32; color: #2e7d32; }
+  .small-action-btn.unban:hover { background: rgba(46,125,50,0.06); }
+
+  /* System status panel */
+  #status-panel { margin-bottom: 24px; }
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 22px;
+    border-top: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
+  .status-row:nth-child(-n+1) { border-top: none; }
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.operational { background: #2e7d32; box-shadow: 0 0 0 3px rgba(46,125,50,0.15); }
+  .status-dot.down { background: #b3261e; box-shadow: 0 0 0 3px rgba(179,38,30,0.15); }
+  .status-dot.checking {
+    background: #c9c2b3;
+    animation: statusPulse 1.1s ease-in-out infinite;
+  }
+  @keyframes statusPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+  .status-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .status-detail {
+    margin-left: auto;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .analysis-body {
+    padding: 18px 22px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+
+  /* Row states */
+  tr.high-intent { background: #fbf3ec; }
+  tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
+  .intent-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(107,31,31,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  .delete-btn {
+    border: 0;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 16px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .delete-btn:hover { color: var(--accent); }
+  .page-tag {
+    font-size: 11px;
+    color: var(--ink-soft);
+    background: var(--bg-subtle);
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  #auth-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(247, 244, 238, 0.6);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+
+  #auth-loading-overlay.visible {
+    display: flex;
+  }
+
+  .auth-loading-box {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 16px;
+    padding: 40px 54px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 24px 60px rgba(20, 15, 10, 0.18);
+  }
+
+  .auth-heart {
+    width: 84px;
+    height: 76px;
+    display: block;
+  }
+
+  .auth-heart-shape {
+    fill: var(--accent);
+    transform-origin: 50px 45px;
+    animation: authHeartPulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes authHeartPulse {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.08); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.04); }
+  }
+
+  .auth-ecg-line {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: authEcgDraw 1.5s linear infinite;
+  }
+
+  @keyframes authEcgDraw {
+    0% { stroke-dashoffset: 100; opacity: 1; }
+    70% { stroke-dashoffset: 0; opacity: 1; }
+    85% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+
+  .auth-loading-text {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .auth-heart-shape, .auth-ecg-line { animation: none; }
+    .auth-ecg-line { stroke-dashoffset: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h2 id="gate-title">Sign In</h2>
+  <p id="gate-subtitle">Enter your username to continue.</p>
+
+  <div id="username-view">
+    <div class="username-input-row">
+      <span id="username-warning-icon" class="username-warning-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2 L23 21 L1 21 Z" fill="#7a2e2e"/>
+          <rect x="11" y="8.5" width="2" height="6.5" fill="#ffffff"/>
+          <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
+        </svg>
+      </span>
+      <input type="text" id="username-input" autocomplete="username" autocapitalize="off" spellcheck="false" aria-label="Username" />
+    </div>
+    <button class="primary" id="username-continue-btn">Continue</button>
+  </div>
+
+  <div id="signin-view" style="display: none;">
+    <button class="primary" id="signin-btn">Sign in with Passkey</button>
+    <div class="gate-toggle" id="register-toggle" style="display: none;">
+      No passkey set up yet? <a id="show-register">Register one</a>
+    </div>
+    <div class="gate-toggle">
+      <a id="username-back-signin">&larr; Back</a>
+    </div>
+  </div>
+
+  <div id="register-view" style="display: none;">
+    <input type="password" id="register-password" placeholder="Dashboard password" autocomplete="off" />
+    <button class="primary" id="register-btn">Register Passkey</button>
+    <div class="gate-toggle">
+      Already have a passkey? <a id="show-signin">Sign in instead</a>
+    </div>
+  </div>
+
+  <div id="gate-error"></div>
+</div>
+
+<div id="auth-overlay">
+  <div class="auth-box">
+    <svg class="auth-heart" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path class="heart-fill" d="M12 20 C7 16 3 12.5 3 8.5 C3 5.5 5.5 3.5 8 3.5 C9.8 3.5 11 4.5 12 6 C13 4.5 14.2 3.5 16 3.5 C18.5 3.5 21 5.5 21 8.5 C21 12.5 17 16 12 20 Z"/>
+      <path d="M6.5 6.2 C7.2 5.2 8.5 4.6 9.6 4.8" stroke="rgba(255,255,255,0.35)" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+      <path class="ecg-line" d="M3.5 11.5 L7 11.5 L9 7.5 L12 15.5 L14.5 8.5 L16.5 11.5 L20.5 11.5" fill="none" stroke="#ffffff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="auth-text">Authenticating&hellip;</div>
+  </div>
+</div>
+
+<div id="hardstop-overlay">
+  <div class="hardstop-card">
+    <div class="hardstop-banner">
+      <div class="hardstop-icon-wrap">
+        <div class="hardstop-icon-stripes">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 2 L23 21 L1 21 Z" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linejoin="round"/>
+            <rect x="11" y="9" width="2" height="6" fill="#ffffff"/>
+            <rect x="11" y="16.5" width="2" height="2" fill="#ffffff"/>
+          </svg>
+        </div>
+        <div class="hardstop-risk-label" id="hardstop-risk-label">HIGH</div>
+      </div>
+      <div class="hardstop-title-block">
+        <div class="hardstop-title" id="hardstop-title">Hard Stop Warning</div>
+        <div class="hardstop-detail" id="hardstop-detail">This action requires confirmation.</div>
+      </div>
+    </div>
+    <div class="hardstop-body">
+      <div class="hardstop-section-label">Associated Systems</div>
+      <div class="hardstop-associated" id="hardstop-associated"></div>
+      <div class="hardstop-warning-text" id="hardstop-warning-text"></div>
+      <div class="hardstop-actions">
+        <button class="hardstop-btn" id="hardstop-cancel-btn">Cancel</button>
+        <button class="hardstop-btn confirm" id="hardstop-confirm-btn">Proceed Anyway</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="conversation-detail-overlay">
+  <div class="conversation-detail-card">
+    <div class="conversation-detail-header">
+      <div>
+        <div class="conversation-detail-title">Conversation</div>
+        <div class="conversation-detail-meta" id="conversation-detail-meta"></div>
+      </div>
+      <button id="conversation-detail-close" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="conversation-detail-thread" id="conversation-detail-thread"></div>
+  </div>
+</div>
+
+<div class="container" id="dashboard">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+    <div>
+      <h1>Dashboard</h1>
+      <p class="subtitle">Conversations and resume requests from Tyler AI.</p>
+    </div>
+    <div style="display:flex; align-items:center; gap: 20px;">
+      <div class="chat-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="chat-toggle-input" checked />
+          <span class="switch-slider"></span>
+        </label>
+        <span id="chat-toggle-label">Chat Enabled</span>
+      </div>
+      <div class="chat-toggle-wrap">
+        <label class="switch">
+          <input type="checkbox" id="maintenance-toggle-input" />
+          <span class="switch-slider maintenance-slider"></span>
+        </label>
+        <span id="maintenance-toggle-label">Site Live</span>
+      </div>
+      <span id="sign-out" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+        <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="width: 11px; height: 13px; flex-shrink: 0;">
+          <path d="M3 7V5a4 4 0 1 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <rect x="2" y="7" width="10" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          <circle cx="7" cy="11" r="1" fill="currentColor"/>
+        </svg>
+        Secure Session
+      </span>
+    </div>
+  </div>
+
+  <div class="stats-row" id="stats-row"></div>
+
+  <section class="panel" id="status-panel">
+    <div class="panel-header">
+      <h2>System Status</h2>
+      <button class="mini-btn" id="status-refresh-btn">Refresh</button>
+    </div>
+    <div class="status-grid" id="status-grid">
+      <div class="status-row" data-check="website">
+        <span class="status-dot checking"></span>
+        <span class="status-name">Website</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="chat">
+        <span class="status-dot checking"></span>
+        <span class="status-name">Chat API</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="database">
+        <span class="status-dot checking"></span>
+        <span class="status-name">Database</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="github">
+        <span class="status-dot checking"></span>
+        <span class="status-name">GitHub</span>
+        <span class="status-detail">Checking...</span>
+      </div>
+      <div class="status-row" data-check="interface">
+        <span class="status-dot operational"></span>
+        <span class="status-name">Dashboard</span>
+        <span class="status-detail">Operational</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="maintenance-log-panel">
+    <div class="panel-header">
+      <h2>Maintenance Log</h2>
+      <span class="panel-count" id="maintenance-log-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th style="width:180px;">When</th><th>Action</th></tr>
+      </thead>
+      <tbody id="maintenance-log-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="injection-panel">
+    <div class="panel-header">
+      <h2>Prompt Injection Attempts</h2>
+      <span class="panel-count" id="injection-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">IP</th>
+          <th>Question</th>
+          <th style="width:180px;">What Was Attempted</th>
+          <th style="width:70px;"></th>
+        </tr>
+      </thead>
+      <tbody id="injection-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="flagged-panel">
+    <div class="panel-header">
+      <h2>Flagged Conversations</h2>
+      <span class="panel-count" id="flagged-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:100px;">IP</th>
+          <th style="width:60px;">Strike</th>
+          <th>Question</th>
+          <th style="width:140px;">Reason</th>
+          <th style="width:140px;"></th>
+        </tr>
+      </thead>
+      <tbody id="flagged-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="banned-panel">
+    <div class="panel-header">
+      <h2>Banned IPs</h2>
+      <span class="panel-count" id="banned-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>IP Address</th><th style="width:90px;"></th></tr>
+      </thead>
+      <tbody id="banned-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="banned-ranges-panel">
+    <div class="panel-header">
+      <h2>Banned Subnets</h2>
+      <span class="panel-count" id="banned-ranges-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Subnet</th><th style="width:90px;"></th></tr>
+      </thead>
+      <tbody id="banned-ranges-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="banned-fingerprints-panel">
+    <div class="panel-header">
+      <h2>Banned Devices</h2>
+      <span class="panel-count" id="banned-fingerprints-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Device Fingerprint</th><th style="width:90px;"></th></tr>
+      </thead>
+      <tbody id="banned-fingerprints-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="analysis-panel">
+    <div class="panel-header">
+      <h2>Smart Analysis</h2>
+      <button class="mini-btn" id="analysis-btn">Generate Insights</button>
+    </div>
+    <div class="analysis-body" id="analysis-body">
+      <p class="empty-row">Click "Generate Insights" to have AI summarize patterns across your visitor conversations.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="kb-panel">
+    <div class="panel-header">
+      <h2>Knowledge Base</h2>
+      <span id="kb-status" class="kb-status"></span>
+    </div>
+    <div class="kb-body">
+      <p class="kb-hint">
+        Edit what Tyler AI knows about you. Changes save directly to the live database and take effect on the next question a visitor asks &mdash; no code deploy needed.
+      </p>
+      <textarea id="kb-textarea" placeholder="Loading current knowledge base..." spellcheck="false"></textarea>
+      <div class="kb-actions">
+        <button class="mini-btn primary-mini" id="kb-save-btn">Save Changes</button>
+        <button class="mini-btn" id="kb-reset-btn">Reset to Default</button>
+        <span id="kb-char-count" class="kb-char-count"></span>
+      </div>
+    </div>
+  </section>
+
+  <div class="controls-row">
+    <input type="text" id="search-input" placeholder="Search conversations..." />
+    <select id="date-filter">
+      <option value="all">All time</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+    </select>
+    <button class="mini-btn" id="export-btn">Export CSV</button>
+    <label class="auto-refresh-label">
+      <input type="checkbox" id="auto-refresh-toggle" checked />
+      Auto-refresh
+    </label>
+  </div>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Conversations</h2>
+      <span class="panel-count" id="conv-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">Page</th>
+          <th style="width:80px;">Messages</th>
+          <th>Preview</th>
+          <th style="width:70px;"></th>
+        </tr>
+      </thead>
+      <tbody id="conv-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Resume Requests</h2>
+      <span class="panel-count" id="resume-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th style="width:160px;">When</th><th>Email</th><th style="width:40px;"></th></tr>
+      </thead>
+      <tbody id="resume-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Call Requests</h2>
+      <span class="panel-count" id="call-request-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:140px;">When</th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+      <tbody id="call-request-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Visitor Intake (getdetails.do)</h2>
+      <span class="panel-count" id="intake-count">0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:150px;">When</th>
+          <th style="width:110px;">IP</th>
+          <th>Device Fingerprint</th>
+          <th style="width:100px;">Recruiter?</th>
+        </tr>
+      </thead>
+      <tbody id="intake-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Accessibility Review Queue</h2>
+      <span class="panel-count" id="a11y-count">0</span>
+    </div>
+    <p style="font-size: 12px; color: #8b857e; margin: -6px 0 14px;">
+      Issues js/accessibility-remediation.js found but couldn't safely auto-fix on its own —
+      low color contrast, skipped heading levels, or ambiguous labels. These need a real look,
+      not another automated pass.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:120px;">Last Seen</th>
+          <th style="width:140px;">Page</th>
+          <th style="width:120px;">Type</th>
+          <th>Description</th>
+          <th style="width:60px;">Seen</th>
+          <th style="width:110px;"></th>
+        </tr>
+      </thead>
+      <tbody id="a11y-body"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <div class="panel-header">
+      <h2>Personal Links</h2>
+      <span class="panel-count" id="greet-count">0</span>
+    </div>
+    <p style="font-size: 12px; color: #8b857e; margin: -6px 0 14px;">
+      Create a link that greets one person by name (e.g. "Hi Sarah — welcome") and also opens
+      Tyler AI with their name. Only the name you type here is ever shown to the visitor; opens are
+      counted (time + count only, no IP stored).
+    </p>
+    <form id="greet-form" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+      <input id="greet-name" type="text" maxlength="60" placeholder="Greeting name (e.g. Sarah)" required style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <input id="greet-company" type="text" maxlength="80" placeholder="Company (optional)" style="flex:1 1 160px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <input id="greet-note" type="text" maxlength="200" placeholder="Short note shown in banner (optional)" style="flex:2 1 240px; padding:8px 10px; border:1px solid #d9d2c4; border-radius:6px; font:inherit;">
+      <button type="submit" class="small-action-btn" id="greet-submit">Create link</button>
+    </form>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:110px;">Created</th>
+          <th style="width:160px;">Who</th>
+          <th>Link</th>
+          <th style="width:60px;">Opens</th>
+          <th style="width:110px;">Last Opened</th>
+          <th style="width:150px;"></th>
+        </tr>
+      </thead>
+      <tbody id="greet-body"></tbody>
+    </table>
+  </section>
+</div>
+
+
+<script>
+  const API_BASE = "https://tylerjanczak-github-io.vercel.app";
+  const SESSION_KEY = "tylerDashboardSession";
+  const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
+
+  const gate = document.getElementById("gate");
+  const dashboard = document.getElementById("dashboard");
+  const gateError = document.getElementById("gate-error");
+  const usernameView = document.getElementById("username-view");
+  const signinView = document.getElementById("signin-view");
+  const registerView = document.getElementById("register-view");
+  const gateTitle = document.getElementById("gate-title");
+  const gateSubtitle = document.getElementById("gate-subtitle");
+
+  // Cosmetic username step before the passkey prompt — this is a single-admin
+  // dashboard, so this isn't a real access boundary (the passkey itself is);
+  // it just makes the login flow feel like a familiar two-step sign-in.
+  const EXPECTED_USERNAME = "tyler";
+
+  const usernameInputEl = document.getElementById("username-input");
+  const usernameWarningIcon = document.getElementById("username-warning-icon");
+
+  usernameInputEl.addEventListener("input", () => {
+    usernameWarningIcon.classList.toggle("hidden", usernameInputEl.value.length > 0);
+  });
+
+  usernameInputEl.addEventListener("blur", () => {
+    usernameWarningIcon.classList.toggle("hidden", usernameInputEl.value.length > 0);
+  });
+
+  document.getElementById("username-continue-btn").addEventListener("click", () => {
+    const entered = document.getElementById("username-input").value.trim().toLowerCase();
+
+    if (entered !== EXPECTED_USERNAME) {
+      gateError.textContent = "Username not found.";
+      return;
+    }
+
+    gateError.textContent = "";
+    usernameView.style.display = "none";
+    signinView.style.display = "block";
+    gateSubtitle.textContent = "Use your passkey to access the dashboard.";
+  });
+
+  document.getElementById("username-input").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      document.getElementById("username-continue-btn").click();
     }
   });
-}
 
-async function handleData(req, res) {
-  if (!(await requireSession(req, res))) return;
+  document.getElementById("username-back-signin").addEventListener("click", () => {
+    signinView.style.display = "none";
+    usernameView.style.display = "block";
+    gateSubtitle.textContent = "Enter your username to continue.";
+    gateError.textContent = "";
+  });
 
-  try {
-    const [rawConversations, rawResumeRequests, rawMaintenanceLog, rawFlagged, bannedIps, bannedRanges, bannedFingerprints, rawInjectionAttempts, rawCallRequests, rawIntakeLog, rawA11yIssues, rawGreetLinks] = await Promise.all([
-      kv.lrange("tyler_ai_conversations", 0, 199),
-      kv.lrange("tyler_ai_resume_requests", 0, 199),
-      kv.lrange("site_maintenance_log", 0, 49),
-      kv.lrange("flagged_conversations", 0, 49),
-      kv.smembers("banned_ips"),
-      kv.smembers("banned_ranges"),
-      kv.smembers("banned_fingerprints"),
-      kv.lrange("injection_attempts", 0, 49),
-      kv.lrange("tyler_ai_call_requests", 0, 99),
-      kv.lrange("visitor_intake_log", 0, 99),
-      kv.hgetall("a11y_issues"),
-      kv.hgetall("greet_links")
-    ]);
-
-    const greetLinks = Object.values(rawGreetLinks || {})
-      .map((value) => {
-        try {
-          return typeof value === "string" ? JSON.parse(value) : value;
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.created) - new Date(a.created));
-
-    const a11yIssues = Object.entries(rawA11yIssues || {})
-      .map(([signature, value]) => {
-        try {
-          const record = typeof value === "string" ? JSON.parse(value) : value;
-          return { signature, ...record };
-        } catch {
-          return null;
-        }
-      })
-      .filter(Boolean)
-      .sort((a, b) => new Date(b.lastSeen) - new Date(a.lastSeen));
-
-    return res.status(200).json({
-      success: true,
-      conversations: parseEntries(rawConversations),
-      resumeRequests: parseEntries(rawResumeRequests),
-      maintenanceLog: parseEntries(rawMaintenanceLog),
-      flaggedConversations: parseEntries(rawFlagged),
-      bannedIps: bannedIps || [],
-      bannedRanges: bannedRanges || [],
-      bannedFingerprints: bannedFingerprints || [],
-      injectionAttempts: parseEntries(rawInjectionAttempts),
-      callRequests: parseEntries(rawCallRequests),
-      intakeLog: parseEntries(rawIntakeLog),
-      a11yIssues,
-      greetLinks
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+  // The "Register one" link stays hidden for a cleaner sign-in screen.
+  // Visit dashboard.html?setup=1 to reveal it when adding a new device.
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("setup") === "1") {
+    document.getElementById("register-toggle").style.display = "block";
   }
-}
 
-async function handleDelete(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { type, index } = req.body;
-    const key = KEYS[type];
-
-    if (!key || typeof index !== "number") {
-      return res.status(400).json({ error: "Invalid delete request." });
-    }
-
-    const rawEntries = await kv.lrange(key, 0, -1);
-
-    if (!Array.isArray(rawEntries) || index < 0 || index >= rawEntries.length) {
-      return res.status(400).json({ error: "Entry not found." });
-    }
-
-    const remaining = rawEntries.filter((_, i) => i !== index);
-
-    await kv.del(key);
-
-    for (const entry of remaining.slice().reverse()) {
-      await kv.lpush(key, entry);
-    }
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleBanIp(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { ip, reason } = req.body;
-
-    if (!ip || typeof ip !== "string") {
-      return res.status(400).json({ error: "No IP address provided." });
-    }
-
-    await kv.sadd("banned_ips", ip);
-    await kv.del(`ip_cooldown_${ip}`);
-
-    await kv.lpush(
-      "ip_ban_log",
-      JSON.stringify({
-        id: crypto.randomUUID(),
-        ip,
-        reason: reason || "Manually banned from dashboard",
-        timestamp: new Date().toISOString()
-      })
-    );
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-function getSlash24(ip) {
-  const parts = ip.split(".");
-  if (parts.length !== 4) return null;
-  return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
-}
-
-async function handleBanRange(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { ip, reason } = req.body;
-
-    if (!ip || typeof ip !== "string") {
-      return res.status(400).json({ error: "No IP address provided." });
-    }
-
-    const range = getSlash24(ip);
-
-    if (!range) {
-      return res.status(400).json({ error: "Could not determine a subnet for that IP." });
-    }
-
-    await kv.sadd("banned_ranges", range);
-
-    await kv.lpush(
-      "ip_ban_log",
-      JSON.stringify({
-        id: crypto.randomUUID(),
-        ip: range,
-        reason: reason || `Subnet ban from dashboard (based on ${ip})`,
-        timestamp: new Date().toISOString()
-      })
-    );
-
-    return res.status(200).json({ success: true, range });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleUnbanRange(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { range } = req.body;
-
-    if (!range || typeof range !== "string") {
-      return res.status(400).json({ error: "No range provided." });
-    }
-
-    await kv.srem("banned_ranges", range);
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleBanFingerprint(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { fingerprint, reason } = req.body;
-
-    if (!fingerprint || typeof fingerprint !== "string") {
-      return res.status(400).json({ error: "No fingerprint provided." });
-    }
-
-    await kv.sadd("banned_fingerprints", fingerprint);
-
-    await kv.lpush(
-      "ip_ban_log",
-      JSON.stringify({
-        id: crypto.randomUUID(),
-        ip: `fingerprint:${fingerprint.slice(0, 12)}...`,
-        reason: reason || "Manually banned from dashboard (device fingerprint)",
-        timestamp: new Date().toISOString()
-      })
-    );
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleUnbanFingerprint(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { fingerprint } = req.body;
-
-    if (!fingerprint || typeof fingerprint !== "string") {
-      return res.status(400).json({ error: "No fingerprint provided." });
-    }
-
-    await kv.srem("banned_fingerprints", fingerprint);
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleUnbanIp(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { ip } = req.body;
-
-    if (!ip || typeof ip !== "string") {
-      return res.status(400).json({ error: "No IP address provided." });
-    }
-
-    // Clear the ban and their strike count together, so unbanning gives
-    // a genuine clean slate rather than leaving them one strike from
-    // an instant re-ban on their very next message.
-    await kv.srem("banned_ips", ip);
-    await kv.del(`ip_strikes_${ip}`);
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleResetStrikes(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { ip } = req.body;
-
-    if (!ip || typeof ip !== "string") {
-      return res.status(400).json({ error: "No IP address provided." });
-    }
-
-    await kv.del(`ip_strikes_${ip}`);
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleAnalysis(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const [rawConversations, rawResumeRequests] = await Promise.all([
-      kv.lrange("tyler_ai_conversations", 0, 99),
-      kv.lrange("tyler_ai_resume_requests", 0, 99)
-    ]);
-
-    const conversations = parseEntries(rawConversations);
-    const resumeRequests = parseEntries(rawResumeRequests);
-
-    if (conversations.length === 0) {
-      return res.status(200).json({
-        success: true,
-        analysis: "Not enough conversation data yet to generate a meaningful analysis. Check back once a few visitors have used Tyler AI."
-      });
-    }
-
-    const conversationText = conversations
-      .map((c, i) => `${i + 1}. Q: "${c.question}"\n   A: "${c.answer}"\n   Page: ${c.page || "unknown"}`)
-      .join("\n\n");
-
-    const prompt = `You are analyzing visitor conversations from a chatbot on Tyler Janczak's professional portfolio website. Below are up to 100 of the most recent visitor questions and the AI's answers, plus the count of resume requests.
-
-Total conversations: ${conversations.length}
-Total resume requests: ${resumeRequests.length}
-
-Conversations:
-${conversationText}
-
-Provide a concise, practical analysis for Tyler (the portfolio owner) covering:
-1. The most common topics or themes visitors are asking about
-2. Any signs of high-intent visitors (recruiters, hiring managers) based on question patterns
-3. Any questions the AI seemed unable to answer well, or gaps in the portfolio content that visitors are asking about
-4. One or two concrete, actionable suggestions for improving the portfolio or the AI's knowledge base based on this data
-
-Keep the total response under 200 words, written directly to Tyler in a helpful, direct tone. Use short paragraphs or a brief list, not headers.`;
-
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        input: prompt
-      })
-    });
-
-    const data = await response.json();
-
-    let analysisText = data.output_text;
-    if (!analysisText && Array.isArray(data.output)) {
-      const messageItem = data.output.find((item) => item.type === "message");
-      const textPart = messageItem?.content?.find((c) => c.type === "output_text");
-      analysisText = textPart?.text;
-    }
-
-    return res.status(200).json({
-      success: true,
-      analysis: analysisText || "Could not generate an analysis right now."
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-async function handleA11yResolve(req, res) {
-  if (!(await requireSession(req, res))) return;
-
-  try {
-    const { signature, status } = req.body;
-
-    if (!signature || typeof signature !== "string") {
-      return res.status(400).json({ error: "No issue signature provided." });
-    }
-
-    const raw = await kv.hget("a11y_issues", signature);
-    if (!raw) {
-      return res.status(404).json({ error: "Issue not found." });
-    }
-
-    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
-    record.status = status === "open" ? "open" : "resolved";
-    record.resolvedAt = record.status === "resolved" ? new Date().toISOString() : null;
-
-    await kv.hset("a11y_issues", { [signature]: JSON.stringify(record) });
-
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-// ---- Personal links (greeting by name) ----
-const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // no look-alike chars
-
-function makeCode(len = 10) {
-  const bytes = randomBytes(len);
-  let out = "";
-  for (let i = 0; i < len; i++) out += CODE_ALPHABET[bytes[i] % CODE_ALPHABET.length];
-  return out;
-}
-
-function cleanText(value, max) {
-  if (typeof value !== "string") return "";
-  // strip control chars and angle brackets; collapse whitespace
-  return value.replace(/<[^>]*>/g, " ").replace(/[\u0000-\u001F\u007F<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
-}
-
-async function handleGreetCreate(req, res) {
-  if (!(await requireSession(req, res))) return;
-  try {
-    const name = cleanText(req.body?.name, 60);
-    const company = cleanText(req.body?.company, 80);
-    const note = cleanText(req.body?.note, 200);
-    if (!name) return res.status(400).json({ error: "A greeting name is required." });
-
-    let code = makeCode();
-    for (let i = 0; i < 5 && (await kv.hget("greet_links", code)); i++) code = makeCode();
-
-    const record = {
-      code, name, company, note,
-      status: "active",
-      created: new Date().toISOString(),
-      opens: 0, firstOpened: null, lastOpened: null
+  document.getElementById("show-register").addEventListener("click", () => {
+    signinView.style.display = "none";
+    registerView.style.display = "block";
+    gateTitle.textContent = "Set Up Passkey";
+    gateSubtitle.textContent = "Enter the dashboard password once to register your passkey.";
+    gateError.textContent = "";
+  });
+
+  document.getElementById("show-signin").addEventListener("click", () => {
+    registerView.style.display = "none";
+    signinView.style.display = "block";
+    gateTitle.textContent = "Sign In";
+    gateSubtitle.textContent = "Use your passkey to access the dashboard.";
+    gateError.textContent = "";
+  });
+
+  document.getElementById("sign-out").addEventListener("click", () => {
+    localStorage.removeItem(SESSION_KEY);
+
+    // Wipe every table, panel, and cached value — not just hide the
+    // container — so no residual data from this session lingers in the
+    // DOM after signing out, even if this device is shared or inspected.
+    currentData = {
+      conversations: [],
+      resumeRequests: [],
+      maintenanceLog: [],
+      flaggedConversations: [],
+      bannedIps: [],
+      bannedRanges: [],
+      bannedFingerprints: [],
+      injectionAttempts: [],
+      callRequests: [],
+      intakeLog: [],
+      a11yIssues: [],
+      greetLinks: []
     };
-    await kv.hset("greet_links", { [code]: JSON.stringify(record) });
-    return res.status(200).json({ success: true, link: record });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
 
-async function handleGreetRevoke(req, res) {
-  if (!(await requireSession(req, res))) return;
-  try {
-    const { code, status } = req.body || {};
-    if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
-      return res.status(400).json({ error: "Invalid code." });
+    document.getElementById("stats-row").innerHTML = "";
+    document.getElementById("conv-body").innerHTML = "";
+    document.getElementById("resume-body").innerHTML = "";
+    document.getElementById("call-request-body").innerHTML = "";
+    document.getElementById("maintenance-log-body").innerHTML = "";
+    document.getElementById("injection-body").innerHTML = "";
+    document.getElementById("flagged-body").innerHTML = "";
+    document.getElementById("banned-body").innerHTML = "";
+    document.getElementById("banned-ranges-body").innerHTML = "";
+    document.getElementById("banned-fingerprints-body").innerHTML = "";
+    document.getElementById("intake-body").innerHTML = "";
+    document.getElementById("a11y-body").innerHTML = "";
+    document.getElementById("greet-body").innerHTML = "";
+    document.getElementById("analysis-body").innerHTML = `<p class="empty-row">Click "Generate Insights" to have AI summarize patterns across your visitor conversations.</p>`;
+    document.getElementById("kb-textarea").value = "";
+    document.getElementById("kb-textarea").placeholder = "Loading current knowledge base...";
+    document.getElementById("search-input").value = "";
+
+    // Reset counters shown in panel headers.
+    ["conv-count", "resume-count", "call-request-count", "maintenance-log-count", "injection-count", "flagged-count",
+     "banned-count", "banned-ranges-count", "banned-fingerprints-count", "map-count", "intake-count", "a11y-count", "greet-count"]
+      .forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = "0";
+      });
+
+    // Stop auto-refresh and clear the flag so it starts fresh after the
+    // next successful sign-in instead of silently reusing old timers.
+    clearInterval(autoRefreshTimer);
+    autoRefreshTimer = null;
+    kbHasLoaded = false;
+
+    dashboard.style.display = "none";
+    gate.style.display = "block";
+    signinView.style.display = "none";
+    registerView.style.display = "none";
+    usernameView.style.display = "block";
+    document.getElementById("username-input").value = "";
+    document.getElementById("username-warning-icon").classList.remove("hidden");
+    gateTitle.textContent = "Sign In";
+    gateSubtitle.textContent = "Enter your username to continue.";
+  });
+
+  async function registerPasskey() {
+    gateError.textContent = "";
+    const password = document.getElementById("register-password").value.trim();
+
+    if (!password) {
+      gateError.textContent = "Enter the dashboard password.";
+      return;
     }
-    const raw = await kv.hget("greet_links", code);
-    if (!raw) return res.status(404).json({ error: "Link not found." });
-    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
-    record.status = status === "active" ? "active" : "revoked";
-    await kv.hset("greet_links", { [code]: JSON.stringify(record) });
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
 
-async function handleGreetDelete(req, res) {
-  if (!(await requireSession(req, res))) return;
-  try {
-    const { code } = req.body || {};
-    if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
-      return res.status(400).json({ error: "Invalid code." });
+    try {
+      const optionsRes = await fetch(`${API_BASE}/api/webauthn?action=register-options`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${password}` }
+      });
+
+      const options = await optionsRes.json();
+
+      if (!optionsRes.ok) {
+        gateError.textContent = options.error || "Incorrect password.";
+        return;
+      }
+
+      console.log("Registration options received from server:", options);
+      const authOverlay = document.getElementById("auth-overlay");
+      authOverlay.classList.add("visible");
+      const attResp = await startRegistration({ optionsJSON: options });
+      authOverlay.classList.remove("visible");
+
+      const verifyRes = await fetch(`${API_BASE}/api/webauthn?action=register-verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${password}`
+        },
+        body: JSON.stringify({ response: attResp })
+      });
+
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok || !verifyData.verified) {
+        gateError.textContent = verifyData.error || "Registration failed.";
+        return;
+      }
+
+      gateError.style.color = "#2e7d32";
+      gateError.textContent = "Passkey registered! Signing you in...";
+      await signInPasskey();
+    } catch (err) {
+      console.error(err);
+      gateError.textContent = "Registration failed: " + (err.message || err.name || "unknown error");
+      document.getElementById("auth-overlay").classList.remove("visible");
     }
-    await kv.hdel("greet_links", code);
-    return res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
-  }
-}
-
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
   }
 
-  const action = req.query.action;
+  async function signInPasskey() {
+    gateError.textContent = "";
+    const authOverlay = document.getElementById("auth-overlay");
 
-  if (req.method === "GET" && action === "data") {
-    return handleData(req, res);
+    try {
+      const optionsRes = await fetch(`${API_BASE}/api/webauthn?action=auth-options`, {
+        method: "POST"
+      });
+
+      const options = await optionsRes.json();
+
+      if (!optionsRes.ok) {
+        gateError.textContent = options.error || "No passkey registered yet.";
+        return;
+      }
+
+      authOverlay.classList.add("visible");
+      const authResp = await startAuthentication({ optionsJSON: options });
+
+      const verifyRes = await fetch(`${API_BASE}/api/webauthn?action=auth-verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ response: authResp })
+      });
+
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok || !verifyData.verified) {
+        gateError.textContent = verifyData.error || "Sign-in failed.";
+        return;
+      }
+
+      localStorage.setItem(SESSION_KEY, verifyData.sessionToken);
+      await loadDashboard();
+    } catch (err) {
+      console.error(err);
+      gateError.textContent = "Sign-in failed: " + (err.message || err.name || "unknown error");
+    } finally {
+      authOverlay.classList.remove("visible");
+    }
   }
 
-  if (req.method === "POST" && action === "delete") {
-    return handleDelete(req, res);
+  document.getElementById("register-btn").addEventListener("click", registerPasskey);
+  document.getElementById("signin-btn").addEventListener("click", signInPasskey);
+
+  function formatDate(iso) {
+    try {
+      return new Date(iso).toLocaleString();
+    } catch {
+      return iso;
+    }
   }
 
-  if (req.method === "POST" && action === "analysis") {
-    return handleAnalysis(req, res);
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
   }
 
-  if (req.method === "POST" && action === "ban-ip") {
-    return handleBanIp(req, res);
+  let currentData = { conversations: [], resumeRequests: [] };
+  let autoRefreshTimer = null;
+  let kbHasLoaded = false;
+
+  const INTENT_KEYWORDS = [
+    "resume", "recommend", "hire", "hiring", "interview", "salary",
+    "available", "availability", "start date", "opportunity", "position",
+    "reach out", "contact", "cv", "role", "open to", "compensation"
+  ];
+
+  function isHighIntent(text) {
+    const lower = (text || "").toLowerCase();
+    return INTENT_KEYWORDS.some((kw) => lower.includes(kw));
   }
 
-  if (req.method === "POST" && action === "unban-ip") {
-    return handleUnbanIp(req, res);
+  function withinDateFilter(timestamp, filterValue) {
+    if (filterValue === "all") return true;
+    const days = parseInt(filterValue, 10);
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    return new Date(timestamp).getTime() >= cutoff;
   }
 
-  if (req.method === "POST" && action === "ban-range") {
-    return handleBanRange(req, res);
+  function renderStats() {
+    const conv = currentData.conversations;
+    const resumes = currentData.resumeRequests;
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const convThisWeek = conv.filter(c => new Date(c.timestamp).getTime() >= weekAgo).length;
+    const highIntentCount = conv.filter(c => isHighIntent(c.question) || isHighIntent(c.answer)).length;
+
+    const stats = [
+      { value: conv.length, label: "Total Conversations" },
+      { value: convThisWeek, label: "This Week" },
+      { value: resumes.length, label: "Resume Requests" },
+      { value: highIntentCount, label: "High-Intent Chats" }
+    ];
+
+    document.getElementById("stats-row").innerHTML = stats.map(s => `
+      <div class="stat-card">
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+      </div>
+    `).join("");
   }
 
-  if (req.method === "POST" && action === "unban-range") {
-    return handleUnbanRange(req, res);
+  function renderFlaggedConversations() {
+    const flagged = currentData.flaggedConversations || [];
+    const body = document.getElementById("flagged-body");
+
+    document.getElementById("flagged-count").textContent = flagged.length;
+
+    body.innerHTML = flagged.length
+      ? flagged.map((entry) => `
+          <tr>
+            <td class="timestamp">${formatDate(entry.timestamp)}</td>
+            <td>${escapeHtml(entry.ip || "unknown")}</td>
+            <td>${entry.strike ? `<span class="intent-tag" style="background: rgba(179,38,30,0.08); color: #b3261e;">${entry.strike}${entry.strike >= 2 ? " (banned)" : ""}</span>` : "—"}</td>
+            <td>${escapeHtml(entry.question || "")}</td>
+            <td>${escapeHtml(entry.reason || "")}</td>
+            <td style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban IP</button>
+              <button class="small-action-btn" data-ban-range="${escapeHtml(entry.ip || "")}">Ban Subnet</button>
+              ${entry.fingerprint ? `<button class="small-action-btn" data-ban-fp="${escapeHtml(entry.fingerprint)}">Ban Device</button>` : ""}
+              <button class="small-action-btn unban" data-reset-ip="${escapeHtml(entry.ip || "")}">Reset</button>
+            </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="6" class="empty-row">No flagged conversations.</td></tr>`;
+
+    body.querySelectorAll("[data-ban-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => banIp(btn.dataset.banIp));
+    });
+
+    body.querySelectorAll("[data-ban-range]").forEach((btn) => {
+      btn.addEventListener("click", () => banRange(btn.dataset.banRange));
+    });
+
+    body.querySelectorAll("[data-ban-fp]").forEach((btn) => {
+      btn.addEventListener("click", () => banFingerprint(btn.dataset.banFp));
+    });
+
+    body.querySelectorAll("[data-reset-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => resetStrikes(btn.dataset.resetIp));
+    });
   }
 
-  if (req.method === "POST" && action === "ban-fingerprint") {
-    return handleBanFingerprint(req, res);
+  async function banRange(ip) {
+    if (!ip) return;
+
+    const parts = ip.split(".");
+    const previewRange = parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.0/24` : ip;
+
+    const confirmed = await showHardStop({
+      risk: "HIGH",
+      riskLevel: "medium",
+      title: "Ban Entire Subnet",
+      detail: `This will block <strong>every visitor</strong> whose IP falls within <strong>${escapeHtml(previewRange)}</strong> (up to 256 addresses) — not just this one person.`,
+      associated: [
+        `Subnet: ${previewRange}`,
+        "Anyone sharing this IP block (e.g. same office, building, or ISP node)",
+        "This is broader than a single-IP ban — use only if needed"
+      ],
+      warning: "This may block unrelated, legitimate visitors who happen to share this network block.",
+      confirmLabel: "Ban Subnet"
+    });
+
+    if (!confirmed) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=ban-range`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not ban that subnet.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not ban that subnet.");
+    }
   }
 
-  if (req.method === "POST" && action === "unban-fingerprint") {
-    return handleUnbanFingerprint(req, res);
+  async function banFingerprint(fingerprint) {
+    if (!fingerprint || !confirm("Ban this specific device/browser? This persists even if they change networks or use a VPN.")) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=ban-fingerprint`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ fingerprint })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not ban that device.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not ban that device.");
+    }
   }
 
-  if (req.method === "POST" && action === "reset-strikes") {
-    return handleResetStrikes(req, res);
+  function renderBannedRanges() {
+    const ranges = currentData.bannedRanges || [];
+    const body = document.getElementById("banned-ranges-body");
+
+    document.getElementById("banned-ranges-count").textContent = ranges.length;
+
+    body.innerHTML = ranges.length
+      ? ranges.map((range) => `
+          <tr>
+            <td>${escapeHtml(range)}</td>
+            <td><button class="small-action-btn unban" data-unban-range="${escapeHtml(range)}">Unban</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No banned subnets.</td></tr>`;
+
+    body.querySelectorAll("[data-unban-range]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const token = localStorage.getItem(SESSION_KEY);
+        try {
+          const res = await fetch(`${API_BASE}/api/dashboard?action=unban-range`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ range: btn.dataset.unbanRange })
+          });
+          if (res.ok) loadDashboard();
+          else alert("Could not unban that subnet.");
+        } catch (err) {
+          console.error(err);
+          alert("Could not unban that subnet.");
+        }
+      });
+    });
   }
 
-  if (req.method === "POST" && action === "a11y-resolve") {
-    return handleA11yResolve(req, res);
+  function renderBannedFingerprints() {
+    const fingerprints = currentData.bannedFingerprints || [];
+    const body = document.getElementById("banned-fingerprints-body");
+
+    document.getElementById("banned-fingerprints-count").textContent = fingerprints.length;
+
+    body.innerHTML = fingerprints.length
+      ? fingerprints.map((fp) => `
+          <tr>
+            <td style="font-family: monospace; font-size: 11px;">${escapeHtml(fp.slice(0, 20))}...</td>
+            <td><button class="small-action-btn unban" data-unban-fp="${escapeHtml(fp)}">Unban</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No banned devices.</td></tr>`;
+
+    body.querySelectorAll("[data-unban-fp]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const token = localStorage.getItem(SESSION_KEY);
+        try {
+          const res = await fetch(`${API_BASE}/api/dashboard?action=unban-fingerprint`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`
+            },
+            body: JSON.stringify({ fingerprint: btn.dataset.unbanFp })
+          });
+          if (res.ok) loadDashboard();
+          else alert("Could not unban that device.");
+        } catch (err) {
+          console.error(err);
+          alert("Could not unban that device.");
+        }
+      });
+    });
   }
 
-  if (req.method === "POST" && action === "greet-create") {
-    return handleGreetCreate(req, res);
+  async function resetStrikes(ip) {
+    if (!ip || !confirm(`Reset the strike count for ${ip}? Their next violation will be treated as a first offense again.`)) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=reset-strikes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not reset strikes for that IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not reset strikes for that IP.");
+    }
   }
 
-  if (req.method === "POST" && action === "greet-revoke") {
-    return handleGreetRevoke(req, res);
+  function renderBannedIps() {
+    const banned = currentData.bannedIps || [];
+    const body = document.getElementById("banned-body");
+
+    document.getElementById("banned-count").textContent = banned.length;
+
+    body.innerHTML = banned.length
+      ? banned.map((ip) => `
+          <tr>
+            <td>${escapeHtml(ip)}</td>
+            <td>
+              <button class="small-action-btn unban" data-unban-ip="${escapeHtml(ip)}">Unban</button>
+            </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No banned IPs.</td></tr>`;
+
+    body.querySelectorAll("[data-unban-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => unbanIp(btn.dataset.unbanIp));
+    });
   }
 
-  if (req.method === "POST" && action === "greet-delete") {
-    return handleGreetDelete(req, res);
+  async function banIp(ip) {
+    if (!ip || !confirm(`Permanently ban ${ip} from using Tyler AI?`)) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=ban-ip`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not ban that IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not ban that IP.");
+    }
   }
 
-  return res.status(400).json({ error: "Unknown or missing action." });
-}
+  async function unbanIp(ip) {
+    if (!ip) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=unban-ip`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ ip })
+      });
+
+      if (res.ok) {
+        loadDashboard();
+      } else {
+        alert("Could not unban that IP.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not unban that IP.");
+    }
+  }
+
+  function renderInjectionAttempts() {
+    const attempts = currentData.injectionAttempts || [];
+    const body = document.getElementById("injection-body");
+
+    document.getElementById("injection-count").textContent = attempts.length;
+
+    body.innerHTML = attempts.length
+      ? attempts.map((entry) => `
+          <tr>
+            <td class="timestamp">${formatDate(entry.timestamp)}</td>
+            <td>${escapeHtml(entry.ip || "unknown")}</td>
+            <td>${escapeHtml(entry.question || "")}</td>
+            <td>${escapeHtml(entry.reason || "")}</td>
+            <td>
+              <button class="small-action-btn" data-ban-ip="${escapeHtml(entry.ip || "")}">Ban IP</button>
+            </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="5" class="empty-row">No injection attempts detected.</td></tr>`;
+
+    body.querySelectorAll("[data-ban-ip]").forEach((btn) => {
+      btn.addEventListener("click", () => banIp(btn.dataset.banIp));
+    });
+  }
+
+  function renderCallRequests() {
+    const requests = currentData.callRequests || [];
+    const body = document.getElementById("call-request-body");
+
+    document.getElementById("call-request-count").textContent = requests.length;
+
+    body.innerHTML = requests.length
+      ? requests.map((r) => `
+          <tr>
+            <td class="timestamp">${formatDate(r.timestamp)}</td>
+            <td>${escapeHtml(r.name || "")}</td>
+            <td>${escapeHtml(r.phone || "")}</td>
+            <td>${escapeHtml(r.email || "")}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="4" class="empty-row">No call requests yet.</td></tr>`;
+  }
+
+  function renderIntakeLog() {
+    const entries = currentData.intakeLog || [];
+    const body = document.getElementById("intake-body");
+
+    document.getElementById("intake-count").textContent = entries.length;
+
+    body.innerHTML = entries.length
+      ? entries.map((e) => `
+          <tr>
+            <td class="timestamp">${formatDate(e.timestamp)}</td>
+            <td>${escapeHtml(e.ip || "unknown")}</td>
+            <td style="font-family: monospace; font-size: 11px;">${e.fingerprint ? escapeHtml(e.fingerprint.slice(0, 24)) + "..." : "—"}</td>
+            <td>${e.isRecruiter === true ? '<span class="intent-tag">Yes</span>' : e.isRecruiter === false ? "No" : "—"}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="4" class="empty-row">No intake entries yet.</td></tr>`;
+  }
+
+  function renderA11yIssues() {
+    const issues = (currentData.a11yIssues || []).filter((i) => i.status !== "resolved");
+    const body = document.getElementById("a11y-body");
+
+    document.getElementById("a11y-count").textContent = issues.length;
+
+    body.innerHTML = issues.length
+      ? issues.map((issue) => `
+          <tr>
+            <td class="timestamp">${formatDate(issue.lastSeen)}</td>
+            <td style="font-size: 12px; word-break: break-all;">${escapeHtml(issue.pageUrl || "")}</td>
+            <td><span class="intent-tag">${escapeHtml(issue.type || "")}</span></td>
+            <td style="font-size: 13px;">
+              ${escapeHtml(issue.description || "")}
+              ${issue.elementSnippet ? `<div style="font-family: monospace; font-size: 10.5px; color: #8b857e; margin-top: 4px; word-break: break-all;">${escapeHtml(issue.elementSnippet)}</div>` : ""}
+            </td>
+            <td>${issue.occurrences || 1}</td>
+            <td><button class="small-action-btn" data-resolve-a11y="${escapeHtml(issue.signature)}">Mark Resolved</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="6" class="empty-row">No open accessibility issues — nice.</td></tr>`;
+
+    body.querySelectorAll("[data-resolve-a11y]").forEach((btn) => {
+      btn.addEventListener("click", () => resolveA11yIssue(btn.dataset.resolveA11y));
+    });
+  }
+
+  // ---- Personal links ----
+  const SITE_ORIGIN = "https://tylerjanczak.com";
+
+  function greetLinkUrl(code) {
+    return `${SITE_ORIGIN}/?c=${encodeURIComponent(code)}`;
+  }
+
+  async function greetApi(action, payload) {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) throw new Error("Not signed in.");
+    const res = await fetch(`${API_BASE}/api/dashboard?action=${action}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Request failed.");
+    return data;
+  }
+
+  function renderGreetLinks() {
+    const links = currentData.greetLinks || [];
+    const body = document.getElementById("greet-body");
+    document.getElementById("greet-count").textContent = links.length;
+
+    body.innerHTML = links.length
+      ? links.map((l) => {
+          const revoked = l.status !== "active";
+          const url = greetLinkUrl(l.code);
+          return `
+          <tr${revoked ? ' style="opacity:.55"' : ""}>
+            <td class="timestamp">${formatDate(l.created)}</td>
+            <td style="font-size:13px;"><strong>${escapeHtml(l.name || "")}</strong>${l.company ? `<br><span style="color:#8b857e;">${escapeHtml(l.company)}</span>` : ""}${revoked ? '<br><span class="intent-tag">revoked</span>' : ""}</td>
+            <td><input type="text" readonly value="${escapeHtml(url)}" style="width:100%; font-size:11.5px; padding:5px 7px; border:1px solid #d9d2c4; border-radius:5px; font-family:monospace;"></td>
+            <td>${l.opens || 0}</td>
+            <td class="timestamp">${l.lastOpened ? formatDate(l.lastOpened) : "—"}</td>
+            <td>
+              <button class="small-action-btn" data-greet-copy="${escapeHtml(l.code)}">Copy</button>
+              <button class="small-action-btn${revoked ? "" : " unban"}" data-greet-toggle="${escapeHtml(l.code)}">${revoked ? "Restore" : "Revoke"}</button>
+              <button class="small-action-btn" data-greet-delete="${escapeHtml(l.code)}">Delete</button>
+            </td>
+          </tr>`;
+        }).join("")
+      : `<tr><td colspan="6" class="empty-row">No personal links yet.</td></tr>`;
+
+    body.querySelectorAll("[data-greet-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const url = greetLinkUrl(btn.dataset.greetCopy);
+        try {
+          await navigator.clipboard.writeText(url);
+          btn.textContent = "Copied";
+        } catch {
+          const input = btn.closest("tr").querySelector("input");
+          input.select();
+          btn.textContent = "Select + copy";
+        }
+        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      });
+    });
+
+    body.querySelectorAll("[data-greet-toggle]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const code = btn.dataset.greetToggle;
+        const link = (currentData.greetLinks || []).find((x) => x.code === code);
+        if (!link) return;
+        const next = link.status === "active" ? "revoked" : "active";
+        try {
+          await greetApi("greet-revoke", { code, status: next });
+          link.status = next;
+          renderGreetLinks();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+
+    body.querySelectorAll("[data-greet-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        if (!confirm("Delete this link permanently? The URL will stop working.")) return;
+        const code = btn.dataset.greetDelete;
+        try {
+          await greetApi("greet-delete", { code });
+          currentData.greetLinks = (currentData.greetLinks || []).filter((x) => x.code !== code);
+          renderGreetLinks();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
+  }
+
+  document.getElementById("greet-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submit = document.getElementById("greet-submit");
+    const name = document.getElementById("greet-name").value.trim();
+    if (!name) return;
+    submit.disabled = true;
+    try {
+      const data = await greetApi("greet-create", {
+        name,
+        company: document.getElementById("greet-company").value.trim(),
+        note: document.getElementById("greet-note").value.trim()
+      });
+      currentData.greetLinks = [data.link, ...(currentData.greetLinks || [])];
+      event.target.reset();
+      renderGreetLinks();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  async function resolveA11yIssue(signature) {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=a11y-resolve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ signature, status: "resolved" })
+      });
+
+      if (res.ok) {
+        currentData.a11yIssues = (currentData.a11yIssues || []).map((issue) =>
+          issue.signature === signature ? { ...issue, status: "resolved" } : issue
+        );
+        renderA11yIssues();
+      } else {
+        alert("Could not update that issue.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not update that issue.");
+    }
+  }
+
+  function renderMaintenanceLog() {
+    const log = currentData.maintenanceLog || [];
+    const body = document.getElementById("maintenance-log-body");
+
+    document.getElementById("maintenance-log-count").textContent = log.length;
+
+    body.innerHTML = log.length
+      ? log.map((entry) => `
+          <tr>
+            <td class="timestamp">${formatDate(entry.timestamp)}</td>
+            <td>${entry.action === "enabled"
+              ? '<span class="intent-tag" style="background: rgba(179,38,30,0.1); color: #b3261e;">Maintenance Enabled</span>'
+              : '<span class="intent-tag" style="background: #e6f2e8; color: #2e7d32;">Maintenance Disabled</span>'}
+          </td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="2" class="empty-row">No maintenance events yet.</td></tr>`;
+  }
+
+  function groupConversationsBySession(conversations) {
+    const groups = new Map();
+
+    conversations.forEach((c, originalIndex) => {
+      const key = c.sessionId || `legacy-${c.id || originalIndex}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push({ ...c, originalIndex });
+    });
+
+    const sessions = Array.from(groups.entries()).map(([sessionId, messages]) => {
+      // Entries come newest-first from the backend. Sort ascending for
+      // display as a natural reading-order thread.
+      const sorted = messages.slice().sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const newestFirst = messages.slice().sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      return {
+        sessionId,
+        messages: sorted,
+        count: sorted.length,
+        lastTimestamp: newestFirst[0]?.timestamp,
+        firstQuestion: sorted[0]?.question || "",
+        primaryIntent: sorted.find(m => m.intent)?.intent || null,
+        page: newestFirst[0]?.page || sorted[0]?.page || null,
+        anyFlagged: messages.some(m => isHighIntent(m.question) || isHighIntent(m.answer)),
+        indices: messages.map(m => m.originalIndex)
+      };
+    });
+
+    return sessions.sort((a, b) => new Date(b.lastTimestamp) - new Date(a.lastTimestamp));
+  }
+
+  const INTENT_LABELS = {
+    recruiter_question: "Recruiter Question",
+    project_question: "Project Question",
+    contact_request: "Contact Request",
+    general_conversation: "General",
+    other: "Other"
+  };
+
+  function openConversationDetail(session) {
+    const overlay = document.getElementById("conversation-detail-overlay");
+    const thread = document.getElementById("conversation-detail-thread");
+    const meta = document.getElementById("conversation-detail-meta");
+
+    meta.textContent = `${session.count} message${session.count === 1 ? "" : "s"}${session.page ? " · " + session.page : ""}`;
+
+    thread.innerHTML = session.messages.map(m => `
+      <div class="conv-bubble-row user">
+        <div class="conv-bubble question">
+          ${escapeHtml(m.question || "")}
+          <span class="conv-bubble-timestamp">
+            ${formatDate(m.timestamp)}${m.intent ? ` · ${escapeHtml(INTENT_LABELS[m.intent] || m.intent)}` : ""}
+          </span>
+        </div>
+      </div>
+      <div class="conv-bubble-row">
+        <div class="conv-bubble answer">${formatMessageHtmlForDashboard(m.answer || "")}</div>
+      </div>
+    `).join("");
+
+    overlay.classList.add("visible");
+  }
+
+  function formatMessageHtmlForDashboard(text) {
+    return escapeHtml(text).replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: var(--accent);">$1</a>'
+    );
+  }
+
+  document.getElementById("conversation-detail-close").addEventListener("click", () => {
+    document.getElementById("conversation-detail-overlay").classList.remove("visible");
+  });
+
+  function renderTables() {
+    const convBody = document.getElementById("conv-body");
+    const resumeBody = document.getElementById("resume-body");
+    const searchTerm = document.getElementById("search-input").value.trim().toLowerCase();
+    const dateFilterValue = document.getElementById("date-filter").value;
+
+    const allSessions = groupConversationsBySession(currentData.conversations);
+
+    const filteredSessions = allSessions
+      .filter(s => withinDateFilter(s.lastTimestamp, dateFilterValue))
+      .filter(s => {
+        if (!searchTerm) return true;
+        return s.messages.some(m =>
+          (m.question || "").toLowerCase().includes(searchTerm) ||
+          (m.answer || "").toLowerCase().includes(searchTerm)
+        );
+      });
+
+    const filteredResumes = currentData.resumeRequests
+      .map((r, originalIndex) => ({ ...r, originalIndex }))
+      .filter(r => withinDateFilter(r.timestamp, dateFilterValue));
+
+    document.getElementById("conv-count").textContent = filteredSessions.length;
+    document.getElementById("resume-count").textContent = filteredResumes.length;
+
+    convBody.innerHTML = filteredSessions.length
+      ? filteredSessions.map((s, sessionIndex) => `
+          <tr class="conversation-row ${s.anyFlagged ? 'high-intent' : ''}" data-session-index="${sessionIndex}">
+            <td class="timestamp">${formatDate(s.lastTimestamp)}</td>
+            <td>${s.page ? `<span class="page-tag">${escapeHtml(s.page)}</span>` : ''}</td>
+            <td>${s.count}</td>
+            <td>${s.anyFlagged ? '<span class="intent-tag">High Intent</span><br>' : ''}${s.primaryIntent ? `<span class="intent-tag" style="background: rgba(74,74,72,0.08); color: var(--ink-soft);">${escapeHtml(INTENT_LABELS[s.primaryIntent] || s.primaryIntent)}</span><br>` : ''}${escapeHtml(s.firstQuestion)}</td>
+            <td><button class="delete-btn" data-session-delete-index="${sessionIndex}" title="Delete conversation">&times;</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="5" class="empty-row">No conversations match.</td></tr>`;
+
+    resumeBody.innerHTML = filteredResumes.length
+      ? filteredResumes.map(r => `
+          <tr>
+            <td class="timestamp">${formatDate(r.timestamp)}</td>
+            <td>${escapeHtml(r.email || "")}</td>
+            <td><button class="delete-btn" data-type="resume" data-index="${r.originalIndex}" title="Delete">&times;</button></td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="3" class="empty-row">No resume requests match.</td></tr>`;
+
+    convBody.querySelectorAll(".conversation-row").forEach(row => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest(".delete-btn")) return;
+        const session = filteredSessions[parseInt(row.dataset.sessionIndex, 10)];
+        openConversationDetail(session);
+      });
+    });
+
+    convBody.querySelectorAll("[data-session-delete-index]").forEach(btn => {
+      btn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        const session = filteredSessions[parseInt(btn.dataset.sessionDeleteIndex, 10)];
+        await deleteConversationSession(session);
+      });
+    });
+
+    document.querySelectorAll('[data-type="resume"].delete-btn').forEach(btn => {
+      btn.addEventListener("click", handleDelete);
+    });
+  }
+
+  async function deleteConversationSession(session) {
+    const label = session.count > 1 ? `all ${session.count} messages in this conversation` : "this entry";
+    if (!confirm(`Delete ${label}? This can't be undone.`)) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+    // Delete from highest index to lowest so earlier indices stay valid
+    // as later ones are removed.
+    const descendingIndices = session.indices.slice().sort((a, b) => b - a);
+
+    try {
+      for (const index of descendingIndices) {
+        await fetch(`${API_BASE}/api/dashboard?action=delete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ type: "conversation", index })
+        });
+      }
+      await loadDashboard();
+    } catch (err) {
+      console.error(err);
+      alert("Could not delete that conversation.");
+    }
+  }
+
+  async function handleDelete(event) {
+    const btn = event.currentTarget;
+    const type = btn.dataset.type;
+    const index = parseInt(btn.dataset.index, 10);
+
+    if (!confirm("Delete this entry? This can't be undone.")) return;
+
+    const token = localStorage.getItem(SESSION_KEY);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=delete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ type, index })
+      });
+
+      if (res.ok) {
+        await loadDashboard();
+      } else {
+        alert("Could not delete that entry.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not delete that entry.");
+    }
+  }
+
+  function exportToCsv() {
+    const rows = [["Timestamp", "Page", "Question", "Answer"]];
+    currentData.conversations.forEach(c => {
+      rows.push([c.timestamp, c.page || "", c.question || "", c.answer || ""]);
+    });
+
+    const csvContent = rows.map(row =>
+      row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tyler-ai-conversations-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function generateAnalysis() {
+    const btn = document.getElementById("analysis-btn");
+    const body = document.getElementById("analysis-body");
+    const token = localStorage.getItem(SESSION_KEY);
+
+    btn.disabled = true;
+    btn.textContent = "Analyzing...";
+    body.innerHTML = `<p class="empty-row">Reviewing conversations...</p>`;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dashboard?action=analysis`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        body.innerHTML = `<p class="empty-row">${escapeHtml(data.error || "Could not generate analysis.")}</p>`;
+      } else {
+        body.textContent = data.analysis;
+      }
+    } catch (err) {
+      console.error(err);
+      body.innerHTML = `<p class="empty-row">Could not generate analysis. Please try again.</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Generate Insights";
+    }
+  }
+
+  document.getElementById("search-input").addEventListener("input", renderTables);
+  document.getElementById("date-filter").addEventListener("change", renderTables);
+  document.getElementById("export-btn").addEventListener("click", exportToCsv);
+  document.getElementById("analysis-btn").addEventListener("click", generateAnalysis);
+
+  const kbTextarea = document.getElementById("kb-textarea");
+  const kbStatus = document.getElementById("kb-status");
+  const kbCharCount = document.getElementById("kb-char-count");
+
+  function updateKbCharCount() {
+    kbCharCount.textContent = `${kbTextarea.value.length.toLocaleString()} characters`;
+  }
+
+  function setKbStatus(text, className) {
+    kbStatus.textContent = text;
+    kbStatus.className = `kb-status ${className}`;
+  }
+
+  async function loadChatStatus() {
+    const toggleInput = document.getElementById("chat-toggle-input");
+    const toggleLabel = document.getElementById("chat-toggle-label");
+    const maintenanceInput = document.getElementById("maintenance-toggle-input");
+    const maintenanceLabel = document.getElementById("maintenance-toggle-label");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-config`, { cache: "no-store" });
+      const data = await res.json();
+
+      toggleInput.checked = data.enabled !== false;
+      toggleLabel.textContent = toggleInput.checked ? "Chat Enabled" : "Chat Disabled";
+
+      maintenanceInput.checked = data.maintenance === true;
+      maintenanceLabel.textContent = maintenanceInput.checked ? "Under Maintenance" : "Site Live";
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function toggleChatEnabled() {
+    const toggleInput = document.getElementById("chat-toggle-input");
+    const toggleLabel = document.getElementById("chat-toggle-label");
+    const token = localStorage.getItem(SESSION_KEY);
+    const desiredState = toggleInput.checked;
+
+    // Revert until confirmed either way.
+    toggleInput.checked = !desiredState;
+
+    const confirmed = desiredState
+      ? await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: Enable Chat Widget",
+          detail: "This will make <strong>Tyler AI</strong> visible and answering questions for all visitors again.",
+          associated: [
+            "Tyler AI Chat Widget",
+            "Resume request flow",
+            "Conversation logging"
+          ],
+          warning: "Visitors will immediately be able to chat and request the resume again.",
+          riskLevel: "medium",
+          confirmLabel: "Override"
+        })
+      : await showHardStop({
+          risk: "MEDIUM",
+          title: "Confirm: Disable Chat Widget",
+          detail: "This will hide <strong>Tyler AI</strong> from every page of your site until re-enabled.",
+          associated: [
+            "Tyler AI Chat Widget",
+            "Resume request flow",
+            "Conversation logging"
+          ],
+          warning: "Visitors will no longer be able to chat or request your resume through the widget.",
+          riskLevel: "medium",
+          confirmLabel: "Override"
+        });
+
+    if (!confirmed) return;
+
+    toggleInput.checked = desiredState;
+    toggleInput.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-config`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ enabled: desiredState })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        toggleInput.checked = !desiredState;
+        alert(data.error || "Could not update chat status.");
+      } else {
+        toggleLabel.textContent = desiredState ? "Chat Enabled" : "Chat Disabled";
+      }
+    } catch (err) {
+      console.error(err);
+      toggleInput.checked = !desiredState;
+      alert("Could not update chat status.");
+    } finally {
+      toggleInput.disabled = false;
+    }
+  }
+
+  document.getElementById("chat-toggle-input").addEventListener("change", toggleChatEnabled);
+
+  /* ------------------------------------------------------------------
+     Maintenance mode — gated behind a Hard Stop confirmation dialog
+     when turning it ON, since it takes the whole live site down.
+  ------------------------------------------------------------------ */
+
+  const hardstopOverlay = document.getElementById("hardstop-overlay");
+  let hardstopResolver = null;
+
+  function showHardStop({ risk, title, detail, associated, warning, riskLevel = "high", confirmLabel = "Proceed Anyway" }) {
+    document.getElementById("hardstop-risk-label").textContent = risk;
+    document.getElementById("hardstop-title").textContent = title;
+    document.getElementById("hardstop-detail").innerHTML = detail;
+    document.getElementById("hardstop-associated").innerHTML = associated
+      .map((item) => `<div class="hardstop-associated-item">${escapeHtml(item)}</div>`)
+      .join("");
+    document.getElementById("hardstop-warning-text").textContent = warning || "";
+    document.getElementById("hardstop-confirm-btn").textContent = confirmLabel;
+
+    const card = document.querySelector(".hardstop-card");
+    card.classList.toggle("risk-medium", riskLevel === "medium");
+
+    hardstopOverlay.classList.add("visible");
+
+    return new Promise((resolve) => {
+      hardstopResolver = resolve;
+    });
+  }
+
+  function closeHardStop(confirmed) {
+    hardstopOverlay.classList.remove("visible");
+    if (hardstopResolver) {
+      hardstopResolver(confirmed);
+      hardstopResolver = null;
+    }
+  }
+
+  document.getElementById("hardstop-cancel-btn").addEventListener("click", () => closeHardStop(false));
+  document.getElementById("hardstop-confirm-btn").addEventListener("click", () => closeHardStop(true));
+
+  async function toggleMaintenanceMode() {
+    const maintenanceInput = document.getElementById("maintenance-toggle-input");
+    const maintenanceLabel = document.getElementById("maintenance-toggle-label");
+    const token = localStorage.getItem(SESSION_KEY);
+    const desiredState = maintenanceInput.checked;
+
+    // Turning maintenance ON is the risky, site-wide action — require a
+    // Hard Stop confirmation. Turning it back OFF (restoring the site)
+    // doesn't need the same friction.
+    if (desiredState) {
+      maintenanceInput.checked = false; // revert until confirmed
+      const confirmed = await showHardStop({
+        risk: "VERY HIGH",
+        title: "Hard Stop: Enable Maintenance Mode",
+        detail: "This will take <strong>the entire live site</strong> offline for all visitors, including recruiters currently browsing.",
+        associated: [
+          "Website: tylerjanczak.com / tylerjanczak-github-io.vercel.app",
+          "Tyler AI Chat Widget",
+          "All portfolio pages and case studies"
+        ],
+        warning: "Every visitor will immediately see a maintenance notice instead of your portfolio."
+      });
+
+      if (!confirmed) return;
+      maintenanceInput.checked = true;
+    }
+
+    maintenanceInput.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-config`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ maintenance: desiredState })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        maintenanceInput.checked = !desiredState;
+        alert(data.error || "Could not update maintenance status.");
+      } else {
+        maintenanceLabel.textContent = desiredState ? "Under Maintenance" : "Site Live";
+        loadDashboard();
+      }
+    } catch (err) {
+      console.error(err);
+      maintenanceInput.checked = !desiredState;
+      alert("Could not update maintenance status.");
+    } finally {
+      maintenanceInput.disabled = false;
+    }
+  }
+
+  document.getElementById("maintenance-toggle-input").addEventListener("change", toggleMaintenanceMode);
+
+  const GITHUB_REPO = "tylerjanczak/tylerjanczak.github.io";
+
+  function setStatusRow(checkName, state, detailText) {
+    const row = document.querySelector(`.status-row[data-check="${checkName}"]`);
+    if (!row) return;
+    row.querySelector(".status-dot").className = `status-dot ${state}`;
+    row.querySelector(".status-detail").textContent = detailText;
+  }
+
+  async function checkWebsite() {
+    try {
+      const res = await fetch(`${window.location.origin}/index.html`, { cache: "no-store" });
+      setStatusRow("website", res.ok ? "operational" : "down", res.ok ? "Operational" : `Error ${res.status}`);
+    } catch {
+      setStatusRow("website", "down", "Unreachable");
+    }
+  }
+
+  async function checkChatApi() {
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-config`, { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok) {
+        setStatusRow("chat", "operational", data.enabled ? "Operational" : "Operational (Disabled)");
+      } else {
+        setStatusRow("chat", "down", "Error");
+      }
+    } catch {
+      setStatusRow("chat", "down", "Unreachable");
+    }
+  }
+
+  async function checkDatabase() {
+    // The chat-status endpoint reads from KV, so a successful response
+    // also confirms the database connection is healthy.
+    try {
+      const res = await fetch(`${API_BASE}/api/chat-config`, { cache: "no-store" });
+      setStatusRow("database", res.ok ? "operational" : "down", res.ok ? "Operational" : "Error");
+    } catch {
+      setStatusRow("database", "down", "Unreachable");
+    }
+  }
+
+  async function checkGitHub() {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits/main`, {
+        headers: { Accept: "application/vnd.github+json" }
+      });
+      if (!res.ok) {
+        setStatusRow("github", "down", "Unreachable");
+        return;
+      }
+      const data = await res.json();
+      const commitDate = data?.commit?.author?.date;
+      const detail = commitDate
+        ? `Last commit ${formatDate(commitDate)}`
+        : "Operational";
+      setStatusRow("github", "operational", detail);
+    } catch {
+      setStatusRow("github", "down", "Unreachable");
+    }
+  }
+
+  function runSystemStatusChecks() {
+    checkWebsite();
+    checkChatApi();
+    checkDatabase();
+    checkGitHub();
+  }
+
+  document.getElementById("status-refresh-btn").addEventListener("click", runSystemStatusChecks);
+
+  async function loadKnowledgeBase() {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge-base`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        kbTextarea.placeholder = "Could not load knowledge base.";
+        return;
+      }
+
+      if (data.usingDefault) {
+        kbTextarea.value = "";
+        kbTextarea.placeholder = "Currently using the built-in default knowledge base from api/chat.js. Type here and click Save to override it.";
+        setKbStatus("Using Default", "default");
+      } else {
+        kbTextarea.value = data.content;
+        setKbStatus("Custom Version Active", "custom");
+      }
+
+      updateKbCharCount();
+    } catch (err) {
+      console.error(err);
+      kbTextarea.placeholder = "Could not load knowledge base.";
+    }
+  }
+
+  async function saveKnowledgeBase() {
+    const token = localStorage.getItem(SESSION_KEY);
+    const btn = document.getElementById("kb-save-btn");
+    const content = kbTextarea.value.trim();
+
+    if (!content) {
+      alert("Knowledge base can't be empty. Use \"Reset to Default\" instead if you want to clear your custom version.");
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Saving...";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge-base`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ content })
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setKbStatus("Saved", "saved");
+        window.setTimeout(() => setKbStatus("Custom Version Active", "custom"), 2000);
+      } else {
+        alert(data.error || "Could not save changes.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not save changes.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Save Changes";
+    }
+  }
+
+  async function resetKnowledgeBase() {
+    if (!confirm("Reset to the default knowledge base built into api/chat.js? Your custom version will be discarded.")) {
+      return;
+    }
+
+    const token = localStorage.getItem(SESSION_KEY);
+    const btn = document.getElementById("kb-reset-btn");
+
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/api/knowledge-base`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ useDefault: true })
+      });
+
+      if (res.ok) {
+        kbTextarea.value = "";
+        kbTextarea.placeholder = "Currently using the built-in default knowledge base from api/chat.js. Type here and click Save to override it.";
+        setKbStatus("Using Default", "default");
+        updateKbCharCount();
+      } else {
+        alert("Could not reset knowledge base.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Could not reset knowledge base.");
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  kbTextarea.addEventListener("input", updateKbCharCount);
+  document.getElementById("kb-save-btn").addEventListener("click", saveKnowledgeBase);
+  document.getElementById("kb-reset-btn").addEventListener("click", resetKnowledgeBase);
+
+  document.getElementById("auto-refresh-toggle").addEventListener("change", (e) => {
+    if (e.target.checked) {
+      autoRefreshTimer = setInterval(loadDashboard, 30000);
+    } else {
+      clearInterval(autoRefreshTimer);
+    }
+  });
+
+  async function loadDashboard() {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+
+    const res = await fetch(`${API_BASE}/api/dashboard?action=data`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!res.ok) {
+      localStorage.removeItem(SESSION_KEY);
+      gate.style.display = "block";
+      dashboard.style.display = "none";
+      gateError.textContent = "Session expired. Please sign in again.";
+      clearInterval(autoRefreshTimer);
+      return;
+    }
+
+    const data = await res.json();
+    currentData = {
+      conversations: data.conversations || [],
+      resumeRequests: data.resumeRequests || [],
+      maintenanceLog: data.maintenanceLog || [],
+      flaggedConversations: data.flaggedConversations || [],
+      bannedIps: data.bannedIps || [],
+      bannedRanges: data.bannedRanges || [],
+      bannedFingerprints: data.bannedFingerprints || [],
+      injectionAttempts: data.injectionAttempts || [],
+      callRequests: data.callRequests || [],
+      intakeLog: data.intakeLog || [],
+      a11yIssues: data.a11yIssues || [],
+      greetLinks: data.greetLinks || []
+    };
+
+    gate.style.display = "none";
+    dashboard.style.display = "block";
+
+    renderStats();
+    renderTables();
+    renderMaintenanceLog();
+    renderInjectionAttempts();
+    renderFlaggedConversations();
+    renderBannedIps();
+    renderBannedRanges();
+    renderBannedFingerprints();
+    renderCallRequests();
+    renderIntakeLog();
+    renderA11yIssues();
+    renderGreetLinks();
+
+    if (!kbHasLoaded) {
+      kbHasLoaded = true;
+      loadKnowledgeBase();
+      loadChatStatus();
+      runSystemStatusChecks();
+    }
+
+    if (!autoRefreshTimer && document.getElementById("auto-refresh-toggle").checked) {
+      autoRefreshTimer = setInterval(loadDashboard, 30000);
+    }
+  }
+
+  // Attempt to resume an existing session on page load.
+  loadDashboard();
+</script>
+
+</body>
+</html>

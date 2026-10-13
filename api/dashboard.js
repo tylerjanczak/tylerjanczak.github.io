@@ -1,5 +1,99 @@
 import { kv } from "@vercel/kv";
-import { randomBytes } from "crypto";
+import { randomBytes, webcrypto, createHash } from "crypto";
+
+// ---- Device-bound session check (identical copy lives in webauthn.js,
+// dashboard.js, chat-config.js and knowledge-base.js) --------------------
+// A session token alone is NOT enough. At sign-in the browser creates a
+// non-extractable signing key and registers its public half with the
+// session; every request must carry a fresh one-time signature:
+//   X-Dashboard-Proof: <timestamp-ms>.<nonce>.<signature, base64url>
+//   signature = ECDSA-P256-SHA256 over:
+//     METHOD \n /path?query \n timestamp \n nonce \n sha256(token)
+// A copied token is useless without the original browser's key.
+const MAX_SKEW_MS = 60 * 1000;
+const NONCE_TTL_SECONDS = 180;
+
+const b64urlToBuf = (s) => Buffer.from(String(s).replace(/-/g, "+").replace(/_/g, "/"), "base64");
+
+function isValidPublicJwk(jwk) {
+  return Boolean(
+    jwk &&
+      typeof jwk === "object" &&
+      jwk.kty === "EC" &&
+      jwk.crv === "P-256" &&
+      typeof jwk.x === "string" && jwk.x.length <= 100 &&
+      typeof jwk.y === "string" && jwk.y.length <= 100 &&
+      jwk.d === undefined
+  );
+}
+
+// Verifies the proof for `token`. Returns true/false, never throws.
+async function verifyProof(req, token) {
+  try {
+    if (typeof token !== "string" || token.length < 20 || token.length > 100) return false;
+
+    const raw = await kv.get(`webauthn_session_${token}`);
+    if (!raw) return false;
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!record || !isValidPublicJwk(record.pk)) return false; // old/unbound sessions are refused
+
+    const header = req.headers["x-dashboard-proof"];
+    if (typeof header !== "string" || header.length > 400) return false;
+    const [ts, nonce, sig] = header.split(".");
+    if (!ts || !nonce || !sig || nonce.length < 16 || nonce.length > 64) return false;
+
+    const tsNum = Number(ts);
+    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) return false;
+
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const message = `${req.method}\n${req.url}\n${ts}\n${nonce}\n${tokenHash}`;
+
+    const key = await webcrypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", x: record.pk.x, y: record.pk.y, ext: true },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"]
+    );
+
+    const ok = await webcrypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      b64urlToBuf(sig),
+      new TextEncoder().encode(message)
+    );
+    if (!ok) return false;
+
+    // One-time use: reject if this nonce was already seen.
+    const fresh = await kv.set(`proof_nonce_${tokenHash.slice(0, 16)}_${nonce}`, "1", {
+      nx: true,
+      ex: NONCE_TTL_SECONDS
+    });
+    return fresh === "OK" || fresh === true;
+  } catch (err) {
+    console.error("Session proof check failed:", err);
+    return false;
+  }
+}
+
+// Drop-in replacement for each endpoint's old requireSession().
+// Sends the 401 itself and returns null on failure; returns the token on success.
+async function requireSession(req, res) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+
+  if (!token) {
+    res.status(401).json({ error: "Not signed in." });
+    return null;
+  }
+
+  if (!(await verifyProof(req, token))) {
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return null;
+  }
+
+  return token;
+}
+
 
 const KEYS = {
   conversation: "tyler_ai_conversations",
@@ -7,24 +101,6 @@ const KEYS = {
   callRequest: "tyler_ai_call_requests",
   intake: "visitor_intake_log"
 };
-
-async function requireSession(req, res) {
-  const sessionToken = req.headers.authorization?.replace("Bearer ", "");
-
-  if (!sessionToken) {
-    res.status(401).json({ error: "Not signed in." });
-    return null;
-  }
-
-  const sessionValid = await kv.get(`webauthn_session_${sessionToken}`);
-
-  if (!sessionValid) {
-    res.status(401).json({ error: "Session expired. Please sign in again." });
-    return null;
-  }
-
-  return sessionToken;
-}
 
 function parseEntries(entries) {
   return (entries || []).map((entry) => {
@@ -95,7 +171,7 @@ async function handleData(req, res) {
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -127,7 +203,7 @@ async function handleDelete(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -157,7 +233,7 @@ async function handleBanIp(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -198,7 +274,7 @@ async function handleBanRange(req, res) {
     return res.status(200).json({ success: true, range });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -217,7 +293,7 @@ async function handleUnbanRange(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -246,7 +322,7 @@ async function handleBanFingerprint(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -265,7 +341,7 @@ async function handleUnbanFingerprint(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -288,7 +364,7 @@ async function handleUnbanIp(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -307,7 +383,7 @@ async function handleResetStrikes(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -377,7 +453,7 @@ Keep the total response under 200 words, written directly to Tyler in a helpful,
     });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -405,13 +481,24 @@ async function handleA11yResolve(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
 // ---- Personal links (greeting by name) ----
 const GREET_PERMISSIONS = ["GUEST", "RECRUITER", "HIRING_MANAGER", "COLLEAGUE"];
 const GREET_TEMPLATES = ["PROD_VIEW", "PROD_MANAGER", "PROD_SUPPORT", "TEST_VIEW"];
+// Time limit for a personal link. Counted from creation (or from the last
+// time the limit was reset in the dashboard). Expired links stop working
+// everywhere (site greeting, chat identity, Bridges) with no other change.
+const GREET_DURATIONS = {
+  "12h": 12 * 3600 * 1000,
+  "1d": 24 * 3600 * 1000,
+  "3d": 3 * 24 * 3600 * 1000,
+  "1w": 7 * 24 * 3600 * 1000,
+  "1m": 30 * 24 * 3600 * 1000
+};
+const expiryFor = (key) => new Date(Date.now() + GREET_DURATIONS[key]).toISOString();
 
 const CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"; // no look-alike chars
 
@@ -438,12 +525,16 @@ async function handleGreetCreate(req, res) {
     const permission = GREET_PERMISSIONS.includes(req.body?.permission) ? req.body.permission : "GUEST";
     const template = GREET_TEMPLATES.includes(req.body?.template) ? req.body.template : "PROD_VIEW";
 
+    const durationKey = Object.prototype.hasOwnProperty.call(GREET_DURATIONS, req.body?.duration) ? req.body.duration : "1w";
+
     let code = makeCode();
     for (let i = 0; i < 5 && (await kv.hget("greet_links", code)); i++) code = makeCode();
 
     const record = {
       code, name, company, note, permission, template,
       status: "active",
+      duration: durationKey,
+      expiresAt: expiryFor(durationKey),
       created: new Date().toISOString(),
       opens: 0, firstOpened: null, lastOpened: null
     };
@@ -451,14 +542,14 @@ async function handleGreetCreate(req, res) {
     return res.status(200).json({ success: true, link: record });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
 async function handleGreetUpdate(req, res) {
   if (!(await requireSession(req, res))) return;
   try {
-    const { code, permission, template } = req.body || {};
+    const { code, permission, template, duration } = req.body || {};
     if (typeof code !== "string" || !/^[A-Za-z0-9_-]{6,24}$/.test(code)) {
       return res.status(400).json({ error: "Invalid code." });
     }
@@ -468,16 +559,23 @@ async function handleGreetUpdate(req, res) {
     if (template !== undefined && !GREET_TEMPLATES.includes(template)) {
       return res.status(400).json({ error: "Invalid template." });
     }
+    if (duration !== undefined && !Object.prototype.hasOwnProperty.call(GREET_DURATIONS, duration)) {
+      return res.status(400).json({ error: "Invalid time limit." });
+    }
     const raw = await kv.hget("greet_links", code);
     if (!raw) return res.status(404).json({ error: "Link not found." });
     const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (duration !== undefined) {
+      record.duration = duration;
+      record.expiresAt = expiryFor(duration);
+    }
     if (permission !== undefined) record.permission = permission;
     if (template !== undefined) record.template = template;
     await kv.hset("greet_links", { [code]: JSON.stringify(record) });
     return res.status(200).json({ success: true, link: record });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -496,7 +594,7 @@ async function handleGreetRevoke(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
@@ -511,14 +609,34 @@ async function handleGreetDelete(req, res) {
     return res.status(200).json({ success: true });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
+// Only the dashboard's own origin may call this from a browser.
+const ALLOWED_ORIGINS = new Set(["https://dashboard.tylerjanczak.com"]);
+
+async function handleLogout(req, res) {
+  const token = await requireSession(req, res);
+  if (!token) return;
+  await kv.del(`webauthn_session_${token}`);
+  return res.status(200).json({ success: true });
+}
+
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Dashboard-Proof");
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
+  if (origin && !ALLOWED_ORIGINS.has(origin) && req.method !== "OPTIONS") {
+    return res.status(403).json({ error: "Forbidden" });
+  }
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -568,6 +686,10 @@ export default async function handler(req, res) {
 
   if (req.method === "POST" && action === "a11y-resolve") {
     return handleA11yResolve(req, res);
+  }
+
+  if (req.method === "POST" && action === "logout") {
+    return handleLogout(req, res);
   }
 
   if (req.method === "POST" && action === "greet-create") {

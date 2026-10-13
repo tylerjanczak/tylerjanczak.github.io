@@ -33,17 +33,17 @@ async function verifyProof(req, token) {
     if (typeof token !== "string" || token.length < 20 || token.length > 100) return false;
 
     const raw = await kv.get(`webauthn_session_${token}`);
-    if (!raw) return false;
+    if (!raw) { req._why = "no-session"; return false; }
     const record = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (!record || !isValidPublicJwk(record.pk)) return false; // old/unbound sessions are refused
+    if (!record || !isValidPublicJwk(record.pk)) { req._why = "unbound-session"; return false; } // old/unbound sessions are refused
 
     const header = req.headers["x-dashboard-proof"];
-    if (typeof header !== "string" || header.length > 400) return false;
+    if (typeof header !== "string" || header.length > 400) { req._why = "no-proof"; return false; }
     const [ts, nonce, sig] = header.split(".");
     if (!ts || !nonce || !sig || nonce.length < 16 || nonce.length > 64) return false;
 
     const tsNum = Number(ts);
-    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) return false;
+    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) { req._why = "clock-skew"; return false; }
 
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const message = `${req.method}\n${req.url}\n${ts}\n${nonce}\n${tokenHash}`;
@@ -62,14 +62,15 @@ async function verifyProof(req, token) {
       b64urlToBuf(sig),
       new TextEncoder().encode(message)
     );
-    if (!ok) return false;
+    if (!ok) { req._why = "bad-signature"; return false; }
 
     // One-time use: reject if this nonce was already seen.
     const fresh = await kv.set(`proof_nonce_${tokenHash.slice(0, 16)}_${nonce}`, "1", {
       nx: true,
       ex: NONCE_TTL_SECONDS
     });
-    return fresh === "OK" || fresh === true;
+    if (!(fresh === "OK" || fresh === true)) { req._why = "replay"; return false; }
+    return true;
   } catch (err) {
     console.error("Session proof check failed:", err);
     return false;
@@ -87,7 +88,7 @@ async function requireSession(req, res) {
   }
 
   if (!(await verifyProof(req, token))) {
-    res.status(401).json({ error: "Session expired. Please sign in again." });
+    res.status(401).json({ error: "Session expired. Please sign in again.", reason: req._why || "invalid" });
     return null;
   }
 

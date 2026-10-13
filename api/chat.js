@@ -259,7 +259,9 @@ async function handleGreetSession(req, res) {
       sessionId: sessionToken,
       name: record.name || "",
       company: record.company || "",
-      note: record.note || ""
+      note: record.note || "",
+      permission: record.permission || "GUEST",
+      template: record.template || "PROD_VIEW"
     });
   } catch (err) {
     console.error("greet-session failed:", err);
@@ -904,7 +906,7 @@ Clinical certifications listed in the portfolio include:
 - ACLS
 - PALS
 - NRP
-- PMP
+
 This experience supports Tyler's perspective that healthcare technology must
 work for the people using it at the bedside and on the floor.
 

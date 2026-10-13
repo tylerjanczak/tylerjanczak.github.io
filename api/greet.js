@@ -5,6 +5,7 @@ import { kv } from "@vercel/kv";
 // Unknown, revoked and malformed codes all get the same { found:false }
 // response so codes can't be probed. No IP is kept long-term; the rate-limit
 // counter expires after 60 seconds.
+
 const CODE_RE = /^[A-Za-z0-9_-]{6,24}$/;
 const LIMIT_PER_MINUTE = 30;
 
@@ -47,7 +48,9 @@ export default async function handler(req, res) {
       found: true,
       name: record.name || "",
       company: record.company || "",
-      note: record.note || ""
+      note: record.note || "",
+      permission: record.permission || "GUEST",
+      template: record.template || "PROD_VIEW"
     });
   } catch (err) {
     console.error("greet failed:", err);

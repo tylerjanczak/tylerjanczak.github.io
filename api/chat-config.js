@@ -28,7 +28,7 @@ function isValidPublicJwk(jwk) {
 }
 
 // Verifies the proof for `token`. Returns true/false, never throws.
-async function verifyProof(req, token) {
+async function verifyProofCore(req, token) {
   try {
     if (typeof token !== "string" || token.length < 20 || token.length > 100) return false;
 
@@ -76,9 +76,35 @@ async function verifyProof(req, token) {
   }
 }
 
+
+// ---- Roles --------------------------------------------------------------
+// Every sign-in carries the role of the passkey that was used (ADMIN,
+// RESTRICTED, READ_ONLY). The role is looked up again on every request, so
+// removing a user or changing their role takes effect immediately.
+const ROLE_RANK = { READ_ONLY: 1, RESTRICTED: 2, ADMIN: 3 };
+
+async function verifyProof(req, token) {
+  if (!(await verifyProofCore(req, token))) return false;
+  try {
+    const rawSession = await kv.get(`webauthn_session_${token}`);
+    const session = rawSession ? (typeof rawSession === "string" ? JSON.parse(rawSession) : rawSession) : null;
+    const rawCreds = await kv.get("webauthn_credentials");
+    const creds = rawCreds ? (typeof rawCreds === "string" ? JSON.parse(rawCreds) : rawCreds) : [];
+    const cred = session && session.cid && Array.isArray(creds) ? creds.find((c) => c.id === session.cid) : null;
+    if (!cred) { req._why = "revoked"; return false; }
+    req._role = ROLE_RANK[cred.role] ? cred.role : "ADMIN"; // passkeys from before roles existed are the owner's
+    req._who = String(cred.label || "");
+    req._cid = cred.id;
+    return true;
+  } catch (err) {
+    console.error("Role lookup failed:", err);
+    return false;
+  }
+}
+
 // Drop-in replacement for each endpoint's old requireSession().
 // Sends the 401 itself and returns null on failure; returns the token on success.
-async function requireSession(req, res) {
+async function requireSession(req, res, minRole = "READ_ONLY") {
   const token = req.headers.authorization?.replace("Bearer ", "");
 
   if (!token) {
@@ -88,6 +114,11 @@ async function requireSession(req, res) {
 
   if (!(await verifyProof(req, token))) {
     res.status(401).json({ error: "Session expired. Please sign in again." });
+    return null;
+  }
+
+  if ((ROLE_RANK[req._role] || 0) < (ROLE_RANK[minRole] || 99)) {
+    res.status(403).json({ error: "Your role does not allow this action.", reason: "role" });
     return null;
   }
 
@@ -157,7 +188,7 @@ async function consumeStepUp(sessionToken, stepUp) {
 }
 
 async function handleToggle(req, res) {
-  const sessionToken = await requireSession(req, res);
+  const sessionToken = await requireSession(req, res, "ADMIN");
   if (!sessionToken) return;
 
   try {

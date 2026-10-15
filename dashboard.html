@@ -288,6 +288,40 @@ tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
   #sky-toggle button:hover { background: rgba(255,255,255,.28); }
   #sky-copy { right: 90px; }
 
+
+  /* sign-in column: a full-height panel down the middle of the scene */
+  body #gate { position: fixed; top: 0; bottom: 0; left: 50%; transform: translateX(-50%); width: min(440px, 100vw); max-width: none;
+    margin: 0; padding: 22vh 40px 90px; border-radius: 0; border: 0; overflow-y: auto; z-index: 2;
+    box-shadow: 0 0 60px rgba(10,8,40,.28); transition: background-color .6s, color .6s; }
+  body[data-sky="day"] #gate { background: rgba(236,239,243,.96); color: #26303b; }
+  body[data-sky="night"] #gate { background: rgba(11,15,43,.94); color: #eef1ff; }
+  body #gate h2 { font-size: 26px; letter-spacing: .01em; margin-bottom: 8px; }
+  body[data-sky="day"] #gate p, body[data-sky="day"] #gate .gate-toggle { color: #55616e; }
+  body[data-sky="night"] #gate p, body[data-sky="night"] #gate .gate-toggle { color: #aab3d9; }
+  body[data-sky="night"] #gate .gate-toggle a, body[data-sky="night"] #gate-error { color: #ff8da3; }
+  body #gate .username-input-row { margin: 34px 0 18px; }
+  body #gate .username-input-row input[type="text"] { border-radius: 0; background: #fff; color: #1d2530; border: 1px solid #9aa5b1; padding: 11px 12px; }
+  body[data-sky="night"] #gate .username-input-row input[type="text"] { border-color: #c9d0f2; }
+  body #gate button.primary { border-radius: 0; }
+  @media (max-width: 900px) { #sky-copy { right: 76px; font-size: 11px; } body #gate { padding-top: 16vh; } }
+  @media (min-width: 901px) { #sky-copy { right: calc(50% + 240px); } }
+
+
+  /* red buttons + square sun/moon flip button */
+  body[data-sky="day"] #gate button.primary { background: #b5123f; }
+  body[data-sky="day"] #gate button.primary:hover { background: #99103a; }
+  body[data-sky="night"] #gate button.primary { background: #e0244e; }
+  body[data-sky="night"] #gate button.primary:hover { background: #c81d45; }
+  body[data-sky="day"] #gate .gate-toggle a, body[data-sky="day"] #gate-error { color: #b5123f; }
+  #username-warning-icon path { fill: #c8133f; }
+  #sky-toggle { width: 38px; height: 38px; border-radius: 4px; background: #fff; border: 1px solid rgba(0,0,0,.2);
+    box-shadow: 0 1px 4px rgba(0,0,0,.3); -webkit-backdrop-filter: none; backdrop-filter: none; bottom: 14px; right: 14px; }
+  #sky-toggle button { width: 38px; height: 38px; border-radius: 4px; }
+  #sky-toggle svg { width: 22px; height: 22px; }
+  #sky-toggle button:hover { background: #eef1f5; }
+  body[data-sky="night"] #sky-toggle #sky-sun { color: #e8920c; }
+  body[data-sky="day"] #sky-toggle #sky-moon { color: #2b2f55; }
+
   /* illustrated scene details */
   .balloon { animation: bob 9s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
   @keyframes bob { from { transform: translateY(-10px) rotate(-1.5deg); } to { transform: translateY(12px) rotate(1.5deg); } }

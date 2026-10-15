@@ -284,7 +284,7 @@ async function handleRegisterOptions(req, res) {
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: RP_ID,
-      userName: req._invite ? String(req._invite.label || "user").slice(0, 40) : "tyler",
+      userName: req._invite ? String(req._invite.username || req._invite.label || "user").slice(0, 40) : "tyler",
       userID: new TextEncoder().encode(req._invite ? `invite-${req._inviteHash.slice(0, 24)}` : "tyler-admin-user"),
       attestationType: "none",
       excludeCredentials: existingCredentials.map((cred) => ({
@@ -361,10 +361,12 @@ async function handleRegisterVerify(req, res) {
       const removed = await kv.del(`invite_${req._inviteHash}`);
       if (!removed) return res.status(400).json({ error: "This invite was already used or has expired." });
       await kv.hdel("invites_pending", req._inviteHash.slice(0, 16));
+      if (req._invite.username) await kv.del(`invite_user_${req._invite.username}`);
     }
 
     existingCredentials.push({
       role: req._invite ? req._invite.role : "ADMIN",
+      username: req._invite ? (req._invite.username || "") : "",
       id: credential.id,
       publicKey: Buffer.from(credential.publicKey).toString("base64"),
       counter: credential.counter,
@@ -488,6 +490,26 @@ async function handleStepUpVerify(req, res) {
   } catch (err) {
     console.error(err);
     return res.status(400).json({ verified: false, error: "Confirmation failed." });
+  }
+}
+
+
+// Tells the sign-in page whether a username still needs its first passkey.
+// Only a yes/no for "has an open invite": it never says whether a username
+// belongs to an existing user. The invite code is still required to register.
+async function handleUsernameStatus(req, res) {
+  if (!(await allow("uname", clientIp(req), 30, 60))) {
+    return res.status(429).json({ error: "Too many attempts. Try again shortly." });
+  }
+  try {
+    const username = String(req.body?.username || "").trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9._-]{2,31}$/.test(username)) return res.status(200).json({ pending: false });
+    const h = await kv.get(`invite_user_${username}`);
+    const live = h ? await kv.exists(`invite_${h}`) : 0;
+    return res.status(200).json({ pending: !!live });
+  } catch (err) {
+    console.error(err);
+    return res.status(200).json({ pending: false });
   }
 }
 
@@ -676,6 +698,8 @@ export default async function handler(req, res) {
       return handleAuthOptions(req, res);
     case "auth-verify":
       return handleAuthVerify(req, res);
+    case "username-status":
+      return handleUsernameStatus(req, res);
     case "stepup-options":
       return handleStepUpOptions(req, res);
     case "stepup-verify":

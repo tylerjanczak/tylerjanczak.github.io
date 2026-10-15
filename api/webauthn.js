@@ -324,6 +324,115 @@ async function handleRegisterVerify(req, res) {
   }
 }
 
+
+// ---- Step-up: re-confirm with the passkey before a risky action ----------
+// Used for things like taking the whole site offline. The browser proves
+// itself again with the passkey; the server then hands back a one-time,
+// two-minute confirmation that is tied to this exact session. The risky
+// endpoint refuses to act without it, so skipping the screen in the browser
+// accomplishes nothing.
+const STEPUP_TTL_SECONDS = 120;
+const sha256hex = (v) => createHash("sha256").update(String(v)).digest("hex");
+
+async function handleStepUpOptions(req, res) {
+  const token = await requireSession(req, res);
+  if (!token) return;
+
+  if (!(await allow("stepopt", clientIp(req), 20, 60))) {
+    return res.status(429).json({ error: "Too many attempts. Try again shortly." });
+  }
+
+  try {
+    const storedCredentials = await getStoredCredentials();
+    if (storedCredentials.length === 0) {
+      return res.status(404).json({ error: "No passkey has been registered yet." });
+    }
+
+    const options = await generateAuthenticationOptions({
+      rpID: RP_ID,
+      allowCredentials: storedCredentials.map((cred) => ({ id: cred.id, transports: cred.transports })),
+      userVerification: "required"
+    });
+
+    const challengeId = randomUUID();
+    await kv.set(
+      `webauthn_stepup_challenge_${challengeId}`,
+      JSON.stringify({ c: options.challenge, s: sha256hex(token) }),
+      { ex: STEPUP_TTL_SECONDS }
+    );
+
+    return res.status(200).json({ ...options, challengeId });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Could not start confirmation." });
+  }
+}
+
+async function handleStepUpVerify(req, res) {
+  const token = await requireSession(req, res);
+  if (!token) return;
+
+  if (!(await allow("stepv", clientIp(req), 10, 300))) {
+    return res.status(429).json({ error: "Too many attempts. Try again later." });
+  }
+
+  try {
+    const { response, challengeId } = req.body || {};
+    if (typeof challengeId !== "string" || !/^[0-9a-f-]{36}$/.test(challengeId) || !response || typeof response.id !== "string") {
+      return res.status(400).json({ verified: false, error: "Invalid request." });
+    }
+
+    const key = `webauthn_stepup_challenge_${challengeId}`;
+    const raw = await kv.get(key);
+    await kv.del(key); // single use, success or not
+    const record = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
+    if (!record || record.s !== sha256hex(token)) {
+      return res.status(400).json({ verified: false, error: "Confirmation expired." });
+    }
+
+    const storedCredentials = await getStoredCredentials();
+    const matchedIndex = storedCredentials.findIndex((cred) => cred.id === response.id);
+    if (matchedIndex === -1) {
+      return res.status(401).json({ verified: false, error: "Confirmation failed." });
+    }
+    const matched = storedCredentials[matchedIndex];
+
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response,
+        expectedChallenge: record.c,
+        expectedOrigin: ORIGIN,
+        expectedRPID: RP_ID,
+        requireUserVerification: true,
+        credential: {
+          id: matched.id,
+          publicKey: Buffer.from(matched.publicKey, "base64"),
+          counter: matched.counter,
+          transports: matched.transports
+        }
+      });
+    } catch (err) {
+      console.error("Step-up verification error:", err);
+      return res.status(401).json({ verified: false, error: "Confirmation failed." });
+    }
+
+    if (!verification.verified) {
+      return res.status(401).json({ verified: false, error: "Confirmation failed." });
+    }
+
+    storedCredentials[matchedIndex].counter = verification.authenticationInfo.newCounter;
+    await kv.set("webauthn_credentials", JSON.stringify(storedCredentials));
+
+    const stepUpToken = randomUUID();
+    await kv.set(`stepup_${sha256hex(stepUpToken)}`, sha256hex(token), { ex: STEPUP_TTL_SECONDS });
+    return res.status(200).json({ verified: true, stepUpToken });
+  } catch (err) {
+    console.error(err);
+    return res.status(400).json({ verified: false, error: "Confirmation failed." });
+  }
+}
+
 async function handleAuthOptions(req, res) {
   if (!(await allow("authopt", clientIp(req), 20, 60))) {
     return res.status(429).json({ error: "Too many attempts. Try again shortly." });
@@ -507,6 +616,10 @@ export default async function handler(req, res) {
       return handleAuthOptions(req, res);
     case "auth-verify":
       return handleAuthVerify(req, res);
+    case "stepup-options":
+      return handleStepUpOptions(req, res);
+    case "stepup-verify":
+      return handleStepUpVerify(req, res);
     default:
       return res.status(400).json({ error: "Unknown or missing action." });
   }

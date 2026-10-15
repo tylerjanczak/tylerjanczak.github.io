@@ -578,7 +578,6 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
     appFrame.style.display = "block";
     return true;
   }
-
   try {
     const msg = sessionStorage.getItem("dashGateMsg");
     if (msg) { gateError.textContent = msg; sessionStorage.removeItem("dashGateMsg"); }
@@ -587,5 +586,6 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
   // Resume an existing session on page load.
   launchApp();
 </script>
+
 </body>
 </html>

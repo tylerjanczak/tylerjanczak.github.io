@@ -134,83 +134,88 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
     cursor: pointer;
     text-decoration: underline;
   }
-/* Authentication overlay */
-  #auth-overlay {
+section.panel {
+    background: #fff;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+.panel-header {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+.panel-header h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 18px;
+  }
+.panel-count {
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: var(--bg-subtle);
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+table { width: 100%; border-collapse: collapse; }
+th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    padding: 10px 22px;
+    background: var(--bg-subtle);
+  }
+.hardstop-card.risk-medium .hardstop-risk-label {
+    background: #9c690a;
+  }
+.hardstop-card.risk-medium .hardstop-warning-text {
+    color: #9c690a;
+  }
+.hardstop-card.risk-medium .hardstop-btn.confirm {
+    background: #c9860f;
+    border-color: #c9860f;
+  }
+.hardstop-card.risk-medium .hardstop-btn.confirm:hover {
+    background: #a66f0c;
+  }
+/* Maintenance log */
+  #maintenance-log-panel { margin-bottom: 24px; }
+#flagged-panel { margin-bottom: 24px; }
+/* Conversation detail modal */
+  #conversation-detail-overlay {
     position: fixed;
     inset: 0;
-    z-index: 999999;
+    z-index: 999997;
     display: none;
     align-items: center;
     justify-content: center;
-    background: rgba(20, 15, 10, 0.12);
+    background: rgba(20, 15, 10, 0.5);
+    padding: 20px;
   }
-#auth-overlay.visible {
-    display: flex;
-  }
-.auth-box {
+#conversation-detail-overlay.visible { display: flex; }
+.conversation-detail-card {
+    width: min(640px, 100%);
+    height: min(640px, 85vh);
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    padding: 34px 46px;
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: 18px;
-    box-shadow: 0 24px 60px rgba(20, 15, 10, 0.18);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
   }
-.auth-heart {
-    width: 60px;
-    height: 60px;
-  }
-.auth-heart .heart-fill {
-    fill: var(--accent);
-  }
-.auth-text {
-    font-family: var(--display);
-    font-size: 13.5px;
-    color: var(--ink-soft);
-    letter-spacing: 0.02em;
-  }
-.analysis-body {
+.conversation-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     padding: 18px 22px;
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--ink);
-    white-space: pre-wrap;
+    border-bottom: 1px solid var(--rule);
+    background: var(--bg-subtle);
   }
-/* Row states */
-  tr.high-intent { background: #fbf3ec; }
-tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
-.intent-tag {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: rgba(107,31,31,0.08);
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-bottom: 4px;
-  }
-.expired-banner {
-    display: flex; align-items: center; gap: 12px;
-    background: #fbf1d9; border: 1px solid #e3c47a; border-left: 5px solid #c08a2f;
-    border-radius: 8px; padding: 10px 14px; margin: 0 0 14px;
-  }
-.expired-banner svg { width: 24px; height: 24px; flex: none; }
-.expired-banner strong { display: block; font-size: 13.5px; color: #6b4a0c; }
-.expired-banner span { display: block; font-size: 12px; color: #7d5a14; }
-/* ---- Order-entry style panels (blue side bar, pill title, ruled sub-heading) ---- */
-  section.panel.emr-panel {
-    border: 1px solid #d6dde6;
-    border-left: 7px solid #2b6fd9;
-    border-radius: 4px;
-    background: #fbfcfd;
-  }
-.emr-panel .panel-header { border-bottom: 0; padding: 14px 20px 4px; }
   /* ---- Login backdrop: night cosmic / daytime rolling hills ---- */
   html, body { min-height: 100%; }
   body { min-height: 100vh; background: #0b0820; transition: background-color .6s; }
@@ -816,7 +821,7 @@ tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
   </div>
 
   <div id="register-view" style="display: none;">
-    <input type="password" id="register-password" placeholder="Dashboard password" autocomplete="off" />
+    <input type="password" id="register-password" placeholder="Dashboard password or invite code" autocomplete="off" />
     <button class="primary" id="register-btn">Register Passkey</button>
     <div class="gate-toggle">
       Already have a passkey? <a id="show-signin">Sign in instead</a>
@@ -978,8 +983,9 @@ tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
   document.getElementById("username-continue-btn").addEventListener("click", () => {
     const entered = document.getElementById("username-input").value.trim().toLowerCase();
 
-    if (entered !== EXPECTED_USERNAME) {
-      gateError.textContent = "Username not found.";
+    // Invited people type their own name; the passkey is the real check.
+    if (!entered) {
+      gateError.textContent = "Enter your username.";
       return;
     }
 
@@ -1014,7 +1020,7 @@ tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
     signinView.style.display = "none";
     registerView.style.display = "block";
     gateTitle.textContent = "Set Up Passkey";
-    gateSubtitle.textContent = "Enter the dashboard password once to register your passkey.";
+    gateSubtitle.textContent = "Enter the dashboard password or your invite code once to register your passkey.";
     gateError.textContent = "";
   });
 

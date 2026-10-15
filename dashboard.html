@@ -134,87 +134,38 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
     cursor: pointer;
     text-decoration: underline;
   }
-section.panel {
-    background: #fff;
-    border: 1px solid var(--rule);
-    border-radius: 10px;
-    margin-bottom: 32px;
-    overflow: hidden;
+.sec-tabs button[aria-selected="true"], .sub-tabs button[aria-selected="true"] { background:#fff; color:#12385f; border-color:#bccbda; border-bottom:1px solid #fff; }
+.sub-tabs { padding: 0 22px 0 40px; margin: 0; }
+.tpl-detail { padding: 14px 22px 18px 40px; }
+.tpl-detail ul { margin:0 0 12px; padding-left:18px; font-size:13px; color:#3b4652; }
+.tpl-detail .tpl-no { color:#8a95a2; }
+.tpl-detail table { margin-top:6px; }
+.hardstop-risk-label {
+    width: 100%;
+    background: #7a1a14;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.03em;
+    padding: 2px 0;
   }
-.panel-header {
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--rule);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.hardstop-error-x { display: none; }
+.hardstop-card.is-error .hardstop-banner { background: #fff; color: var(--ink); border-bottom: 1px solid #e6e1d6; align-items: center; }
+.hardstop-card.is-error .hardstop-icon-wrap { background: none; overflow: visible; }
+.hardstop-card.is-error .hardstop-icon-stripes, .hardstop-card.is-error .hardstop-risk-label { display: none; }
+.hardstop-card.is-error .hardstop-error-x {
+    display: flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: 50%; background: #d12f26; color: #fff;
+    font-size: 24px; font-weight: 700; line-height: 1; padding-bottom: 2px;
   }
-.panel-header h2 {
-    font-family: var(--display);
-    font-weight: 600;
-    font-size: 18px;
-  }
-.panel-count {
-    font-size: 12px;
-    color: var(--ink-soft);
-    background: var(--bg-subtle);
-    padding: 4px 10px;
-    border-radius: 999px;
-  }
-table { width: 100%; border-collapse: collapse; }
-th {
-    text-align: left;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--ink-soft);
-    padding: 10px 22px;
-    background: var(--bg-subtle);
-  }
-.hardstop-card.risk-medium .hardstop-risk-label {
-    background: #9c690a;
-  }
-.hardstop-card.risk-medium .hardstop-warning-text {
-    color: #9c690a;
-  }
-.hardstop-card.risk-medium .hardstop-btn.confirm {
-    background: #c9860f;
-    border-color: #c9860f;
-  }
-.hardstop-card.risk-medium .hardstop-btn.confirm:hover {
-    background: #a66f0c;
-  }
-/* Maintenance log */
-  #maintenance-log-panel { margin-bottom: 24px; }
-#flagged-panel { margin-bottom: 24px; }
-/* Conversation detail modal */
-  #conversation-detail-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 999997;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(20, 15, 10, 0.5);
-    padding: 20px;
-  }
-#conversation-detail-overlay.visible { display: flex; }
-.conversation-detail-card {
-    width: min(640px, 100%);
-    height: min(640px, 85vh);
-    background: #fff;
-    border-radius: 10px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 30px 70px rgba(0,0,0,0.35);
-  }
-.conversation-detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 18px 22px;
-    border-bottom: 1px solid var(--rule);
-    background: var(--bg-subtle);
+.hardstop-card.is-error .hardstop-title { margin-bottom: 2px; }
+.hardstop-warning-text:empty { display: none; }
+.hardstop-title-block { flex: 1; }
+.hardstop-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
   }
   /* ---- Login backdrop: night cosmic / daytime rolling hills ---- */
   html, body { min-height: 100%; }
@@ -980,16 +931,34 @@ th {
     usernameWarningIcon.classList.toggle("hidden", usernameInputEl.value.length > 0);
   });
 
-  document.getElementById("username-continue-btn").addEventListener("click", () => {
+  document.getElementById("username-continue-btn").addEventListener("click", async () => {
     const entered = document.getElementById("username-input").value.trim().toLowerCase();
 
-    // Invited people type their own name; the passkey is the real check.
+    // Invited people type their own username; the passkey is the real check.
     if (!entered) {
       gateError.textContent = "Enter your username.";
       return;
     }
 
     gateError.textContent = "";
+    // A username with an open invite has no passkey yet: go straight to creating one.
+    try {
+      const res = await fetch(`${API_BASE}/api/webauthn?action=username-status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: entered })
+      });
+      const info = await res.json().catch(() => ({}));
+      if (info && info.pending) {
+        usernameView.style.display = "none";
+        registerView.style.display = "block";
+        gateTitle.textContent = "Create Your Passkey";
+        gateSubtitle.textContent = "Welcome. Enter the invite code you were sent to create a passkey for this username.";
+        document.getElementById("register-password").placeholder = "Invite code";
+        return;
+      }
+    } catch (e) { /* fall through to the normal sign-in */ }
+
     usernameView.style.display = "none";
     signinView.style.display = "block";
     gateSubtitle.textContent = "Use your passkey to access the dashboard.";

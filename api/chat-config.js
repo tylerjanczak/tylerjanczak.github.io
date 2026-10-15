@@ -1,4 +1,99 @@
 import { kv } from "@vercel/kv";
+import { webcrypto, createHash } from "crypto";
+
+// ---- Device-bound session check (identical copy lives in webauthn.js,
+// dashboard.js, chat-config.js and knowledge-base.js) --------------------
+// A session token alone is NOT enough. At sign-in the browser creates a
+// non-extractable signing key and registers its public half with the
+// session; every request must carry a fresh one-time signature:
+//   X-Dashboard-Proof: <timestamp-ms>.<nonce>.<signature, base64url>
+//   signature = ECDSA-P256-SHA256 over:
+//     METHOD \n /path?query \n timestamp \n nonce \n sha256(token)
+// A copied token is useless without the original browser's key.
+const MAX_SKEW_MS = 60 * 1000;
+const NONCE_TTL_SECONDS = 180;
+
+const b64urlToBuf = (s) => Buffer.from(String(s).replace(/-/g, "+").replace(/_/g, "/"), "base64");
+
+function isValidPublicJwk(jwk) {
+  return Boolean(
+    jwk &&
+      typeof jwk === "object" &&
+      jwk.kty === "EC" &&
+      jwk.crv === "P-256" &&
+      typeof jwk.x === "string" && jwk.x.length <= 100 &&
+      typeof jwk.y === "string" && jwk.y.length <= 100 &&
+      jwk.d === undefined
+  );
+}
+
+// Verifies the proof for `token`. Returns true/false, never throws.
+async function verifyProof(req, token) {
+  try {
+    if (typeof token !== "string" || token.length < 20 || token.length > 100) return false;
+
+    const raw = await kv.get(`webauthn_session_${token}`);
+    if (!raw) return false;
+    const record = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (!record || !isValidPublicJwk(record.pk)) return false; // old/unbound sessions are refused
+
+    const header = req.headers["x-dashboard-proof"];
+    if (typeof header !== "string" || header.length > 400) return false;
+    const [ts, nonce, sig] = header.split(".");
+    if (!ts || !nonce || !sig || nonce.length < 16 || nonce.length > 64) return false;
+
+    const tsNum = Number(ts);
+    if (!Number.isFinite(tsNum) || Math.abs(Date.now() - tsNum) > MAX_SKEW_MS) return false;
+
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const message = `${req.method}\n${req.url}\n${ts}\n${nonce}\n${tokenHash}`;
+
+    const key = await webcrypto.subtle.importKey(
+      "jwk",
+      { kty: "EC", crv: "P-256", x: record.pk.x, y: record.pk.y, ext: true },
+      { name: "ECDSA", namedCurve: "P-256" },
+      false,
+      ["verify"]
+    );
+
+    const ok = await webcrypto.subtle.verify(
+      { name: "ECDSA", hash: "SHA-256" },
+      key,
+      b64urlToBuf(sig),
+      new TextEncoder().encode(message)
+    );
+    if (!ok) return false;
+
+    // One-time use: reject if this nonce was already seen.
+    const fresh = await kv.set(`proof_nonce_${tokenHash.slice(0, 16)}_${nonce}`, "1", {
+      nx: true,
+      ex: NONCE_TTL_SECONDS
+    });
+    return fresh === "OK" || fresh === true;
+  } catch (err) {
+    console.error("Session proof check failed:", err);
+    return false;
+  }
+}
+
+// Drop-in replacement for each endpoint's old requireSession().
+// Sends the 401 itself and returns null on failure; returns the token on success.
+async function requireSession(req, res) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+
+  if (!token) {
+    res.status(401).json({ error: "Not signed in." });
+    return null;
+  }
+
+  if (!(await verifyProof(req, token))) {
+    res.status(401).json({ error: "Session expired. Please sign in again." });
+    return null;
+  }
+
+  return token;
+}
+
 
 function ipInCidr(ip, cidr) {
   try {
@@ -52,26 +147,18 @@ async function handleStatus(req, res) {
   }
 }
 
-async function requireSession(req, res) {
-  const sessionToken = req.headers.authorization?.replace("Bearer ", "");
-
-  if (!sessionToken) {
-    res.status(401).json({ error: "Not signed in." });
-    return null;
-  }
-
-  const sessionValid = await kv.get(`webauthn_session_${sessionToken}`);
-
-  if (!sessionValid) {
-    res.status(401).json({ error: "Session expired. Please sign in again." });
-    return null;
-  }
-
-  return sessionToken;
+// One-time passkey confirmation (issued by webauthn.js stepup-verify), tied to this session.
+async function consumeStepUp(sessionToken, stepUp) {
+  if (typeof stepUp !== "string" || stepUp.length < 20 || stepUp.length > 64) return false;
+  const key = `stepup_${createHash("sha256").update(stepUp).digest("hex")}`;
+  const bound = await kv.get(key);
+  await kv.del(key); // single use
+  return !!bound && bound === createHash("sha256").update(sessionToken).digest("hex");
 }
 
 async function handleToggle(req, res) {
-  if (!(await requireSession(req, res))) return;
+  const sessionToken = await requireSession(req, res);
+  if (!sessionToken) return;
 
   try {
     const { enabled, maintenance } = req.body;
@@ -82,6 +169,10 @@ async function handleToggle(req, res) {
     }
 
     if (typeof maintenance === "boolean") {
+      // Taking the whole site offline needs a fresh passkey confirmation.
+      if (maintenance === true && !(await consumeStepUp(sessionToken, req.body.stepUp))) {
+        return res.status(401).json({ error: "Passkey confirmation is required to take the site offline." });
+      }
       await kv.set("site_maintenance_enabled", maintenance ? "true" : "false");
 
       await kv.lpush(
@@ -99,14 +190,14 @@ async function handleToggle(req, res) {
     return res.status(400).json({ error: "Invalid request." });
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: "Server error." });
   }
 }
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Dashboard-Proof");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();

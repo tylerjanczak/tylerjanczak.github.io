@@ -738,7 +738,6 @@ export default async function handler(req, res) {
   if (req.method === "POST" && action === "reset-strikes") {
     return handleResetStrikes(req, res);
   }
-
   if (req.method === "POST" && action === "a11y-resolve") {
     return handleA11yResolve(req, res);
   }

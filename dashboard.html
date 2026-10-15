@@ -173,6 +173,35 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
     color: var(--ink-soft);
     letter-spacing: 0.02em;
   }
+.analysis-body {
+    padding: 18px 22px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ink);
+    white-space: pre-wrap;
+  }
+/* Row states */
+  tr.high-intent { background: #fbf3ec; }
+tr.high-intent td:first-child { border-left: 3px solid var(--accent); }
+.intent-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: rgba(107,31,31,0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+.expired-banner {
+    display: flex; align-items: center; gap: 12px;
+    background: #fbf1d9; border: 1px solid #e3c47a; border-left: 5px solid #c08a2f;
+    border-radius: 8px; padding: 10px 14px; margin: 0 0 14px;
+  }
+.expired-banner svg { width: 24px; height: 24px; flex: none; }
+.expired-banner strong { display: block; font-size: 13.5px; color: #6b4a0c; }
 .expired-banner span { display: block; font-size: 12px; color: #7d5a14; }
 /* ---- Order-entry style panels (blue side bar, pill title, ruled sub-heading) ---- */
   section.panel.emr-panel {
@@ -182,23 +211,6 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
     background: #fbfcfd;
   }
 .emr-panel .panel-header { border-bottom: 0; padding: 14px 20px 4px; }
-.emr-panel .panel-header h2 {
-    font-family: var(--body);
-    font-size: 16px; font-weight: 600; color: #1f4e79;
-    background: #cfe5f3; padding: 5px 18px; border-radius: 999px;
-  }
-.emr-panel .panel-count { background: #e4eef7; color: #1f4e79; }
-.emr-sub {
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 20px 8px 28px; font-size: 14px; font-weight: 500; color: #3d5a78;
-  }
-.emr-sub::after { content: ""; flex: 1; height: 1px; background: #b9c6d3; }
-.emr-panel th {
-    background: transparent; color: #6b7c8f; padding: 6px 22px 6px 22px;
-    border-bottom: 1px solid #dfe5ec; font-weight: 600;
-  }
-.emr-panel td { border-top: 0; border-bottom: 1px solid #e3e8ee; padding: 11px 22px; }
-.emr-panel th:first-child, .emr-panel td:first-child { padding-left: 40px; }
   #app-frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); display: none; }
 
 </style>
@@ -545,6 +557,7 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
       authOverlay.classList.remove("visible");
     }
   }
+
   document.getElementById("register-btn").addEventListener("click", registerPasskey);
   document.getElementById("signin-btn").addEventListener("click", signInPasskey);
 
@@ -572,7 +585,7 @@ button.primary:disabled { opacity: 0.5; cursor: not-allowed; }
     }
     const html = await res.text();
     gate.style.display = "none";
-    appFrame.setAttribute("allow", "clipboard-write");
+    appFrame.setAttribute("allow", "clipboard-write; publickey-credentials-get");
     appFrame.srcdoc = html;
     appFrame.style.display = "block";
     return true;

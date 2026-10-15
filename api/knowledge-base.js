@@ -126,8 +126,24 @@ async function requireSession(req, res, minRole = "READ_ONLY") {
 }
 
 
+
+// Section permission for the Knowledge Base (editable in Template Linking).
+async function kbAllowed(role, level) {
+  if (role === "ADMIN") return true;
+  let stored = null;
+  try {
+    const raw = await kv.get("role_templates");
+    stored = raw ? (typeof raw === "string" ? JSON.parse(raw) : raw) : null;
+  } catch { stored = null; }
+  const custom = stored && stored[role] && stored[role].knowledgeBase;
+  const see = custom ? !!custom.see || !!custom.change : true;
+  const change = custom ? !!custom.change : false;
+  return level === "change" ? change : see;
+}
+
 async function handleGet(req, res) {
   if (!(await requireSession(req, res))) return;
+  if (!(await kbAllowed(req._role, "see"))) return res.status(403).json({ error: "Your role does not allow this action.", reason: "role" });
 
   try {
     const content = await kv.get("tyler_ai_knowledge_base");
@@ -144,7 +160,8 @@ async function handleGet(req, res) {
 }
 
 async function handleSave(req, res) {
-  if (!(await requireSession(req, res, "ADMIN"))) return;
+  if (!(await requireSession(req, res))) return;
+  if (!(await kbAllowed(req._role, "change"))) return res.status(403).json({ error: "Your role does not allow this action.", reason: "role" });
 
   try {
     const { content, useDefault } = req.body;

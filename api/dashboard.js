@@ -26,7 +26,6 @@ function isValidPublicJwk(jwk) {
       jwk.d === undefined
   );
 }
-
 // Verifies the proof for `token`. Returns true/false, never throws.
 async function verifyProof(req, token) {
   try {

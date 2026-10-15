@@ -34,7 +34,7 @@ function isValidPublicJwk(jwk) {
 }
 
 // Verifies the proof for `token`. Returns true/false, never throws.
-async function verifyProof(req, token) {
+async function verifyProofCore(req, token) {
   try {
     if (typeof token !== "string" || token.length < 20 || token.length > 100) return false;
 
@@ -82,9 +82,35 @@ async function verifyProof(req, token) {
   }
 }
 
+
+// ---- Roles --------------------------------------------------------------
+// Every sign-in carries the role of the passkey that was used (ADMIN,
+// RESTRICTED, READ_ONLY). The role is looked up again on every request, so
+// removing a user or changing their role takes effect immediately.
+const ROLE_RANK = { READ_ONLY: 1, RESTRICTED: 2, ADMIN: 3 };
+
+async function verifyProof(req, token) {
+  if (!(await verifyProofCore(req, token))) return false;
+  try {
+    const rawSession = await kv.get(`webauthn_session_${token}`);
+    const session = rawSession ? (typeof rawSession === "string" ? JSON.parse(rawSession) : rawSession) : null;
+    const rawCreds = await kv.get("webauthn_credentials");
+    const creds = rawCreds ? (typeof rawCreds === "string" ? JSON.parse(rawCreds) : rawCreds) : [];
+    const cred = session && session.cid && Array.isArray(creds) ? creds.find((c) => c.id === session.cid) : null;
+    if (!cred) { req._why = "revoked"; return false; }
+    req._role = ROLE_RANK[cred.role] ? cred.role : "ADMIN"; // passkeys from before roles existed are the owner's
+    req._who = String(cred.label || "");
+    req._cid = cred.id;
+    return true;
+  } catch (err) {
+    console.error("Role lookup failed:", err);
+    return false;
+  }
+}
+
 // Drop-in replacement for each endpoint's old requireSession().
 // Sends the 401 itself and returns null on failure; returns the token on success.
-async function requireSession(req, res) {
+async function requireSession(req, res, minRole = "READ_ONLY") {
   const token = req.headers.authorization?.replace("Bearer ", "");
 
   if (!token) {
@@ -94,6 +120,11 @@ async function requireSession(req, res) {
 
   if (!(await verifyProof(req, token))) {
     res.status(401).json({ error: "Session expired. Please sign in again." });
+    return null;
+  }
+
+  if ((ROLE_RANK[req._role] || 0) < (ROLE_RANK[minRole] || 99)) {
+    res.status(403).json({ error: "Your role does not allow this action.", reason: "role" });
     return null;
   }
 
@@ -189,6 +220,23 @@ async function checkPassword(req, res) {
 
   const provided = req.headers.authorization?.replace("Bearer ", "") || "";
 
+  // An invite code (made by an ADMIN, single use, 24 hours) works in place of the password.
+  req._invite = null;
+  if (provided && !safeEqual(provided, expected) && provided.length >= 16 && provided.length <= 64) {
+    try {
+      const h = createHash("sha256").update(provided).digest("hex");
+      const rawInvite = await kv.get(`invite_${h}`);
+      if (rawInvite) {
+        req._invite = typeof rawInvite === "string" ? JSON.parse(rawInvite) : rawInvite;
+        req._inviteHash = h;
+        await kv.del(`pw_fail_${ip}`);
+        return true;
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   if (!provided || !safeEqual(provided, expected)) {
     try {
       const f = await kv.incr(`pw_fail_${ip}`);
@@ -225,6 +273,7 @@ async function handleRegisterOptions(req, res) {
     if (
       existingCredentials.length > 0 &&
       process.env.ALLOW_PASSKEY_REGISTRATION !== "true" &&
+      !req._invite &&
       !(await hasValidSession(req))
     ) {
       return res.status(403).json({
@@ -235,8 +284,8 @@ async function handleRegisterOptions(req, res) {
     const options = await generateRegistrationOptions({
       rpName: RP_NAME,
       rpID: RP_ID,
-      userName: "tyler",
-      userID: new TextEncoder().encode("tyler-admin-user"),
+      userName: req._invite ? String(req._invite.label || "user").slice(0, 40) : "tyler",
+      userID: new TextEncoder().encode(req._invite ? `invite-${req._inviteHash.slice(0, 24)}` : "tyler-admin-user"),
       attestationType: "none",
       excludeCredentials: existingCredentials.map((cred) => ({
         id: cred.id,
@@ -287,6 +336,7 @@ async function handleRegisterVerify(req, res) {
     if (
       existingCredentials.length > 0 &&
       process.env.ALLOW_PASSKEY_REGISTRATION !== "true" &&
+      !req._invite &&
       !(await hasValidSession(req))
     ) {
       return res.status(403).json({ error: "Registration is closed." });
@@ -306,12 +356,20 @@ async function handleRegisterVerify(req, res) {
 
     const { credential } = verification.registrationInfo;
 
+    // An invite is consumed exactly once, and only now that the passkey checked out.
+    if (req._invite) {
+      const removed = await kv.del(`invite_${req._inviteHash}`);
+      if (!removed) return res.status(400).json({ error: "This invite was already used or has expired." });
+      await kv.hdel("invites_pending", req._inviteHash.slice(0, 16));
+    }
+
     existingCredentials.push({
+      role: req._invite ? req._invite.role : "ADMIN",
       id: credential.id,
       publicKey: Buffer.from(credential.publicKey).toString("base64"),
       counter: credential.counter,
       transports: credential.transports || [],
-      label: String(deviceLabel || `Device ${existingCredentials.length + 1}`).slice(0, 60),
+      label: String((req._invite && req._invite.label) || deviceLabel || `Device ${existingCredentials.length + 1}`).slice(0, 60),
       registeredAt: new Date().toISOString()
     });
 
@@ -558,6 +616,7 @@ async function handleAuthVerify(req, res) {
 
     storedCredentials[matchedIndex].counter =
       verification.authenticationInfo.newCounter;
+    storedCredentials[matchedIndex].lastUsed = new Date().toISOString();
     await kv.set("webauthn_credentials", JSON.stringify(storedCredentials));
     await kv.del(`auth_fail_${ip}`);
 
@@ -565,7 +624,8 @@ async function handleAuthVerify(req, res) {
     await kv.set(
       `webauthn_session_${sessionToken}`,
       JSON.stringify({
-        v: 1,
+        v: 2,
+        cid: matchedCredential.id,
         created: new Date().toISOString(),
         pk: { kty: "EC", crv: "P-256", x: devicePublicKey.x, y: devicePublicKey.y }
       }),

@@ -1098,12 +1098,17 @@
   // ---- Read-aloud (ElevenLabs via /api/tts; the key never touches the browser) ----
   const SPEAK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
   let voiceAvailable = true;
+  let visitorInteracted = false; // browsers only allow sound after the visitor acts; also saves credits on the greeting
   let voiceOn = false;
-  try { voiceOn = localStorage.getItem("tylerAiVoice") === "1"; } catch (e) {}
+  voiceOn = true; // reads replies aloud by default; the header speaker mutes it and the choice is remembered
+  try { if (localStorage.getItem("tylerAiVoice") === "0") voiceOn = false; } catch (e) {}
+  let speakQueue = [], queueRunning = false, playDone = null;
   let currentAudio = null, currentBtn = null, currentUrl = null, speakSeq = 0;
 
-  function stopSpeaking() {
+  function stopSpeaking(keepQueue) {
+    if (keepQueue !== true) speakQueue = [];
     speakSeq++;
+    if (playDone) { const d = playDone; playDone = null; d(); }
     if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
     if (currentUrl) { URL.revokeObjectURL(currentUrl); currentUrl = null; }
     if (currentBtn) { currentBtn.classList.remove("is-active", "is-loading"); currentBtn = null; }
@@ -1134,14 +1139,51 @@
       if (mine !== speakSeq) return;
       currentUrl = URL.createObjectURL(blob);
       currentAudio = new Audio(currentUrl);
-      currentAudio.onended = stopSpeaking;
-      currentAudio.onerror = stopSpeaking;
+      currentAudio.onended = () => stopSpeaking(true);
+      currentAudio.onerror = () => stopSpeaking(true);
       btn.classList.remove("is-loading");
       btn.classList.add("is-active");
+      const finished = new Promise((r) => { playDone = r; });
       await currentAudio.play();
+      await finished;
     } catch (e) {
-      if (mine === speakSeq) stopSpeaking();
+      if (mine === speakSeq) stopSpeaking(true);
     }
+  }
+
+  // Automatic read-aloud: replies are spoken one after another, never on top of each other.
+  async function runSpeakQueue() {
+    if (queueRunning) return;
+    queueRunning = true;
+    while (speakQueue.length && voiceOn && voiceAvailable) {
+      const [t, b] = speakQueue.shift();
+      await speakText(t, b);
+    }
+    queueRunning = false;
+  }
+  function enqueueSpeak(text, btn) { speakQueue.push([text, btn]); runSpeakQueue(); }
+
+  // ---- Wrapping up: after a short goodbye, "press" Back to Home for the visitor ----
+  // Waits for the spoken reply to finish, then clicks the real Back to Home button
+  // (it shows its loading spinner, then goes home). Typing again cancels it.
+  // Does nothing on pages that don't have that button.
+  let leaveTimer = null, leaveSeq = 0;
+  function cancelLeave() { leaveSeq++; if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = null; } }
+  function scheduleLeave() {
+    if (!document.getElementById("bridges-back-home")) return;
+    cancelLeave();
+    const mine = leaveSeq, started = Date.now();
+    const check = () => {
+      if (mine !== leaveSeq) return;
+      const speaking = (currentBtn !== null || speakQueue.length > 0 || queueRunning) && Date.now() - started < 30000;
+      if (speaking || Date.now() - started < 1200) { leaveTimer = setTimeout(check, 250); return; }
+      leaveTimer = setTimeout(() => {
+        if (mine !== leaveSeq) return;
+        const b = document.getElementById("bridges-back-home");
+        if (b) b.click();
+      }, voiceOn ? 2000 : 4500);
+    };
+    leaveTimer = setTimeout(check, 250);
   }
 
   const voiceToggle = document.getElementById("tyler-ai-voice");
@@ -1160,6 +1202,7 @@
   const notificationDot = document.getElementById("tyler-ai-notification-dot");
   const launcherLabel = document.getElementById("tyler-ai-launcher-label");
   const a11yBadge = document.getElementById("tyler-ai-a11y-badge");
+  input.addEventListener("input", cancelLeave);
 
   // Reflects the site-wide accessibility widget's state (js/accessibility-widget.js)
   // into the chat header, so visitors can see their settings carried into the chat.
@@ -1239,6 +1282,8 @@
     conversationSessionId = crypto.randomUUID();
   }
 
+  let closingOffered = false;
+  const closingPattern = /^\s*(thanks?|thank you|thx|ty|bye|goodbye|good bye|see you|that'?s (all|it)|that is (all|it)|i'?m (good|all set|done)|all set|no,? thanks?|nope,? thanks?|cheers)\b/i;
   const resumeRequestPattern =
     /(resume|cv).*(send|email|copy|share|forward|get|see|view)|(send|email|copy|share|forward|get|see|view).*(resume|cv)/i;
   const scheduleCallPattern =
@@ -1742,8 +1787,21 @@
 
       typingElement.remove();
 
-      const { displayText, navigateUrl } = parseAssistantResponse(answer);
+      const parsedReply = parseAssistantResponse(answer);
+      const navigateUrl = parsedReply.navigateUrl;
+      let displayText = parsedReply.displayText;
+      // Wrapping up: the visitor says goodbye or thanks, or the chat has run a while.
+      // One short closing line is added to the reply (so it is spoken in the same breath), once per visit.
+      if (!data?.disabled && !closingOffered && (closingPattern.test(question) || conversationHistory.length >= 7)) {
+        closingOffered = true;
+        displayText += "\n\nThanks for stopping by. If it would help, I can email you Tyler's resume or set up a call with him. Just say the word.";
+      }
       addAssistantMessage(displayText, data?.disabled ? "error" : "");
+
+      // A short goodbye or thanks (not a question or request): head home once the reply has been heard.
+      if (!data?.disabled && closingPattern.test(question) && question.trim().split(/\s+/).length <= 6 && !/[?]|resume|cv|call|meeting|schedule|book/i.test(question)) {
+        scheduleLeave();
+      }
 
       if (!data?.disabled) {
         conversationHistory.push({ question, answer: displayText });
@@ -2282,6 +2340,8 @@
   function addUserMessage(text) {
     const row = document.createElement("div");
     row.className = "tyler-ai-row user";
+    visitorInteracted = true;
+    cancelLeave();
 
     const bubble = document.createElement("div");
     bubble.className = "tyler-ai-message";
@@ -2325,7 +2385,7 @@
       sp.innerHTML = SPEAK_ICON;
       sp.addEventListener("click", () => speakText(text, sp));
       row.appendChild(sp);
-      if (voiceOn) speakText(text, sp);
+      if (voiceOn && visitorInteracted) enqueueSpeak(text, sp);
     }
     messages.appendChild(row);
     scrollToBottom();

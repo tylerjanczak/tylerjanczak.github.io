@@ -10,6 +10,7 @@
   const CONFIG = {
     apiUrl: "https://tylerjanczak-github-io.vercel.app/api/chat",
     statusUrl: "https://tylerjanczak-github-io.vercel.app/api/chat-config",
+    ttsUrl: "https://tylerjanczak-github-io.vercel.app/api/tts",
     resumeUrl: "https://tylerjanczak-github-io.vercel.app/resume.pdf",
     resumeApiUrl: "https://tylerjanczak-github-io.vercel.app/api/send-resume",
     assistantName: "Tyler AI",
@@ -604,6 +605,24 @@
       flex-shrink: 0;
     }
 
+    #tyler-ai-voice {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border: 0; border-radius: 50%;
+      background: transparent; color: var(--ta-muted); cursor: pointer;
+    }
+    #tyler-ai-voice:hover { background: rgba(0,0,0,0.05); }
+    #tyler-ai-voice[aria-pressed="true"] { color: var(--ta-red); background: rgba(123,31,42,0.1); }
+    #tyler-ai-voice:focus-visible, .tyler-ai-speak:focus-visible { outline: 3px solid rgba(123,31,42,0.3); outline-offset: 2px; }
+    #tyler-ai-voice svg, .tyler-ai-speak svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .tyler-ai-speak {
+      display: inline-flex; align-items: center; justify-content: center; align-self: flex-end;
+      width: 28px; height: 28px; margin-left: 4px; border: 0; border-radius: 50%;
+      background: transparent; color: var(--ta-muted); cursor: pointer; flex: 0 0 auto;
+    }
+    .tyler-ai-speak:hover { background: rgba(0,0,0,0.06); }
+    .tyler-ai-speak.is-active { color: var(--ta-red); }
+    .tyler-ai-speak.is-loading { opacity: 0.5; }
+
     #tyler-ai-close {
       display: flex;
       align-items: center;
@@ -1011,6 +1030,8 @@
           </div>
         </div>
 
+        <button id="tyler-ai-voice" type="button" aria-pressed="false" aria-label="Read replies aloud" title="Read replies aloud"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+
         <button
           id="tyler-ai-close"
           type="button"
@@ -1073,6 +1094,65 @@
   const panel = document.getElementById("tyler-ai-panel");
   const launcher = document.getElementById("tyler-ai-launcher");
   const closeButton = document.getElementById("tyler-ai-close");
+
+  // ---- Read-aloud (ElevenLabs via /api/tts; the key never touches the browser) ----
+  const SPEAK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+  let voiceAvailable = true;
+  let voiceOn = false;
+  try { voiceOn = localStorage.getItem("tylerAiVoice") === "1"; } catch (e) {}
+  let currentAudio = null, currentBtn = null, currentUrl = null, speakSeq = 0;
+
+  function stopSpeaking() {
+    speakSeq++;
+    if (currentAudio) { try { currentAudio.pause(); } catch (e) {} currentAudio = null; }
+    if (currentUrl) { URL.revokeObjectURL(currentUrl); currentUrl = null; }
+    if (currentBtn) { currentBtn.classList.remove("is-active", "is-loading"); currentBtn = null; }
+  }
+
+  async function speakText(text, btn) {
+    const same = currentBtn === btn;
+    stopSpeaking();
+    if (same) return; // second click on the same button = stop
+    const mine = speakSeq;
+    currentBtn = btn;
+    btn.classList.add("is-loading");
+    try {
+      const res = await fetch(CONFIG.ttsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, fingerprint: deviceFingerprint })
+      });
+      if (!res.ok) {
+        if (res.status === 503 || res.status === 403) {
+          voiceAvailable = false;
+          document.querySelectorAll(".tyler-ai-speak").forEach((b) => b.remove());
+          const vb = document.getElementById("tyler-ai-voice"); if (vb) vb.style.display = "none";
+        }
+        throw new Error("tts " + res.status);
+      }
+      const blob = await res.blob();
+      if (mine !== speakSeq) return;
+      currentUrl = URL.createObjectURL(blob);
+      currentAudio = new Audio(currentUrl);
+      currentAudio.onended = stopSpeaking;
+      currentAudio.onerror = stopSpeaking;
+      btn.classList.remove("is-loading");
+      btn.classList.add("is-active");
+      await currentAudio.play();
+    } catch (e) {
+      if (mine === speakSeq) stopSpeaking();
+    }
+  }
+
+  const voiceToggle = document.getElementById("tyler-ai-voice");
+  voiceToggle.setAttribute("aria-pressed", voiceOn ? "true" : "false");
+  voiceToggle.addEventListener("click", () => {
+    voiceOn = !voiceOn;
+    voiceToggle.setAttribute("aria-pressed", voiceOn ? "true" : "false");
+    try { localStorage.setItem("tylerAiVoice", voiceOn ? "1" : "0"); } catch (e) {}
+    if (!voiceOn) stopSpeaking();
+  });
+
   const messages = document.getElementById("tyler-ai-messages");
   const form = document.getElementById("tyler-ai-form");
   const input = document.getElementById("tyler-ai-input");
@@ -1435,6 +1515,7 @@
   }
 
   function closeChat() {
+    stopSpeaking();
     panel.classList.remove("tyler-ai-open");
     panel.setAttribute("aria-hidden", "true");
     launcher.setAttribute("aria-expanded", "false");
@@ -2235,6 +2316,17 @@
 
     row.appendChild(avatar);
     row.appendChild(bubble);
+    if (voiceAvailable && !type && String(text).trim().length >= 20) {
+      const sp = document.createElement("button");
+      sp.type = "button";
+      sp.className = "tyler-ai-speak";
+      sp.setAttribute("aria-label", "Listen to this reply");
+      sp.title = "Listen";
+      sp.innerHTML = SPEAK_ICON;
+      sp.addEventListener("click", () => speakText(text, sp));
+      row.appendChild(sp);
+      if (voiceOn) speakText(text, sp);
+    }
     messages.appendChild(row);
     scrollToBottom();
 

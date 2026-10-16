@@ -425,6 +425,27 @@
 
     .contact-grid dd { font-family: var(--display); font-size: 19px; }
 
+    /* ---------- Tip jar ---------- */
+    .tip-jar-layout { display: flex; gap: 40px; align-items: center; flex-wrap: wrap; }
+    .tip-jar-art { width: 190px; height: auto; flex: 0 0 auto; overflow: visible; }
+    .tip-jar-copy { flex: 1 1 300px; max-width: 520px; }
+    .tip-jar-lead { margin: 0 0 20px; }
+    .tip-jar-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .tip-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 76px; min-height: 48px; padding: 0 22px;
+      font-family: var(--display); font-size: 22px; color: var(--ink);
+      background: transparent; border: 1px solid var(--ink); border-radius: 2px;
+      text-decoration: none; cursor: pointer; transition: background .15s, color .15s;
+    }
+    .tip-btn:hover, .tip-btn:focus-visible { background: var(--ink); color: var(--bg); }
+    .tip-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    .tip-jar-status { min-height: 1.4em; margin: 14px 0 0; font-size: 15px; color: var(--accent); }
+    .tip-jar-fine { margin: 10px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+    @keyframes tjDrop { 0% { transform: translateY(-150px) rotate(var(--r0)); opacity: 0; } 15% { opacity: 1; } 70% { transform: translateY(4px) rotate(var(--r1)); } 85% { transform: translateY(-3px) rotate(var(--r1)); } 100% { transform: translateY(0) rotate(var(--r1)); opacity: 1; } }
+    .tj-drop { animation: tjDrop .75s cubic-bezier(.3,.1,.4,1) both; }
+    @media (prefers-reduced-motion: reduce) { .tj-drop { animation: none; } }
+
     footer {
       border-top: 1px solid var(--rule);
       padding: 36px 0 64px;
@@ -655,6 +676,7 @@
               <div class="tl-metric"><strong>×<span class="tl-num" data-to="7" data-dec="0" data-prefix="×" data-suffix="">7</span></strong><span>Employee of the Month</span></div>
               <div class="tl-metric"><strong>×<span class="tl-num" data-to="11" data-dec="0" data-prefix="×" data-suffix="">11</span></strong><span>Service Value Award</span></div>
             </div>
+            <p class="tl-lane-note">Dashed line: continuous bedside practice, running alongside every role above.</p>
             <p class="role-body">
               Maintained continuous PRN bedside practice across all corporate roles, keeping frontline
               clinical insight informing enterprise healthcare technology and operations work. Operate
@@ -766,6 +788,37 @@
 
 <p class="contact-location">Wilmette, Illinois</p>
     </section>
+    </section>
+
+    <section id="tip-jar" class="tip-jar" aria-labelledby="tip-jar-title">
+      <h2 class="section-label">Tip jar</h2>
+      <h3 class="section-heading" id="tip-jar-title">Fuel the next feature.</h3>
+      <div class="tip-jar-layout">
+        <svg class="tip-jar-art" id="tip-jar-art" viewBox="0 0 200 250" role="img" aria-label="A glass jar about half full of dollar bills" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <clipPath id="tj-inside"><path d="M44 74 Q36 80 36 96 L36 214 Q36 232 54 232 L146 232 Q164 232 164 214 L164 96 Q164 80 156 74 Z"/></clipPath>
+            <linearGradient id="tj-glass" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".25" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity=".05"/><stop offset="1" stop-color="#fff" stop-opacity=".4"/></linearGradient>
+            <symbol id="tj-bill" viewBox="0 0 80 36"><rect x="1" y="1" width="78" height="34" rx="4" fill="#7fae7a" stroke="#3f6b3d" stroke-width="2"/><rect x="6" y="6" width="68" height="24" rx="2" fill="none" stroke="#3f6b3d" stroke-width="1" opacity=".6"/><ellipse cx="40" cy="18" rx="11" ry="9" fill="#a9cfa4" stroke="#3f6b3d" stroke-width="1.5"/><text x="40" y="23" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="14" fill="#2f5a2e">1</text><text x="12" y="15" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="9" fill="#2f5a2e">1</text><text x="68" y="31" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="9" fill="#2f5a2e">1</text></symbol>
+          </defs>
+          <ellipse cx="100" cy="238" rx="66" ry="7" fill="#000" opacity=".12"/>
+          <g clip-path="url(#tj-inside)"><g id="tj-pile"></g></g>
+          <path d="M44 74 Q36 80 36 96 L36 214 Q36 232 54 232 L146 232 Q164 232 164 214 L164 96 Q164 80 156 74 Z" fill="url(#tj-glass)" stroke="#8a8578" stroke-width="3"/>
+          <rect x="46" y="58" width="108" height="16" rx="4" fill="none" stroke="#8a8578" stroke-width="3"/>
+          <path d="M48 96 L48 200" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+          <g id="tj-falling"></g>
+        </svg>
+        <div class="tip-jar-copy">
+          <p class="large tip-jar-lead">If something here helped, you can drop a dollar or two in the jar. Completely optional, and appreciated.</p>
+          <div class="tip-jar-buttons" role="group" aria-label="Choose a tip amount">
+            <a class="tip-btn" data-tip="1" href="#tip-jar" rel="noopener">$1</a>
+            <a class="tip-btn" data-tip="2" href="#tip-jar" rel="noopener">$2</a>
+            <a class="tip-btn" data-tip="3" href="#tip-jar" rel="noopener">$3</a>
+          </div>
+          <p class="tip-jar-status" id="tip-jar-status" role="status" aria-live="polite"></p>
+          <p class="tip-jar-fine">Payments are handled securely by Stripe, with Apple Pay, Google Pay or card where your device supports them. This is a personal tip jar, not a charitable donation, so tips aren't tax-deductible.</p>
+        </div>
+      </div>
+    </section>
 
   </main>
 
@@ -871,7 +924,97 @@
   }
 })();
 </script>
-<script src="js/accessibility.js" defer></script>
+
+  <script>
+  // Tip jar: the jar starts about half full; each real tip adds that many dollar bills.
+  // To switch tipping on: create three Payment Links in Stripe ($1, $2, $3), set each one's
+  // after-payment redirect to  https://tylerjanczak.com/?tip=1#tip-jar  (2 and 3 for the others),
+  // and paste the links below. Until then the buttons say tipping isn't live and add nothing.
+  (function () {
+    var TIP_LINKS = { 1: "", 2: "", 3: "" };
+
+    var NS = "http://www.w3.org/2000/svg", XL = "http://www.w3.org/1999/xlink";
+    var pile = document.getElementById("tj-pile"), falling = document.getElementById("tj-falling");
+    var statusEl = document.getElementById("tip-jar-status");
+    if (!pile) return;
+    var BASE = 14, MAX = 20, KEY = "tylerTipJarAdded";
+    var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Same "random" layout every visit, so the jar never jitters between loads.
+    var seed = 7;
+    function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+    function slot(i) {
+      var row = Math.floor(i / 2), left = i % 2 === 0;
+      var x = 100 + (left ? -14 : 14) + (rnd() - 0.5) * 22;
+      var y = 222 - row * 12 - (rnd() * 3);
+      var rot = (rnd() - 0.5) * 34;
+      return { x: Math.max(70, Math.min(130, x)), y: Math.max(76, y), rot: rot };
+    }
+    var slots = [];
+    for (var i = 0; i < MAX + BASE + 8; i++) slots.push(slot(i));
+
+    function bill(i, animate) {
+      var s = slots[Math.min(i, slots.length - 1)];
+      var g = document.createElementNS(NS, "g");
+      g.setAttribute("transform", "translate(" + s.x + " " + s.y + ")");
+      var u = document.createElementNS(NS, "use");
+      u.setAttribute("href", "#tj-bill"); u.setAttributeNS(XL, "href", "#tj-bill");
+      u.setAttribute("width", "70"); u.setAttribute("height", "31.5");
+      u.setAttribute("x", "-35"); u.setAttribute("y", "-16");
+      var inner = document.createElementNS(NS, "g");
+      inner.setAttribute("transform", "rotate(" + s.rot.toFixed(1) + ")");
+      inner.appendChild(u); g.appendChild(inner);
+      if (animate && !reduce) {
+        inner.style.setProperty("--r0", (s.rot - 40) + "deg");
+        inner.style.setProperty("--r1", s.rot.toFixed(1) + "deg");
+        inner.style.transformBox = "fill-box"; inner.style.transformOrigin = "center";
+        inner.setAttribute("transform", "");
+        inner.classList.add("tj-drop");
+        inner.style.transform = "";
+      }
+      return g;
+    }
+    var count = 0;
+    function addBills(n, animate) {
+      n = Math.max(0, n | 0);
+      for (var k = 0; k < n; k++) {
+        (function (delay, idx) {
+          setTimeout(function () { pile.appendChild(bill(idx, animate)); }, animate && !reduce ? delay : 0);
+        })(k * 260, BASE + count);
+        count++;
+      }
+    }
+    for (var b = 0; b < BASE; b++) pile.appendChild(bill(b, false));
+
+    var stored = 0;
+    try { stored = Math.min(MAX, parseInt(localStorage.getItem(KEY) || "0", 10) || 0); } catch (e) {}
+    addBills(stored, false);
+
+    var params = new URLSearchParams(location.search);
+    var tipped = parseInt(params.get("tip") || "0", 10);
+    if (tipped >= 1 && tipped <= 3) {
+      addBills(tipped, true);
+      try { localStorage.setItem(KEY, String(Math.min(MAX, stored + tipped))); } catch (e) {}
+      statusEl.textContent = "Thank you! " + tipped + (tipped === 1 ? " dollar" : " dollars") + " in the jar.";
+      try { history.replaceState(null, "", location.pathname + "#tip-jar"); } catch (e) {}
+      var sec = document.getElementById("tip-jar");
+      if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: "center" });
+    }
+
+    var demo = params.get("jar") === "demo";
+    Array.prototype.forEach.call(document.querySelectorAll(".tip-btn"), function (a) {
+      var n = parseInt(a.getAttribute("data-tip"), 10), link = TIP_LINKS[n];
+      if (link) a.setAttribute("href", link);
+      a.addEventListener("click", function (e) {
+        if (link) return;                       // real link: Stripe takes over
+        e.preventDefault();
+        if (demo) { addBills(n, true); statusEl.textContent = "Preview only: no money moved."; }
+        else statusEl.textContent = "The tip jar isn't switched on yet. Check back soon.";
+      });
+    });
+  })();
+  </script>
+<script src="js/accessibility-widget.js" defer></script>
 <script src="js/session-info.js" defer></script>
 <script src="js/tyler-ai.js"></script>
 <script src="js/heatmap-disclaimer.js"></script>

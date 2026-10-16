@@ -1,3 +1,8 @@
+// api/tts.js — Tyler AI read-aloud, powered by ElevenLabs.
+// The ElevenLabs key lives only in Vercel env vars and never reaches the browser.
+// Env: ELEVENLABS_API_KEY (required), ELEVENLABS_VOICE_ID (required),
+//      ELEVENLABS_MODEL (optional, default eleven_flash_v2_5),
+//      TTS_DAILY_CHAR_BUDGET (optional, default 150000 — hard spending cap per UTC day).
 import { kv } from "@vercel/kv";
 import { Readable } from "node:stream";
 
@@ -75,15 +80,15 @@ export default async function handler(req, res) {
     try {
       const rl = `rl_tts_${ip}`;
       const n = await kv.incr(rl);
-      if (n === 1) await kv.expire(rl, 600);
-      if (n > 25) return res.status(429).json({ error: "Too many voice requests. Try again in a few minutes." });
+      if (n === 1 || (await kv.ttl(rl)) < 0) await kv.expire(rl, 600);
+      if (n > 40) return res.status(429).json({ error: "Too many voice requests. Try again in a few minutes." });
     } catch (e) { console.error("tts rate limit unavailable", e); }
 
     const budget = Number(process.env.TTS_DAILY_CHAR_BUDGET) || 150000;
     const day = new Date().toISOString().slice(0, 10);
     const bKey = `tts_chars_${day}`;
     const used = await kv.incrby(bKey, text.length);
-    if (used === text.length) await kv.expire(bKey, 172800);
+    if (used === text.length || (await kv.ttl(bKey)) < 0) await kv.expire(bKey, 172800);
     if (used > budget) return res.status(429).json({ error: "Voice is resting for today." });
 
     const upstream = await fetch(

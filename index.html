@@ -1038,7 +1038,7 @@
       stripe = window.Stripe(STRIPE_PK);
       elements = stripe.elements({ mode: "payment", amount: amount * 100, currency: "usd" });
       var ece = elements.create("expressCheckout", {
-        paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", amazonPay: "never", klarna: "never" },
+        paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", amazonPay: "auto", klarna: "never" },
         buttonHeight: 48
       });
       ece.mount("#tip-express");

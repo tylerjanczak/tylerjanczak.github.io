@@ -1,3 +1,6 @@
+// api/tip.js — creates a Stripe PaymentIntent for the tip jar ($1, $2 or $3).
+// Env: STRIPE_SECRET_KEY (required; sk_test_... while testing, sk_live_... when real).
+// The secret key lives only in Vercel; the page only ever holds the public (pk_) key.
 import { kv } from "@vercel/kv";
 
 const PUBLIC_ORIGINS = new Set([
@@ -41,7 +44,7 @@ export default async function handler(req, res) {
     body.set("amount", String(dollars * 100));
     body.set("currency", "usd");
     body.set("description", "Tip jar");
-    body.set("payment_method_types[]", "card"); // Apple Pay and Google Pay are card wallets
+    body.set("automatic_payment_methods[enabled]", "true"); // which methods appear is managed in the Stripe Dashboard
     body.set("metadata[source]", "tylerjanczak.com tip jar");
 
     const r = await fetch("https://api.stripe.com/v1/payment_intents", {

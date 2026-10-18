@@ -1036,7 +1036,7 @@
 
     try {
       stripe = window.Stripe(STRIPE_PK);
-      elements = stripe.elements({ mode: "payment", amount: amount * 100, currency: "usd", paymentMethodTypes: ["card"] });
+      elements = stripe.elements({ mode: "payment", amount: amount * 100, currency: "usd" });
       var ece = elements.create("expressCheckout", {
         paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", amazonPay: "never", klarna: "never" },
         buttonHeight: 48

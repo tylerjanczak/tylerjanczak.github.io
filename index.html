@@ -438,7 +438,9 @@
       background: transparent; border: 1px solid var(--ink); border-radius: 2px;
       text-decoration: none; cursor: pointer; transition: background .15s, color .15s;
     }
-    .tip-btn:hover, .tip-btn:focus-visible { background: var(--ink); color: var(--bg); }
+    .tip-btn { font-family: var(--display); }
+    .tip-btn:hover, .tip-btn:focus-visible, .tip-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+    .tip-express { margin-top: 16px; max-width: 320px; min-height: 0; }
     .tip-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
     .tip-jar-status { min-height: 1.4em; margin: 14px 0 0; font-size: 15px; color: var(--accent); }
     .tip-jar-fine { margin: 10px 0 0; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
@@ -810,12 +812,13 @@
         <div class="tip-jar-copy">
           <p class="large tip-jar-lead">If something here helped, you can drop a dollar or two in the jar. Completely optional, and appreciated.</p>
           <div class="tip-jar-buttons" role="group" aria-label="Choose a tip amount">
-            <a class="tip-btn" data-tip="1" href="#tip-jar" rel="noopener">$1</a>
-            <a class="tip-btn" data-tip="2" href="#tip-jar" rel="noopener">$2</a>
-            <a class="tip-btn" data-tip="3" href="#tip-jar" rel="noopener">$3</a>
+            <button type="button" class="tip-btn" data-tip="1" aria-pressed="true">$1</button>
+            <button type="button" class="tip-btn" data-tip="2" aria-pressed="false">$2</button>
+            <button type="button" class="tip-btn" data-tip="3" aria-pressed="false">$3</button>
           </div>
+          <div id="tip-express" class="tip-express" aria-label="Pay with Apple Pay or Google Pay"></div>
           <p class="tip-jar-status" id="tip-jar-status" role="status" aria-live="polite"></p>
-          <p class="tip-jar-fine">Payments are handled securely by Stripe, with Apple Pay, Google Pay or card where your device supports them. This is a personal tip jar, not a charitable donation, so tips aren't tax-deductible.</p>
+          <p class="tip-jar-fine">Tips are paid with Apple Pay or Google Pay and processed securely by Stripe, so your card details never touch this site. This is a personal tip jar, not a charitable donation, so tips aren't tax-deductible.</p>
         </div>
       </div>
     </section>
@@ -925,13 +928,15 @@
 })();
 </script>
 
+  <script src="https://js.stripe.com/v3/" async></script>
   <script>
   // Tip jar: the jar starts about half full; each real tip adds that many dollar bills.
-  // To switch tipping on: create three Payment Links in Stripe ($1, $2, $3), set each one's
-  // after-payment redirect to  https://tylerjanczak.com/?tip=1#tip-jar  (2 and 3 for the others),
-  // and paste the links below. Until then the buttons say tipping isn't live and add nothing.
+  // Payments use Stripe's Express Checkout (Apple Pay / Google Pay buttons only).
+  // To switch tipping on, paste your Stripe PUBLISHABLE key (pk_test_... or pk_live_...) below.
+  // It is meant to be public. Never put the secret (sk_) key in this file.
   (function () {
-    var TIP_LINKS = { 1: "", 2: "", 3: "" };
+    var STRIPE_PK = "pk_live_51UR7GM2MlVZoJjj4gY1bS9dcO6s2lvlNu331GDSn3x1S5YLlx9d95sR9QPgJ12y2xtPVYJm0YwoJpPzC6PlY0AAF00ohLt7qCJ";
+    var TIP_API = "https://tylerjanczak-github-io.vercel.app/api/tip";
 
     var NS = "http://www.w3.org/2000/svg", XL = "http://www.w3.org/1999/xlink";
     var pile = document.getElementById("tj-pile"), falling = document.getElementById("tj-falling");
@@ -1001,17 +1006,71 @@
       if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: "center" });
     }
 
+    var statusEl = document.getElementById("tip-jar-status");
+    var express = document.getElementById("tip-express");
+    var chips = Array.prototype.slice.call(document.querySelectorAll(".tip-btn"));
+    var amount = 1, elements = null, stripe = null, busy = false;
+
+    function setAmount(n) {
+      amount = n;
+      chips.forEach(function (c) { c.setAttribute("aria-pressed", String(parseInt(c.getAttribute("data-tip"), 10) === n)); });
+      if (elements) elements.update({ amount: n * 100 });
+    }
+    chips.forEach(function (c) { c.addEventListener("click", function () { setAmount(parseInt(c.getAttribute("data-tip"), 10)); }); });
+
+    function thanks(n) {
+      addBills(n, true);
+      try { var cur = Math.min(MAX, parseInt(localStorage.getItem(KEY) || "0", 10) || 0); localStorage.setItem(KEY, String(Math.min(MAX, cur + n))); } catch (e) {}
+      statusEl.textContent = "Thank you! " + n + (n === 1 ? " dollar" : " dollars") + " in the jar.";
+    }
+
     var demo = params.get("jar") === "demo";
-    Array.prototype.forEach.call(document.querySelectorAll(".tip-btn"), function (a) {
-      var n = parseInt(a.getAttribute("data-tip"), 10), link = TIP_LINKS[n];
-      if (link) a.setAttribute("href", link);
-      a.addEventListener("click", function (e) {
-        if (link) return;                       // real link: Stripe takes over
-        e.preventDefault();
-        if (demo) { addBills(n, true); statusEl.textContent = "Preview only: no money moved."; }
-        else statusEl.textContent = "The tip jar isn't switched on yet. Check back soon.";
+    if (demo) {
+      express.innerHTML = '<button type="button" class="tip-btn" id="tip-demo" style="width:100%">Preview: drop it in</button>';
+      document.getElementById("tip-demo").addEventListener("click", function () { addBills(amount, true); statusEl.textContent = "Preview only: no money moved."; });
+      return;
+    }
+    function initStripe() {
+    if (!STRIPE_PK) { statusEl.textContent = "The tip jar isn't switched on yet. Check back soon."; return; }
+    if (typeof window.Stripe !== "function") { statusEl.textContent = "The tip jar couldn't load. Please try again later."; return; }
+
+    try {
+      stripe = window.Stripe(STRIPE_PK);
+      elements = stripe.elements({ mode: "payment", amount: amount * 100, currency: "usd", paymentMethodTypes: ["card"] });
+      var ece = elements.create("expressCheckout", {
+        paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", amazonPay: "never", klarna: "never" },
+        buttonHeight: 48
       });
-    });
+      ece.mount("#tip-express");
+      ece.on("ready", function (e) {
+        var m = (e && e.availablePaymentMethods) || null;
+        if (!m || (!m.applePay && !m.googlePay)) {
+          statusEl.textContent = "Tipping works with Apple Pay or Google Pay. Open this page on a device or browser that has one set up.";
+        }
+      });
+      ece.on("confirm", function () {
+        if (busy) return;
+        busy = true; statusEl.textContent = "Processing...";
+        var n = amount;
+        elements.submit().then(function (r) {
+          if (r && r.error) throw new Error(r.error.message || "Payment could not start.");
+          return fetch(TIP_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: n }) });
+        }).then(function (res) {
+          return res.json().then(function (d) { if (!res.ok || !d.clientSecret) throw new Error(d.error || "Couldn't start the payment."); return d.clientSecret; });
+        }).then(function (clientSecret) {
+          return stripe.confirmPayment({ elements: elements, clientSecret: clientSecret, confirmParams: { return_url: location.origin + "/?tip=" + n + "#tip-jar" }, redirect: "if_required" });
+        }).then(function (r) {
+          if (r && r.error) throw new Error(r.error.message || "The payment didn't go through.");
+          thanks(n);
+        }).catch(function (err) {
+          statusEl.textContent = (err && err.message) || "The payment didn't go through. You weren't charged.";
+        }).then(function () { busy = false; });
+      });
+    } catch (e) {
+      statusEl.textContent = "The tip jar isn't available right now.";
+    }
+    }
+    if (document.readyState === "complete") initStripe(); else window.addEventListener("load", initStripe);
   })();
   </script>
 <script src="js/accessibility-widget.js" defer></script>

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<!--
+  © 2026 Tyler Janczak. All rights reserved.
+  tylerjanczak.com
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automated Identity Provisioning · Tyler Janczak</title>
+  <meta name="description" content="Case study: integrating 20 third-party applications with Active Directory using REST APIs and SSO to automate user onboarding and offboarding." />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23F7F4EE'/%3E%3Ctext x='50' y='68' font-family='Georgia, serif' font-size='52' font-weight='600' fill='%236B1F1F' text-anchor='middle'%3ETNJ%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F7F4EE; --bg-subtle: #EFEAE0; --ink: #1B1B1B; --ink-soft: #4A4A48;
+      --rule: #D9D2C4; --accent: #6B1F1F;
+      --display: "Fraunces", Georgia, serif;
+      --body: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 32px; }
+    .masthead { border-bottom: 1px solid var(--rule); padding: 22px 0; margin-bottom: 80px; }
+    .masthead-inner { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-soft); }
+    .masthead-mark { font-family: var(--display); font-weight: 600; color: var(--accent); letter-spacing: 0.1em; }
+    a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
+    a:hover { background: rgba(107,31,31,0.08); }
+    a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.22em; color: var(--ink-soft); margin-bottom: 24px; }
+    h1 { font-family: var(--display); font-weight: 400; font-size: clamp(36px, 6vw, 56px); line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 24px; }
+    .tagline { font-family: var(--display); font-size: clamp(20px, 3vw, 24px); font-weight: 300; font-style: italic; line-height: 1.45; color: var(--ink-soft); margin-bottom: 56px; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 28px 0; margin-bottom: 72px; }
+    .stat-num { font-family: var(--display); font-size: 40px; font-weight: 400; color: var(--accent); line-height: 1.1; }
+    .stat-label { font-size: 13px; color: var(--ink-soft); margin-top: 6px; line-height: 1.45; }
+    section { margin-bottom: 64px; }
+    .section-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.28em; color: var(--accent); margin-bottom: 24px; display: flex; align-items: center; gap: 16px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--rule); }
+    p { margin-bottom: 18px; }
+    .back { display: inline-block; margin-top: 8px; font-size: 14px; }
+    footer { border-top: 1px solid var(--rule); padding: 28px 0 56px; margin-top: 40px; font-size: 13px; color: var(--ink-soft); }
+
+    .panel { background: var(--bg-subtle); border: 1px solid var(--rule); padding: 18px 16px 8px; margin: 8px 0 18px; }
+    .panel-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.24em; color: var(--ink-soft); margin-bottom: 4px; }
+    .panel.after .panel-tag { color: var(--accent); }
+    .ring { width: 100%; height: auto; display: block; }
+    .cap { font-size: 14px; color: var(--ink-soft); margin: 4px 0 10px; }
+    .node.off { fill: #E4DED1; stroke: #B9B1A0; stroke-width: 1.2; stroke-dasharray: 3 3; }
+    .node.on { fill: #fff; stroke: var(--accent); stroke-width: 1.4; }
+    .x { stroke: #9a9182; stroke-width: 1.6; fill: none; stroke-linecap: round; }
+    .chk { stroke: var(--accent); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; transform: translate(0,0); }
+    .wire { stroke: var(--accent); stroke-width: 1; opacity: .35; stroke-dasharray: 4 5; animation: flow 2.4s linear infinite; }
+    @keyframes flow { to { stroke-dashoffset: -18; } }
+    .hub { fill: var(--accent); }
+    .hubt { fill: #fff; font-family: var(--display); font-size: 14px; }
+    .big { font-family: var(--display); font-size: 26px; fill: var(--ink); }
+    .sub { font-family: var(--body); font-size: 13px; fill: var(--ink-soft); }
+    .life { margin: 22px 0 6px; border: 1px solid var(--rule); }
+    .life-row { display: grid; grid-template-columns: 120px 1fr; }
+    .life-row + .life-row { border-top: 1px solid var(--rule); }
+    .life-lane { background: var(--bg-subtle); font-size: 11px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); padding: 18px 14px; display: flex; align-items: center; }
+    .life ol { list-style: none; counter-reset: s; display: grid; grid-template-columns: repeat(3,1fr); }
+    .life li { counter-increment: s; padding: 16px 14px 16px 38px; font-size: 14px; line-height: 1.45; color: var(--ink-soft); position: relative; border-left: 1px solid var(--rule); }
+    .life li::before { content: counter(s); position: absolute; left: 12px; top: 15px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 11px; display: grid; place-items: center; }
+    .life-row.off li::before { background: var(--ink); }
+    @media (max-width: 640px) {
+      .life-row { grid-template-columns: 1fr; }
+      .life ol { grid-template-columns: 1fr; }
+      .life li { border-left: 0; border-top: 1px solid var(--rule); }
+    }
+    @media (prefers-reduced-motion: reduce) { .wire { animation: none; } }
+
+    .pain { background: var(--bg-subtle); border: 1px solid var(--rule); padding: 18px 16px 20px; margin: 8px 0 22px; }
+    .pain-tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.24em; color: var(--ink-soft); margin-bottom: 14px; }
+    .pain ol { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; position: relative; }
+    .pain li { background: var(--bg); border: 1px solid var(--rule); padding: 12px 10px; font-size: 13px; line-height: 1.35; color: var(--ink-soft); display: flex; flex-direction: column; gap: 6px; position: relative; }
+    .pain li:not(:last-child)::after { content: "\2192"; position: absolute; right: -10px; top: 50%; transform: translate(50%,-50%); color: var(--accent); font-size: 14px; background: var(--bg-subtle); line-height: 1; z-index: 1; }
+    .pain b { font-family: var(--display); font-weight: 500; font-size: 14px; color: var(--ink); }
+    .pain .n { width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: #fff; font-size: 11px; display: grid; place-items: center; }
+    .pain .flag { font-size: 12px; font-weight: 500; color: var(--accent); }
+    .pain li.wait, .pain li.work, .pain li.risk { border-color: var(--accent); }
+    .pain li.wait { background: repeating-linear-gradient(135deg, var(--bg), var(--bg) 6px, #F1E7E2 6px, #F1E7E2 12px); }
+    .pain .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+    .pain .grid i { height: 8px; background: #E4DED1; border: 1px dashed #B9B1A0; border-radius: 2px; display: block; }
+    @media (max-width: 640px) {
+      .pain ol { grid-template-columns: 1fr; gap: 16px; }
+      .pain li:not(:last-child)::after { content: "\2193"; right: auto; left: 50%; top: auto; bottom: -16px; transform: translate(-50%,50%); }
+      .pain .grid { max-width: 160px; }
+    }
+
+    .phases { position: relative; padding-left: 0; }
+    .phases::before { content: ""; position: absolute; left: 17px; top: 0; bottom: 0; width: 1px; background: var(--rule); }
+    .ph { position: relative; border-bottom: 1px solid var(--rule); margin-left: 0; }
+    .ph:last-child { border-bottom: 0; }
+    .ph summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 36px 1fr 24px; gap: 18px; align-items: start; padding: 24px 0; }
+    .ph summary::-webkit-details-marker { display: none; }
+    .ph summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+    .ph-num { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--display); font-size: 14px; display: grid; place-items: center; position: relative; z-index: 1; }
+    .ph-label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--accent); margin-bottom: 4px; }
+    .ph-title { display: block; font-family: var(--display); font-weight: 600; font-size: 21px; line-height: 1.3; letter-spacing: -0.01em; }
+    .ph-tog::after { content: "+"; font-size: 24px; line-height: 1; color: var(--ink-soft); }
+    .ph[open] .ph-tog::after { content: "\00d7"; }
+    .ph-body { padding: 0 24px 28px 54px; color: var(--ink-soft); }
+    .ph-body strong { color: var(--ink); }
+    .ph-body p:last-child { margin-bottom: 0; }
+    @media (max-width: 640px) { .ph summary { gap: 14px; } .ph-body { padding: 0 8px 26px 50px; } .ph-title { font-size: 19px; } }
+    @media (max-width: 640px) {
+      .container { padding: 0 22px; }
+      .masthead { margin-bottom: 48px; }
+      .stats { grid-template-columns: 1fr; gap: 20px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="container masthead-inner">
+      <a class="masthead-mark" href="https://tylerjanczak.com" style="border:none">TNJ</a>
+      <span>Case Study</span>
+    </div>
+  </header>
+
+  <main class="container">
+    <p class="eyebrow">CORE Solutions · Identity &amp; Access</p>
+    <h1>Automated Identity Provisioning with Active Directory</h1>
+    <p class="tagline">Taking the manual work out of onboarding for the help desk, so new hires can sign in on day one.</p>
+
+    <div class="stats" role="list">
+      <div role="listitem"><div class="stat-num">20</div><div class="stat-label">third-party applications integrated with Active Directory</div></div>
+      <div role="listitem"><div class="stat-num">Hours</div><div class="stat-label">of help desk time saved per onboarding</div></div>
+      <div role="listitem"><div class="stat-num">Day 1</div><div class="stat-label">new hires sign in with only a password reset</div></div>
+    </div>
+
+    <section>
+      <h2 class="section-label">The challenge</h2>
+      <p>The hard part was making onboarding easier on the help desk. When someone was hired, their Active Directory account was created, and a form went to the hiring manager listing the access the new hire would need and for which applications. Depending on the manager's schedule, that form could sit for days.</p>
+            <div class="pain" aria-label="The old onboarding process">
+        <div class="pain-tag">The old onboarding process</div>
+        <ol>
+          <li><span class="n">1</span><b>New hire</b><span>Hire confirmed</span></li>
+          <li><span class="n">2</span><b>AD account created</b><span>Done quickly</span></li>
+          <li class="wait"><span class="n">3</span><b>Access form to manager</b><span class="flag">Waiting on manager's schedule: days</span></li>
+          <li class="work"><span class="n">4</span><b>IT visits every app</b><span class="grid"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="flag">Connect username to organization: hours</span></li>
+          <li class="risk"><span class="n">5</span><b>Day one</b><span class="flag">Login issues possible</span></li>
+        </ol>
+      </div>
+      <p>Even with the AD account ready, IT then had to go into each application by hand and connect the user's username to the organization. It took hours per hire, it landed on the help desk, and it left room for login problems on a new employee's first day. Offboarding had the same weakness: removing access depended on someone visiting every app.</p>
+    </section>
+
+    <section>
+      <h2 class="section-label">What I did</h2>
+      <p>I integrated 20 third-party applications with Active Directory so that the manual app-by-app setup happened automatically from the AD account. The work combined two approaches:</p>
+      <div class="panel">
+        <div class="panel-tag">Before</div>
+        <svg class="ring" viewBox="0 0 640 300" role="img" aria-label="Before: twenty applications, each managed manually">
+<rect class="node off" x="307.0" y="32.0" width="26" height="20" rx="4"/>
+<path class="x" d="M316.0 38.0 l8 8 M324.0 38.0 l-8 8"/>
+<rect class="node off" x="385.8" y="37.3" width="26" height="20" rx="4"/>
+<path class="x" d="M394.8 43.3 l8 8 M402.8 43.3 l-8 8"/>
+<rect class="node off" x="456.9" y="52.6" width="26" height="20" rx="4"/>
+<path class="x" d="M465.9 58.6 l8 8 M473.9 58.6 l-8 8"/>
+<rect class="node off" x="513.3" y="76.5" width="26" height="20" rx="4"/>
+<path class="x" d="M522.3 82.5 l8 8 M530.3 82.5 l-8 8"/>
+<rect class="node off" x="549.5" y="106.6" width="26" height="20" rx="4"/>
+<path class="x" d="M558.5 112.6 l8 8 M566.5 112.6 l-8 8"/>
+<rect class="node off" x="562.0" y="140.0" width="26" height="20" rx="4"/>
+<path class="x" d="M571.0 146.0 l8 8 M579.0 146.0 l-8 8"/>
+<rect class="node off" x="549.5" y="173.4" width="26" height="20" rx="4"/>
+<path class="x" d="M558.5 179.4 l8 8 M566.5 179.4 l-8 8"/>
+<rect class="node off" x="513.3" y="203.5" width="26" height="20" rx="4"/>
+<path class="x" d="M522.3 209.5 l8 8 M530.3 209.5 l-8 8"/>
+<rect class="node off" x="456.9" y="227.4" width="26" height="20" rx="4"/>
+<path class="x" d="M465.9 233.4 l8 8 M473.9 233.4 l-8 8"/>
+<rect class="node off" x="385.8" y="242.7" width="26" height="20" rx="4"/>
+<path class="x" d="M394.8 248.7 l8 8 M402.8 248.7 l-8 8"/>
+<rect class="node off" x="307.0" y="248.0" width="26" height="20" rx="4"/>
+<path class="x" d="M316.0 254.0 l8 8 M324.0 254.0 l-8 8"/>
+<rect class="node off" x="228.2" y="242.7" width="26" height="20" rx="4"/>
+<path class="x" d="M237.2 248.7 l8 8 M245.2 248.7 l-8 8"/>
+<rect class="node off" x="157.1" y="227.4" width="26" height="20" rx="4"/>
+<path class="x" d="M166.1 233.4 l8 8 M174.1 233.4 l-8 8"/>
+<rect class="node off" x="100.7" y="203.5" width="26" height="20" rx="4"/>
+<path class="x" d="M109.7 209.5 l8 8 M117.7 209.5 l-8 8"/>
+<rect class="node off" x="64.5" y="173.4" width="26" height="20" rx="4"/>
+<path class="x" d="M73.5 179.4 l8 8 M81.5 179.4 l-8 8"/>
+<rect class="node off" x="52.0" y="140.0" width="26" height="20" rx="4"/>
+<path class="x" d="M61.0 146.0 l8 8 M69.0 146.0 l-8 8"/>
+<rect class="node off" x="64.5" y="106.6" width="26" height="20" rx="4"/>
+<path class="x" d="M73.5 112.6 l8 8 M81.5 112.6 l-8 8"/>
+<rect class="node off" x="100.7" y="76.5" width="26" height="20" rx="4"/>
+<path class="x" d="M109.7 82.5 l8 8 M117.7 82.5 l-8 8"/>
+<rect class="node off" x="157.1" y="52.6" width="26" height="20" rx="4"/>
+<path class="x" d="M166.1 58.6 l8 8 M174.1 58.6 l-8 8"/>
+<rect class="node off" x="228.2" y="37.3" width="26" height="20" rx="4"/>
+<path class="x" d="M237.2 43.3 l8 8 M245.2 43.3 l-8 8"/>
+<text class="big" x="320" y="154" text-anchor="middle">20 apps</text><text class="sub" x="320" y="174" text-anchor="middle">20 separate logins</text><text class="sub" x="320" y="190" text-anchor="middle">20 manual steps</text>
+</svg>
+        <p class="cap">Every application was its own island. IT visited each one to connect a new hire's username to the organization.</p>
+      </div>
+      <div class="panel after">
+        <div class="panel-tag">After</div>
+        <svg class="ring" viewBox="0 0 640 300" role="img" aria-label="After: twenty applications connected to Active Directory">
+<line class="wire" style="animation-delay:0.00s" x1="320" y1="150" x2="320.0" y2="42.0"/>
+<line class="wire" style="animation-delay:0.07s" x1="320" y1="150" x2="398.8" y2="47.3"/>
+<line class="wire" style="animation-delay:0.14s" x1="320" y1="150" x2="469.9" y2="62.6"/>
+<line class="wire" style="animation-delay:0.21s" x1="320" y1="150" x2="526.3" y2="86.5"/>
+<line class="wire" style="animation-delay:0.28s" x1="320" y1="150" x2="562.5" y2="116.6"/>
+<line class="wire" style="animation-delay:0.35s" x1="320" y1="150" x2="575.0" y2="150.0"/>
+<line class="wire" style="animation-delay:0.42s" x1="320" y1="150" x2="562.5" y2="183.4"/>
+<line class="wire" style="animation-delay:0.49s" x1="320" y1="150" x2="526.3" y2="213.5"/>
+<line class="wire" style="animation-delay:0.56s" x1="320" y1="150" x2="469.9" y2="237.4"/>
+<line class="wire" style="animation-delay:0.63s" x1="320" y1="150" x2="398.8" y2="252.7"/>
+<line class="wire" style="animation-delay:0.70s" x1="320" y1="150" x2="320.0" y2="258.0"/>
+<line class="wire" style="animation-delay:0.77s" x1="320" y1="150" x2="241.2" y2="252.7"/>
+<line class="wire" style="animation-delay:0.84s" x1="320" y1="150" x2="170.1" y2="237.4"/>
+<line class="wire" style="animation-delay:0.91s" x1="320" y1="150" x2="113.7" y2="213.5"/>
+<line class="wire" style="animation-delay:0.98s" x1="320" y1="150" x2="77.5" y2="183.4"/>
+<line class="wire" style="animation-delay:1.05s" x1="320" y1="150" x2="65.0" y2="150.0"/>
+<line class="wire" style="animation-delay:1.12s" x1="320" y1="150" x2="77.5" y2="116.6"/>
+<line class="wire" style="animation-delay:1.19s" x1="320" y1="150" x2="113.7" y2="86.5"/>
+<line class="wire" style="animation-delay:1.26s" x1="320" y1="150" x2="170.1" y2="62.6"/>
+<line class="wire" style="animation-delay:1.33s" x1="320" y1="150" x2="241.2" y2="47.3"/>
+<rect class="node on" x="307.0" y="32.0" width="26" height="20" rx="4"/>
+<path class="chk" d="M315.0 42.0 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="385.8" y="37.3" width="26" height="20" rx="4"/>
+<path class="chk" d="M393.8 47.3 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="456.9" y="52.6" width="26" height="20" rx="4"/>
+<path class="chk" d="M464.9 62.6 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="513.3" y="76.5" width="26" height="20" rx="4"/>
+<path class="chk" d="M521.3 86.5 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="549.5" y="106.6" width="26" height="20" rx="4"/>
+<path class="chk" d="M557.5 116.6 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="562.0" y="140.0" width="26" height="20" rx="4"/>
+<path class="chk" d="M570.0 150.0 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="549.5" y="173.4" width="26" height="20" rx="4"/>
+<path class="chk" d="M557.5 183.4 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="513.3" y="203.5" width="26" height="20" rx="4"/>
+<path class="chk" d="M521.3 213.5 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="456.9" y="227.4" width="26" height="20" rx="4"/>
+<path class="chk" d="M464.9 237.4 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="385.8" y="242.7" width="26" height="20" rx="4"/>
+<path class="chk" d="M393.8 252.7 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="307.0" y="248.0" width="26" height="20" rx="4"/>
+<path class="chk" d="M315.0 258.0 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="228.2" y="242.7" width="26" height="20" rx="4"/>
+<path class="chk" d="M236.2 252.7 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="157.1" y="227.4" width="26" height="20" rx="4"/>
+<path class="chk" d="M165.1 237.4 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="100.7" y="203.5" width="26" height="20" rx="4"/>
+<path class="chk" d="M108.7 213.5 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="64.5" y="173.4" width="26" height="20" rx="4"/>
+<path class="chk" d="M72.5 183.4 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="52.0" y="140.0" width="26" height="20" rx="4"/>
+<path class="chk" d="M60.0 150.0 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="64.5" y="106.6" width="26" height="20" rx="4"/>
+<path class="chk" d="M72.5 116.6 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="100.7" y="76.5" width="26" height="20" rx="4"/>
+<path class="chk" d="M108.7 86.5 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="157.1" y="52.6" width="26" height="20" rx="4"/>
+<path class="chk" d="M165.1 62.6 l3.5 3.5 l7 -7"/>
+<rect class="node on" x="228.2" y="37.3" width="26" height="20" rx="4"/>
+<path class="chk" d="M236.2 47.3 l3.5 3.5 l7 -7"/>
+<circle class="hub" cx="320" cy="150" r="46"/><text class="hubt" x="320" y="147" text-anchor="middle">Active</text><text class="hubt" x="320" y="163" text-anchor="middle">Directory</text>
+</svg>
+        <p class="cap">Active Directory became the hub. REST APIs connect each user to the organization and SSO handles sign-in for all 20.</p>
+      </div>
+      <p><strong>REST APIs</strong> handled the account lifecycle, so connecting a user to the organization in each app no longer required IT to log in and do it by hand. <strong>Single sign-on</strong> meant users authenticated through Active Directory rather than holding separate credentials in every system.</p>
+      <div class="life" aria-label="Employee lifecycle">
+        <div class="life-row">
+          <div class="life-lane">Onboarding</div>
+          <ol>
+            <li>Account created in AD</li>
+            <li>REST APIs connect the user to each app</li>
+            <li>Day one: reset password and sign in</li>
+          </ol>
+        </div>
+        <div class="life-row off">
+          <div class="life-lane">Offboarding</div>
+          <ol>
+            <li>AD account disabled</li>
+            <li>REST APIs remove app accounts</li>
+            <li>Access ends across the integrated apps</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-label">How it came together</h2>
+      <div class="phases">
+        <details class="ph" name="phases" open>
+          <summary><span class="ph-num" aria-hidden="true">01</span><span class="ph-text"><span class="ph-label">Phase 01</span><span class="ph-title">Understanding where the time went.</span></span><span class="ph-tog" aria-hidden="true"></span></summary>
+          <div class="ph-body"><p>On paper, onboarding looked simple: create the user in Active Directory and they're set. In practice, the AD account was only the first step. A form went to the hiring manager listing the apps the new hire needed, and once it came back, IT had to log in to each application and connect the user's username to the organization.</p><p><strong>The process depended on a manager's calendar and on the help desk's time.</strong> Every hire cost IT hours, and a new employee's first day could start with login problems.</p></div>
+        </details>
+        <details class="ph" name="phases">
+          <summary><span class="ph-num" aria-hidden="true">02</span><span class="ph-text"><span class="ph-label">Phase 02</span><span class="ph-title">Taking stock of the applications.</span></span><span class="ph-tog" aria-hidden="true"></span></summary>
+          <div class="ph-body"><p>I worked through the third-party applications to see how each could be connected: which exposed a REST API for managing users, which supported SSO, and which needed both.</p><p>That review became the list of <strong>20 applications</strong> in scope and a single pattern to apply across them.</p></div>
+        </details>
+        <details class="ph" name="phases">
+          <summary><span class="ph-num" aria-hidden="true">03</span><span class="ph-text"><span class="ph-label">Phase 03</span><span class="ph-title">Connecting the apps to Active Directory.</span></span><span class="ph-tog" aria-hidden="true"></span></summary>
+          <div class="ph-body"><p>For each application, I used its REST API so a user created in Active Directory is linked to the organization automatically, and set up SSO so that sign-in runs through AD.</p><p>Repeating the same pattern across all 20 kept the build consistent, and it meant the help desk had one process to understand instead of twenty.</p></div>
+        </details>
+        <details class="ph" name="phases">
+          <summary><span class="ph-num" aria-hidden="true">04</span><span class="ph-text"><span class="ph-label">Phase 04</span><span class="ph-title">Making day one uneventful.</span></span><span class="ph-tog" aria-hidden="true"></span></summary>
+          <div class="ph-body"><p>The goal was simple: a new hire sits down on their first day, resets their password and signs in. I tested the flow end to end against the integrated applications and made sure the help desk knew what the new process covered.</p><p><strong>Offboarding followed the same path.</strong> Disabling the account in Active Directory became the way access ended.</p></div>
+        </details>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="section-label">The result</h2>
+      <p>Each onboarding saved the help desk multiple hours. Because the connection to every application was handled automatically from Active Directory, a new hire's first day no longer started with login troubleshooting. The only thing they needed to do was reset their password.</p>
+      <p>Offboarding benefited the same way: when someone left, access ended through Active Directory instead of depending on a manual visit to each application.</p>
+    </section>
+
+    <a class="back" href="https://tylerjanczak.com/#experience">← Back to experience</a>
+  </main>
+
+  <footer>
+    <div class="container">© 2026 Tyler Janczak</div>
+  </footer>
+</body>
+</html>

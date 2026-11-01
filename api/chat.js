@@ -326,96 +326,8 @@ const ACTION_LIMITS = {
   "validate-session": [60, 600]
 };
 
-export default async function handler(req, res) {
-  // Only this site's own pages may call the API from a browser.
-  const origin = req.headers.origin;
-  if (origin && PUBLIC_ORIGINS.has(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin");
-  }
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("X-Content-Type-Options", "nosniff");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  try {
-    const limitForAction = ACTION_LIMITS[req.body?.action];
-    if (limitForAction) {
-      const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
-      if (!(await underLimit(`chat_${req.body.action}`, ip, limitForAction[0], limitForAction[1]))) {
-        return res.status(429).json({ error: "Too many requests. Please try again later." });
-      }
-    }
-
-    // Calendar availability lookup — a separate flow from normal Q&A,
-    // triggered when a visitor wants to schedule a call. Pulls real open
-    // times from Calendly rather than answering from the knowledge base.
-    if (req.body.action === "get-availability") {
-      return handleAvailabilityRequest(req, res);
-    }
-
-    // Sends you an email notification the moment a visitor picks a
-    // specific time — no Calendly redirect, they just request that slot.
-    if (req.body.action === "request-booking") {
-      return handleBookingRequest(req, res);
-    }
-
-    // Logs a visitor's contact info the moment they start the scheduling
-    // flow, so it's visible on the dashboard even if they never finish
-    // the actual booking.
-    if (req.body.action === "log-call-request") {
-      return handleLogCallRequest(req, res);
-    }
-
-    // Logs the IP/fingerprint/recruiter-status captured on the
-    // getdetails.do intake gate, before the visitor ever reaches chat.
-    if (req.body.action === "log-intake") {
-      return handleLogIntake(req, res);
-    }
-
-    // Validates the single-use session token minted by getdetails.do —
-    // the only legitimate way into the full-screen chat.
-    if (req.body.action === "greet-session") {
-      return handleGreetSession(req, res);
-    }
-
-    if (req.body.action === "validate-session") {
-      return handleValidateSession(req, res);
-    }
-
-    const { question } = req.body;
-
-    if (!question) {
-      return res.status(400).json({ error: "No question provided." });
-    }
-
-    const clientIp =
-      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-      req.socket?.remoteAddress ||
-      "unknown";
-
-    const deviceFingerprint = req.body.fingerprint || null;
-
-    // Permanently banned IPs, subnets, or device fingerprints (confirmed
-    // automatically after strike 2, or manually from the dashboard) get an
-    // immediate, canned response — no OpenAI call, no further logging.
-    const isPermanentlyBanned = await isVisitorBlocked(clientIp, deviceFingerprint);
-    if (isPermanentlyBanned) {
-      return res.status(200).json({
-        success: true,
-        response: "This chat has been disabled.",
-        disabled: true
-      });
-    }
-
-    const DEFAULT_PORTFOLIO = `
+// Built-in default knowledge base. Exported so the dashboard can show and edit it.
+export const DEFAULT_PORTFOLIO = `
 TYLER JANCZAK — VERIFIED PROFESSIONAL PORTFOLIO KNOWLEDGE
 
 PURPOSE AND RESPONSE BOUNDARIES
@@ -919,6 +831,23 @@ Relevant experience includes:
 - Enterprise application consolidation
 - Multi-application technology environments
 
+AD CASE STUDY, FIRST WAVE OF 20 APPLICATIONS:
+Within that initiative, Tyler integrated 20 third-party applications with
+Active Directory using REST APIs and single sign-on (SSO). This was the first
+wave of a rollout intended to reach hundreds of applications.
+
+Before the integration, onboarding depended on a form sent to the hiring
+manager listing the access the new hire needed, which could be delayed by the
+manager's schedule. IT then had to log in to each application manually and
+connect the user's username to the organization.
+
+After the integration, that connection happened automatically from Active
+Directory. Each onboarding saved the help desk multiple hours, and on day one
+a new hire only needed to reset their password to sign in. Offboarding followed
+the same path through Active Directory.
+
+Do not say Tyler integrated hundreds of applications; he integrated 20.
+
 Do not state that Tyler independently owned the entire Azure implementation.
 His portfolio says that he contributed to the enterprise rollout.
 
@@ -1181,13 +1110,104 @@ SITE PAGES (link to these when relevant)
 - Skills: https://tylerjanczak.com/skills.html
 - Birchstreet case study: https://tylerjanczak.com/birchstreet-casestudy.html
 - CORE Intelligence case study: https://tylerjanczak.com/rss-index.html
-- Active Directory AD case study: https://tylerjanczak.com/redirect.html
+- Active Directory AD case study: https://tylerjanczak.com/ad-casestudy.html
 - WaveMark / project timeline case study: https://tylerjanczak.com/project-timeline.html
 - Contact: https://tylerjanczak.com/#contact
 
 
 When one of these pages is directly relevant to the visitor's question (they ask to see recommendations, skills, or a specific project/case study), respond with a short sentence and include a markdown link to it formatted exactly like this: [Link text](URL). Do not just summarize the page's content — include the link so the visitor gets taken there. Otherwise, do not include a link.
 `;
+
+export default async function handler(req, res) {
+  // Only this site's own pages may call the API from a browser.
+  const origin = req.headers.origin;
+  if (origin && PUBLIC_ORIGINS.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const limitForAction = ACTION_LIMITS[req.body?.action];
+    if (limitForAction) {
+      const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
+      if (!(await underLimit(`chat_${req.body.action}`, ip, limitForAction[0], limitForAction[1]))) {
+        return res.status(429).json({ error: "Too many requests. Please try again later." });
+      }
+    }
+
+    // Calendar availability lookup — a separate flow from normal Q&A,
+    // triggered when a visitor wants to schedule a call. Pulls real open
+    // times from Calendly rather than answering from the knowledge base.
+    if (req.body.action === "get-availability") {
+      return handleAvailabilityRequest(req, res);
+    }
+
+    // Sends you an email notification the moment a visitor picks a
+    // specific time — no Calendly redirect, they just request that slot.
+    if (req.body.action === "request-booking") {
+      return handleBookingRequest(req, res);
+    }
+
+    // Logs a visitor's contact info the moment they start the scheduling
+    // flow, so it's visible on the dashboard even if they never finish
+    // the actual booking.
+    if (req.body.action === "log-call-request") {
+      return handleLogCallRequest(req, res);
+    }
+
+    // Logs the IP/fingerprint/recruiter-status captured on the
+    // getdetails.do intake gate, before the visitor ever reaches chat.
+    if (req.body.action === "log-intake") {
+      return handleLogIntake(req, res);
+    }
+
+    // Validates the single-use session token minted by getdetails.do —
+    // the only legitimate way into the full-screen chat.
+    if (req.body.action === "greet-session") {
+      return handleGreetSession(req, res);
+    }
+
+    if (req.body.action === "validate-session") {
+      return handleValidateSession(req, res);
+    }
+
+    const { question } = req.body;
+
+    if (!question) {
+      return res.status(400).json({ error: "No question provided." });
+    }
+
+    const clientIp =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.socket?.remoteAddress ||
+      "unknown";
+
+    const deviceFingerprint = req.body.fingerprint || null;
+
+    // Permanently banned IPs, subnets, or device fingerprints (confirmed
+    // automatically after strike 2, or manually from the dashboard) get an
+    // immediate, canned response — no OpenAI call, no further logging.
+    const isPermanentlyBanned = await isVisitorBlocked(clientIp, deviceFingerprint);
+    if (isPermanentlyBanned) {
+      return res.status(200).json({
+        success: true,
+        response: "This chat has been disabled.",
+        disabled: true
+      });
+    }
+
+    // DEFAULT_PORTFOLIO now lives at the top of this file (exported for the dashboard).
 
     const storedPortfolio = await kv.get("tyler_ai_knowledge_base");
     const portfolio = storedPortfolio || DEFAULT_PORTFOLIO;

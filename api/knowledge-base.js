@@ -1,4 +1,5 @@
 import { kv } from "@vercel/kv";
+import { DEFAULT_PORTFOLIO } from "./chat.js";
 import { webcrypto, createHash } from "crypto";
 
 // ---- Device-bound session check (identical copy lives in webauthn.js,
@@ -151,7 +152,9 @@ async function handleGet(req, res) {
     return res.status(200).json({
       success: true,
       content: content || null,
-      usingDefault: !content
+      usingDefault: !content,
+      // The built-in text, so the dashboard editor can show it when no custom version is saved yet.
+      defaultContent: content ? null : DEFAULT_PORTFOLIO
     });
   } catch (err) {
     console.error(err);

@@ -77,11 +77,6 @@ async function verifyProofCore(req, token) {
   }
 }
 
-
-// ---- Roles --------------------------------------------------------------
-// Every sign-in carries the role of the passkey that was used (ADMIN,
-// RESTRICTED, READ_ONLY). The role is looked up again on every request, so
-// removing a user or changing their role takes effect immediately.
 const ROLE_RANK = { READ_ONLY: 1, RESTRICTED: 2, ADMIN: 3 };
 
 async function verifyProof(req, token) {

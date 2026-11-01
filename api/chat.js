@@ -17,7 +17,6 @@ function ipInCidr(ip, cidr) {
     return false;
   }
 }
-
 async function isVisitorBlocked(ip, fingerprint) {
   const [isDirectlyBanned, bannedRanges, isFingerprintBanned] = await Promise.all([
     kv.sismember("banned_ips", ip),

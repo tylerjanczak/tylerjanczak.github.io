@@ -1178,16 +1178,17 @@
   #pl-overlay.on { opacity: 1; }
   .pl-box { width: 176px; padding: 16px; background: var(--bg, #F7F4EE); border: 1px solid var(--rule, #D9D2C4); border-radius: 12px; box-shadow: 0 12px 36px rgba(27,27,27,.16); text-align: center; transform: translateY(6px) scale(.97); transition: transform .2s ease; }
   #pl-overlay.on .pl-box { transform: none; }
-  .pl-svg { width: 144px; height: 100px; display: block; margin: 0 auto; overflow: visible; }
-  .pl-edge { stroke: var(--ink-soft, #4A4A48); stroke-width: 1.1; stroke-linecap: round; opacity: 0; }
-  .pl-node { fill: var(--bg, #F7F4EE); stroke: var(--accent, #6B1F1F); stroke-width: 1.7; }
-  .pl-node.hub { fill: var(--accent, #6B1F1F); }
-  .pl-ping { fill: none; stroke: var(--accent, #6B1F1F); stroke-width: 1.2; opacity: 0; }
+  .pl-svg { width: 152px; height: 81px; display: block; margin: 0 auto; overflow: visible; }
+  .pl-rung { stroke: var(--ink-soft, #4A4A48); stroke-width: 1; stroke-linecap: round; }
+  .pl-sa { stroke: var(--accent, #6B1F1F); stroke-linecap: round; }
+  .pl-sb { stroke: #5f7f9e; stroke-linecap: round; }
+  .pl-da { fill: var(--accent, #6B1F1F); }
+  .pl-db { fill: #5f7f9e; }
   @media (prefers-reduced-motion: reduce) { #pl-overlay, .pl-box { transition: none; } }
 </style>
 <div id="pl-overlay" role="status" aria-live="polite" aria-label="Loading" hidden>
   <div class="pl-box">
-    <svg class="pl-svg" viewBox="0 0 120 84" aria-hidden="true"></svg>
+    <svg class="pl-svg" viewBox="0 0 120 64" aria-hidden="true"></svg>
   </div>
 </div>
 <script>
@@ -1200,81 +1201,45 @@
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   var NS = "http://www.w3.org/2000/svg";
 
-  // One hub plus six nodes, shown in three arrangements that morph into each other:
-  // loose and scattered -> hub and spoke -> tightly meshed. Edge strength morphs too.
-  var CX = 60, CY = 42;
-  function ring(rx, ry, jit) {
-    var out = [[CX, CY]];
-    for (var k = 0; k < 6; k++) {
-      var ang = (-90 + k * 60) * Math.PI / 180;
-      var j = jit ? jit[k] : [0, 0];
-      out.push([CX + rx * Math.cos(ang) + j[0], CY + ry * Math.sin(ang) + j[1]]);
-    }
-    return out;
-  }
-  var L = [
-    { pos: ring(40, 32, [[-6,8],[10,-4],[-8,-10],[12,6],[6,-8],[-10,4]]).map(function (p, i) { return i ? p : [CX - 8, CY + 6]; }), w: { spoke: 0,  nb: .85, chord: 0,  opp: 0 } },
-    { pos: ring(44, 33),                                                                                                    w: { spoke: 1,  nb: .3,  chord: 0,  opp: 0 } },
-    { pos: ring(21, 16),                                                                                                    w: { spoke: 1,  nb: 1,   chord: .7, opp: .45 } }
-  ];
-  var seq = [L[0], L[1], L[2], L[1]], HOLD = 420, MORPH = 1100;
-  var N = 7, pairs = [], edges = [], nodes = [], ping;
-  for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
-    var ln = document.createElementNS(NS, "line"); ln.setAttribute("class", "pl-edge"); svg.appendChild(ln);
-    edges.push(ln); pairs.push([i, j]);
-  }
-  ping = document.createElementNS(NS, "circle"); ping.setAttribute("class", "pl-ping"); svg.appendChild(ping);
-  for (i = 0; i < N; i++) {
-    var c = document.createElementNS(NS, "circle");
-    c.setAttribute("class", "pl-node" + (i === 0 ? " hub" : "")); c.setAttribute("r", i === 0 ? 6 : 4.4);
-    svg.appendChild(c); nodes.push(c);
-  }
-  function weight(w, i, j) {
-    if (i === 0) return w.spoke;
-    var d = Math.abs(i - j); d = Math.min(d, 6 - d);
-    return d === 1 ? w.nb : d === 2 ? w.chord : w.opp;
-  }
-  var pos = L[0].pos.map(function (p) { return p.slice(); });
-  var wts = pairs.map(function (pr) { return weight(L[0].w, pr[0], pr[1]); });
+  // A rotating DNA double helix drawn as two ribbons joined by base-pair rungs.
+  // Depth is faked by thickening and brightening whichever strand is "in front".
+  var X0 = 6, X1 = 114, CY = 32, AMP = 25, RUNGS = 16, SEG = 80, K = 1.7 * 2 * Math.PI;
+  var rungs = [], segA = [], segB = [], dotA = [], dotB = [], raf = null, t0 = 0, i;
+  function mk(tag, cls) { var e = document.createElementNS(NS, tag); e.setAttribute("class", cls); svg.appendChild(e); return e; }
+  for (i = 0; i < RUNGS; i++) rungs.push(mk("line", "pl-rung"));
+  for (i = 0; i < SEG; i++) { segB.push(mk("line", "pl-sb")); segA.push(mk("line", "pl-sa")); }
+  for (i = 0; i < RUNGS; i++) { dotB.push(mk("circle", "pl-db")); dotA.push(mk("circle", "pl-da")); }
 
-  function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
-  function draw() {
-    for (var k = 0; k < N; k++) { nodes[k].setAttribute("cx", pos[k][0].toFixed(1)); nodes[k].setAttribute("cy", pos[k][1].toFixed(1)); }
-    for (var e = 0; e < pairs.length; e++) {
-      var a = pos[pairs[e][0]], b = pos[pairs[e][1]];
-      edges[e].setAttribute("x1", a[0].toFixed(1)); edges[e].setAttribute("y1", a[1].toFixed(1));
-      edges[e].setAttribute("x2", b[0].toFixed(1)); edges[e].setAttribute("y2", b[1].toFixed(1));
-      edges[e].style.opacity = (wts[e] * .6).toFixed(2);
+  function fade(u) { return Math.min(1, .18 + 3.2 * Math.min(u, 1 - u)); }   // soften both ends
+  function draw(ph) {
+    var i, u, x, a, sn, cs, f, dz;
+    for (i = 0; i < RUNGS; i++) {
+      u = i / (RUNGS - 1); x = X0 + u * (X1 - X0); a = ph + u * K; sn = Math.sin(a); cs = Math.cos(a); f = fade(u);
+      var y1 = CY + AMP * sn, y2 = CY - AMP * sn;
+      rungs[i].setAttribute("x1", x.toFixed(1)); rungs[i].setAttribute("x2", x.toFixed(1));
+      rungs[i].setAttribute("y1", y1.toFixed(1)); rungs[i].setAttribute("y2", y2.toFixed(1));
+      rungs[i].style.opacity = ((.14 + .32 * Math.abs(sn)) * f).toFixed(2);
+      dz = (cs + 1) / 2;
+      dotA[i].setAttribute("cx", x.toFixed(1)); dotA[i].setAttribute("cy", y1.toFixed(1));
+      dotA[i].setAttribute("r", (1.8 + 1.7 * dz).toFixed(2)); dotA[i].style.opacity = ((.4 + .6 * dz) * f).toFixed(2);
+      dotB[i].setAttribute("cx", x.toFixed(1)); dotB[i].setAttribute("cy", y2.toFixed(1));
+      dotB[i].setAttribute("r", (1.8 + 1.7 * (1 - dz)).toFixed(2)); dotB[i].style.opacity = ((.4 + .6 * (1 - dz)) * f).toFixed(2);
+    }
+    for (i = 0; i < SEG; i++) {
+      var u0 = i / SEG, u1 = (i + 1) / SEG, a0 = ph + u0 * K, a1 = ph + u1 * K;
+      var xa = X0 + u0 * (X1 - X0), xb = X0 + u1 * (X1 - X0), zm = (Math.cos((a0 + a1) / 2) + 1) / 2;
+      f = fade((u0 + u1) / 2);
+      segA[i].setAttribute("x1", xa.toFixed(1)); segA[i].setAttribute("x2", xb.toFixed(1));
+      segA[i].setAttribute("y1", (CY + AMP * Math.sin(a0)).toFixed(1)); segA[i].setAttribute("y2", (CY + AMP * Math.sin(a1)).toFixed(1));
+      segA[i].style.strokeWidth = (1 + 1.5 * zm).toFixed(2); segA[i].style.opacity = ((.3 + .7 * zm) * f).toFixed(2);
+      segB[i].setAttribute("x1", xa.toFixed(1)); segB[i].setAttribute("x2", xb.toFixed(1));
+      segB[i].setAttribute("y1", (CY - AMP * Math.sin(a0)).toFixed(1)); segB[i].setAttribute("y2", (CY - AMP * Math.sin(a1)).toFixed(1));
+      segB[i].style.strokeWidth = (1 + 1.5 * (1 - zm)).toFixed(2); segB[i].style.opacity = ((.3 + .7 * (1 - zm)) * f).toFixed(2);
     }
   }
-
-  var raf = null, t0 = 0;
-  function frame(now) {
-    var cyc = HOLD + MORPH, t = now - t0, n = Math.floor(t / cyc), local = t - n * cyc;
-    var from = seq[n % seq.length], to = seq[(n + 1) % seq.length];
-    var base = local < HOLD ? 0 : (local - HOLD) / MORPH;
-    for (var k = 0; k < N; k++) {
-      var p = ease(Math.max(0, Math.min(1, (base - k * .03) / .82)));   // slight stagger so it ripples
-      pos[k][0] = from.pos[k][0] + (to.pos[k][0] - from.pos[k][0]) * p;
-      pos[k][1] = from.pos[k][1] + (to.pos[k][1] - from.pos[k][1]) * p;
-    }
-    var pe = ease(Math.min(1, base));
-    for (var e = 0; e < pairs.length; e++) {
-      var w0 = weight(from.w, pairs[e][0], pairs[e][1]), w1 = weight(to.w, pairs[e][0], pairs[e][1]);
-      wts[e] = w0 + (w1 - w0) * pe;
-    }
-    draw();
-    var pp = (t % 1100) / 1100;
-    ping.setAttribute("cx", pos[0][0]); ping.setAttribute("cy", pos[0][1]);
-    ping.setAttribute("r", (6 + pp * 16).toFixed(1)); ping.style.opacity = (.5 * (1 - pp)).toFixed(2);
-    raf = requestAnimationFrame(frame);
-  }
+  function frame(now) { draw((now - t0) * .0036); raf = requestAnimationFrame(frame); }
   function start() {
-    if (reduce) {
-      pos = L[1].pos.map(function (p) { return p.slice(); });
-      wts = pairs.map(function (pr) { return weight(L[1].w, pr[0], pr[1]); });
-      draw(); return;
-    }
+    if (reduce) { draw(.9); return; }
     if (raf) return;
     t0 = performance.now(); raf = requestAnimationFrame(frame);
   }

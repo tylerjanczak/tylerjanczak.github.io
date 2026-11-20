@@ -484,7 +484,6 @@
 .role-postscript a:hover {
   border-bottom-color: var(--accent);
 }
-#tip-jar { display: none !important; }
   </style>
   <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
@@ -687,6 +686,122 @@
               rapid-response events. ACLS, BLS, PALS, NRP certified. Employee of the Month (×7),
               Service Value Award (×11).
             </p>
+            <!-- CODE BLUE START -->
+            <style>
+              .cb { margin: 22px 0 6px; padding: 14px 16px 12px; border: 1px solid var(--rule); background: var(--bg-subtle); border-radius: 6px; }
+              .cb-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 11px; text-transform: uppercase; letter-spacing: .22em; color: var(--accent); margin-bottom: 10px; }
+              .cb-replay { font: inherit; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; background: none; border: 0; border-bottom: 1px solid var(--accent); color: var(--ink-soft); cursor: pointer; padding: 0 0 1px; white-space: nowrap; flex-shrink: 0; }
+              .cb-replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+              @media (max-width: 480px) { .cb-head { letter-spacing: .08em; font-size: 10px; } .cb-title { white-space: nowrap; } }
+              .cb-track { position: relative; height: 92px; }
+              .cb-rail { position: absolute; left: 0; right: 0; bottom: 2px; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+              .cb-fill { height: 100%; width: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); }
+              .cb-runner { position: absolute; left: 0; bottom: 2px; }
+              .cb-fig { width: 130px; height: 76px; display: block; overflow: visible; }
+              .cb-foot { margin-top: 10px; font-size: 12.5px; color: var(--ink-soft); }
+              .cb.done .cb-title::after { content: " \00b7  on scene"; color: var(--ink-soft); }
+              .cb-thigh, .cb-shin, .cb-body, .cb-arm { transform-box: view-box; }
+              .cb-thigh { transform-origin: 30.5px 43.5px; }
+              .cb-shin { transform-origin: 30.5px 56px; }
+              .cb-body { transform-origin: 30px 44px; }
+              .cb-wheel { transform-box: fill-box; transform-origin: center; }
+              .cb-streak { opacity: 0; }
+              .cb.run .cb-runner { animation: cbRun 3.6s cubic-bezier(.4,.05,.3,1) forwards; }
+              .cb.run .cb-fill { animation: cbFill 3.6s cubic-bezier(.4,.05,.3,1) forwards; }
+              .cb.run .cb-thigh { animation: cbThigh .72s linear infinite; }
+              .cb.run .cb-shin { animation: cbShin .72s linear infinite; }
+              .cb.run .cb-thigh.cb-b, .cb.run .cb-shin.cb-b { animation-delay: -.36s; }
+              .cb.run .cb-body { animation: cbBob .36s ease-in-out infinite alternate; }
+              .cb.run .cb-wheel { animation: cbSpin .5s linear infinite; }
+              .cb.run .cb-streak { animation: cbStreak .5s linear infinite; }
+              .cb.run .cb-streak:nth-of-type(2) { animation-delay: -.17s; }
+              .cb.run .cb-streak:nth-of-type(3) { animation-delay: -.33s; }
+              .cb.done .cb-thigh, .cb.done .cb-shin, .cb.done .cb-body, .cb.done .cb-wheel, .cb.done .cb-streak { animation: none; }
+              .cb.done .cb-thigh.cb-a { transform: rotate(-6deg); }
+              .cb.done .cb-thigh.cb-b { transform: rotate(6deg); }
+              @keyframes cbRun { to { left: calc(100% - 130px); } }
+              @keyframes cbFill { to { transform: scaleX(1); } }
+              @keyframes cbThigh { 0% { transform: rotate(-38deg); } 25% { transform: rotate(-4deg); } 50% { transform: rotate(32deg); } 75% { transform: rotate(8deg); } 100% { transform: rotate(-38deg); } }
+              @keyframes cbShin { 0% { transform: rotate(16deg); } 25% { transform: rotate(26deg); } 50% { transform: rotate(62deg); } 75% { transform: rotate(102deg); } 100% { transform: rotate(16deg); } }
+              @keyframes cbBob { from { transform: translateY(0); } to { transform: translateY(-1.8px); } }
+              @keyframes cbSpin { to { transform: rotate(360deg); } }
+              @keyframes cbStreak { 0% { opacity: 0; transform: translateX(6px); } 30% { opacity: .55; } 100% { opacity: 0; transform: translateX(-10px); } }
+              @media (prefers-reduced-motion: reduce) {
+                .cb .cb-runner { left: calc(100% - 130px); }
+                .cb .cb-fill { transform: scaleX(1); }
+                .cb .cb-title::after { content: " \00b7  on scene"; color: var(--ink-soft); }
+                .cb.run .cb-runner, .cb.run .cb-fill, .cb.run .cb-thigh, .cb.run .cb-shin, .cb.run .cb-body, .cb.run .cb-wheel, .cb.run .cb-streak { animation: none; }
+              }
+            </style>
+            <div class="cb" id="code-blue" role="group" aria-label="Animation: a hospital tech in blue scrubs running with a crash cart">
+              <div class="cb-head"><span class="cb-title">Code response</span><button type="button" class="cb-replay">Run again</button></div>
+              <div class="cb-track" aria-hidden="true">
+                <div class="cb-rail"><div class="cb-fill"></div></div>
+                <div class="cb-runner">
+                  <svg class="cb-fig" viewBox="0 0 130 76" xmlns="http://www.w3.org/2000/svg">
+                    <path class="cb-streak" d="M10 30h14" stroke="#8a8478" stroke-width="1.6" stroke-linecap="round"/>
+                    <path class="cb-streak" d="M4 42h16" stroke="#8a8478" stroke-width="1.6" stroke-linecap="round"/>
+                    <path class="cb-streak" d="M9 54h13" stroke="#8a8478" stroke-width="1.6" stroke-linecap="round"/>
+                    <g class="cb-thigh cb-b"><path d="M25 43.5h11l-1.2 13.5h-8.6z" fill="#3C6892"/>
+                        <g class="cb-shin cb-b"><path d="M26.2 55.5h8.6l-1.4 13h-6z" fill="#3C6892"/><path d="M25.3 67.6h9.8q3 0 4 3.4v1.2H25.3z" fill="#fff" stroke="#B5B5B5" stroke-width=".8" stroke-linejoin="round"/></g></g>
+                    <g class="cb-body">
+                      <path d="M36 28.5L61 37.5" stroke="#4A7AA6" stroke-width="5.6" stroke-linecap="round" fill="none"/>
+                      <g transform="rotate(14 30 44)">
+                        <rect x="23" y="24" width="14.5" height="22" rx="5" fill="#5E8FC0"/>
+                        <path d="M23.6 41h13.3l.5 5.4a2 2 0 0 1-2 2.2H25.2a2 2 0 0 1-2-2.2z" fill="#4B7AA8"/>
+                        <path d="M26.6 23.6l4.3 7 4.3-7z" fill="#C9915F"/>
+                        <rect x="27.2" y="17.5" width="7" height="6" rx="2.4" fill="#C9915F"/>
+                        <circle cx="31" cy="13.5" r="8.2" fill="#C9915F"/>
+                        <path d="M22.8 12.6c-1.6-7 3.2-11.7 9-11.7 6 0 9.4 3.8 9 9.7-1.4-3.4-4-5-7.6-5-3.5 0-7 .8-10.4 7z" fill="#1A1A1A"/>
+                        <path d="M22.9 12.8c-.2 3 .4 5 1.4 6.4l.8-3.4z" fill="#1A1A1A"/>
+                        <path d="M27.8 18.4c2.8 3.6 9 3.6 11.6-.8.2 4.8-3.2 8-6.6 7.8-3-.2-5-2.8-5-7z" fill="#2B2118"/>
+                        <ellipse cx="25.4" cy="14.6" rx="1.7" ry="2.3" fill="#B8814F"/>
+                        <circle cx="35.4" cy="12.8" r="1" fill="#1A1A1A"/>
+                        <path d="M33.6 10.4q2.2-1 4 0" stroke="#1A1A1A" stroke-width="1" stroke-linecap="round" fill="none"/>
+                        <path d="M35.2 17q1.5.9 3.2 0" stroke="#6E4527" stroke-width=".9" stroke-linecap="round" fill="none"/>
+                      </g>
+                      <path d="M37 30l12.5 5" stroke="#5E8FC0" stroke-width="6" stroke-linecap="round" fill="none"/>
+                      <path d="M48 34.5l14 3.6" stroke="#C9915F" stroke-width="4.4" stroke-linecap="round" fill="none"/>
+                      <circle cx="62.4" cy="38" r="2.7" fill="#C9915F"/>
+                    </g>
+                    <g class="cb-thigh cb-a"><path d="M25 43.5h11l-1.2 13.5h-8.6z" fill="#4B7AA8"/>
+                        <g class="cb-shin cb-a"><path d="M26.2 55.5h8.6l-1.4 13h-6z" fill="#4B7AA8"/><path d="M25.3 67.6h9.8q3 0 4 3.4v1.2H25.3z" fill="#fff" stroke="#B5B5B5" stroke-width=".8" stroke-linejoin="round"/></g></g>
+                    <path d="M64 29v23" stroke="#4A4A48" stroke-width="2.6" stroke-linecap="round"/>
+                    <path d="M61.4 29.5h5.4" stroke="#4A4A48" stroke-width="2.6" stroke-linecap="round"/>
+                    <rect x="67" y="33" width="58" height="27" rx="3" fill="#B3261E"/>
+                    <rect x="67" y="33" width="58" height="4" rx="2" fill="#D23A30"/>
+                    <rect x="71" y="39.5" width="50" height="6.5" rx="1.2" fill="#8C1D17"/>
+                    <rect x="71" y="48" width="50" height="6.5" rx="1.2" fill="#8C1D17"/>
+                    <rect x="94" y="41" width="4" height="2.6" rx=".8" fill="#E9C9C5"/><rect x="94" y="49.5" width="4" height="2.6" rx=".8" fill="#E9C9C5"/>
+                    <path d="M110 35.2v4.4M107.8 37.4h4.4" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle class="cb-wheel" cx="76" cy="66" r="5" fill="#1B1B1B"/><circle class="cb-wheel" cx="116" cy="66" r="5" fill="#1B1B1B"/>
+                    <circle cx="76" cy="66" r="1.6" fill="#8a8a8a"/><circle cx="116" cy="66" r="1.6" fill="#8a8a8a"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="cb-foot">Rapid response and code events at the bedside &middot; ACLS &middot; BLS &middot; PALS &middot; NRP</div>
+            </div>
+            <script>
+            (function () {
+              var box = document.getElementById("code-blue");
+              if (!box) return;
+              var runner = box.querySelector(".cb-runner");
+              function play() {
+                box.classList.remove("run", "done");
+                void box.offsetWidth;
+                box.classList.add("run");
+              }
+              runner.addEventListener("animationend", function (e) { if (e.animationName === "cbRun") box.classList.add("done"); });
+              box.querySelector(".cb-replay").addEventListener("click", play);
+              if ("IntersectionObserver" in window) {
+                var seen = false;
+                new IntersectionObserver(function (entries, obs) {
+                  entries.forEach(function (en) { if (en.isIntersecting && !seen) { seen = true; play(); obs.disconnect(); } });
+                }, { threshold: 0.6 }).observe(box);
+              } else { play(); }
+            })();
+            </script>
+            <!-- CODE BLUE END -->
             <div class="tl-links">
               <a href="recommendations.html#kathleen" class="case-study-link">Jump to recommendation <span class="arrow">→</span></a>
             </div>
@@ -720,7 +835,6 @@
   <span class="cert" tabindex="0" data-tooltip="Basic Life Support">BLS</span>
   <span class="cert" tabindex="0" data-tooltip="Advanced Cardiac Life Support">ACLS</span>
   <span class="cert" tabindex="0" data-tooltip="Pediatric Advanced Life Support">PALS</span>
-  <span class="cert" tabindex="0" data-tooltip="Project Management Professional">PMP</span>
   <span class="cert" tabindex="0" data-tooltip="Neonatal Resuscitation Program">NRP</span>
 </div>
 
@@ -831,7 +945,6 @@
       <span>© 2026 Tyler Janczak</span>
       <div class="footer-links" style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px;">
         <a href="privacy-policy.html" style="color: inherit; border-bottom: 1px solid var(--rule); text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Privacy Policy</a>
-        <button type="button" id="session-info-toggle" aria-expanded="false" aria-controls="session-info-wrap" data-no-translate style="background: none; border: 0; border-bottom: 1px solid var(--rule); padding: 0; margin: 0; cursor: pointer; font: inherit; color: inherit; text-transform: uppercase; letter-spacing: 0.18em; font-size: 12px;">Session Info</button>
       </div>
       <span class="secure-badge">
       <svg viewBox="0 0 14 16" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -841,27 +954,8 @@
       </svg>
       Secure Session
     </span>
-      <div id="session-info-wrap" hidden style="flex-basis: 100%; max-width: 620px;">
-        <div id="session-info-inline" data-no-translate></div>
-      </div>
     </div>
   </footer>
-  <script>
-    (function () {
-      var btn = document.getElementById('session-info-toggle');
-      var wrap = document.getElementById('session-info-wrap');
-      if (!btn || !wrap) return;
-      btn.addEventListener('click', function () {
-        var open = wrap.hasAttribute('hidden');
-        if (open) wrap.removeAttribute('hidden'); else wrap.setAttribute('hidden', '');
-        btn.setAttribute('aria-expanded', String(open));
-        if (open) {
-          if (window.TylerSessionInfo && window.TylerSessionInfo.refresh) window.TylerSessionInfo.refresh();
-          wrap.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
-        }
-      });
-    })();
-  </script>
 <!-- Personal greeting: ?c=<code> in the URL shows a welcome line above the
      hero eyebrow. The name is looked up server-side (api/greet); nothing
      personal is in the URL. -->
@@ -936,7 +1030,7 @@
   // To switch tipping on, paste your Stripe PUBLISHABLE key (pk_test_... or pk_live_...) below.
   // It is meant to be public. Never put the secret (sk_) key in this file.
   (function () {
-    var STRIPE_PK = "pk_live_51UR7GM2MlVZoJjj4gY1bS9dcO6s2lvlNu331GDSn3x1S5YLlx9d95sR9QPgJ12y2xtPVYJm0YwoJpPzC6PlY0AAF00ohLt7qCJ";
+    var STRIPE_PK = "";
     var TIP_API = "https://tylerjanczak-github-io.vercel.app/api/tip";
 
     var NS = "http://www.w3.org/2000/svg", XL = "http://www.w3.org/1999/xlink";
@@ -1039,7 +1133,7 @@
       stripe = window.Stripe(STRIPE_PK);
       elements = stripe.elements({ mode: "payment", amount: amount * 100, currency: "usd" });
       var ece = elements.create("expressCheckout", {
-        paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", amazonPay: "auto", klarna: "never" },
+        paymentMethods: { applePay: "auto", googlePay: "auto", link: "never", paypal: "never", amazonPay: "never", klarna: "never" },
         buttonHeight: 48
       });
       ece.mount("#tip-express");
@@ -1075,9 +1169,143 @@
   })();
   </script>
 <script src="js/accessibility-widget.js" defer></script>
-<script src="js/session-info.js" defer></script>
 <script src="js/tyler-ai.js"></script>
 <script src="js/heatmap-disclaimer.js"></script>
+<!-- PAGE LOADER START -->
+<style>
+  #pl-overlay { position: fixed; inset: 0; z-index: 2147483000; display: grid; place-items: center; background: rgba(247,244,238,.62); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); opacity: 0; transition: opacity .18s ease; }
+  #pl-overlay[hidden] { display: none; }
+  #pl-overlay.on { opacity: 1; }
+  .pl-box { width: 176px; padding: 16px; background: var(--bg, #F7F4EE); border: 1px solid var(--rule, #D9D2C4); border-radius: 12px; box-shadow: 0 12px 36px rgba(27,27,27,.16); text-align: center; transform: translateY(6px) scale(.97); transition: transform .2s ease; }
+  #pl-overlay.on .pl-box { transform: none; }
+  .pl-svg { width: 144px; height: 100px; display: block; margin: 0 auto; overflow: visible; }
+  .pl-edge { stroke: var(--ink-soft, #4A4A48); stroke-width: 1.1; stroke-linecap: round; opacity: 0; }
+  .pl-node { fill: var(--bg, #F7F4EE); stroke: var(--accent, #6B1F1F); stroke-width: 1.7; }
+  .pl-node.hub { fill: var(--accent, #6B1F1F); }
+  .pl-ping { fill: none; stroke: var(--accent, #6B1F1F); stroke-width: 1.2; opacity: 0; }
+  @media (prefers-reduced-motion: reduce) { #pl-overlay, .pl-box { transition: none; } }
+</style>
+<div id="pl-overlay" role="status" aria-live="polite" aria-label="Loading" hidden>
+  <div class="pl-box">
+    <svg class="pl-svg" viewBox="0 0 120 84" aria-hidden="true"></svg>
+  </div>
+</div>
+<script>
+(function () {
+  if (window.__pageLoader) return;
+  window.__pageLoader = true;
+  var overlay = document.getElementById("pl-overlay");
+  if (!overlay) return;
+  var svg = overlay.querySelector(".pl-svg");
+  var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var NS = "http://www.w3.org/2000/svg";
+
+  // One hub plus six nodes, shown in three arrangements that morph into each other:
+  // loose and scattered -> hub and spoke -> tightly meshed. Edge strength morphs too.
+  var CX = 60, CY = 42;
+  function ring(rx, ry, jit) {
+    var out = [[CX, CY]];
+    for (var k = 0; k < 6; k++) {
+      var ang = (-90 + k * 60) * Math.PI / 180;
+      var j = jit ? jit[k] : [0, 0];
+      out.push([CX + rx * Math.cos(ang) + j[0], CY + ry * Math.sin(ang) + j[1]]);
+    }
+    return out;
+  }
+  var L = [
+    { pos: ring(40, 32, [[-6,8],[10,-4],[-8,-10],[12,6],[6,-8],[-10,4]]).map(function (p, i) { return i ? p : [CX - 8, CY + 6]; }), w: { spoke: 0,  nb: .85, chord: 0,  opp: 0 } },
+    { pos: ring(44, 33),                                                                                                    w: { spoke: 1,  nb: .3,  chord: 0,  opp: 0 } },
+    { pos: ring(21, 16),                                                                                                    w: { spoke: 1,  nb: 1,   chord: .7, opp: .45 } }
+  ];
+  var seq = [L[0], L[1], L[2], L[1]], HOLD = 420, MORPH = 1100;
+  var N = 7, pairs = [], edges = [], nodes = [], ping;
+  for (var i = 0; i < N; i++) for (var j = i + 1; j < N; j++) {
+    var ln = document.createElementNS(NS, "line"); ln.setAttribute("class", "pl-edge"); svg.appendChild(ln);
+    edges.push(ln); pairs.push([i, j]);
+  }
+  ping = document.createElementNS(NS, "circle"); ping.setAttribute("class", "pl-ping"); svg.appendChild(ping);
+  for (i = 0; i < N; i++) {
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("class", "pl-node" + (i === 0 ? " hub" : "")); c.setAttribute("r", i === 0 ? 6 : 4.4);
+    svg.appendChild(c); nodes.push(c);
+  }
+  function weight(w, i, j) {
+    if (i === 0) return w.spoke;
+    var d = Math.abs(i - j); d = Math.min(d, 6 - d);
+    return d === 1 ? w.nb : d === 2 ? w.chord : w.opp;
+  }
+  var pos = L[0].pos.map(function (p) { return p.slice(); });
+  var wts = pairs.map(function (pr) { return weight(L[0].w, pr[0], pr[1]); });
+
+  function ease(t) { return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function draw() {
+    for (var k = 0; k < N; k++) { nodes[k].setAttribute("cx", pos[k][0].toFixed(1)); nodes[k].setAttribute("cy", pos[k][1].toFixed(1)); }
+    for (var e = 0; e < pairs.length; e++) {
+      var a = pos[pairs[e][0]], b = pos[pairs[e][1]];
+      edges[e].setAttribute("x1", a[0].toFixed(1)); edges[e].setAttribute("y1", a[1].toFixed(1));
+      edges[e].setAttribute("x2", b[0].toFixed(1)); edges[e].setAttribute("y2", b[1].toFixed(1));
+      edges[e].style.opacity = (wts[e] * .6).toFixed(2);
+    }
+  }
+
+  var raf = null, t0 = 0;
+  function frame(now) {
+    var cyc = HOLD + MORPH, t = now - t0, n = Math.floor(t / cyc), local = t - n * cyc;
+    var from = seq[n % seq.length], to = seq[(n + 1) % seq.length];
+    var base = local < HOLD ? 0 : (local - HOLD) / MORPH;
+    for (var k = 0; k < N; k++) {
+      var p = ease(Math.max(0, Math.min(1, (base - k * .03) / .82)));   // slight stagger so it ripples
+      pos[k][0] = from.pos[k][0] + (to.pos[k][0] - from.pos[k][0]) * p;
+      pos[k][1] = from.pos[k][1] + (to.pos[k][1] - from.pos[k][1]) * p;
+    }
+    var pe = ease(Math.min(1, base));
+    for (var e = 0; e < pairs.length; e++) {
+      var w0 = weight(from.w, pairs[e][0], pairs[e][1]), w1 = weight(to.w, pairs[e][0], pairs[e][1]);
+      wts[e] = w0 + (w1 - w0) * pe;
+    }
+    draw();
+    var pp = (t % 1100) / 1100;
+    ping.setAttribute("cx", pos[0][0]); ping.setAttribute("cy", pos[0][1]);
+    ping.setAttribute("r", (6 + pp * 16).toFixed(1)); ping.style.opacity = (.5 * (1 - pp)).toFixed(2);
+    raf = requestAnimationFrame(frame);
+  }
+  function start() {
+    if (reduce) {
+      pos = L[1].pos.map(function (p) { return p.slice(); });
+      wts = pairs.map(function (pr) { return weight(L[1].w, pr[0], pr[1]); });
+      draw(); return;
+    }
+    if (raf) return;
+    t0 = performance.now(); raf = requestAnimationFrame(frame);
+  }
+  function stop() { if (raf) cancelAnimationFrame(raf); raf = null; }
+
+  var showT = null, failT = null;
+  function show() {
+    overlay.hidden = false; start();
+    requestAnimationFrame(function () { overlay.classList.add("on"); });
+    clearTimeout(failT); failT = setTimeout(hide, 10000); // never leave the page covered
+  }
+  function hide() {
+    clearTimeout(showT); clearTimeout(failT);
+    overlay.classList.remove("on"); stop();
+    setTimeout(function () { if (!overlay.classList.contains("on")) overlay.hidden = true; }, 200);
+  }
+  window.addEventListener("pageshow", hide);      // back button / cached page
+
+  document.addEventListener("click", function (ev) {
+    if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+    var a = ev.target.closest && ev.target.closest("a[href]");
+    if (!a || (a.target && a.target !== "_self") || a.hasAttribute("download")) return;
+    var u; try { u = new URL(a.href, location.href); } catch (e) { return; }
+    if (u.origin !== location.origin || !/^https?:$/.test(u.protocol)) return;
+    if (u.pathname === location.pathname && u.search === location.search) return; // same-page jump
+    clearTimeout(showT);
+    showT = setTimeout(show, 120); // skip the flash on instant loads
+  }, true);
+})();
+</script>
+<!-- PAGE LOADER END -->
 </body>
 
    <template id="ecg-template">

@@ -1280,14 +1280,15 @@
   }
   function stop() { if (raf) cancelAnimationFrame(raf); raf = null; }
 
-  var showT = null, failT = null;
+  var MIN_SHOW_MS = 1500;   // how long the loader plays before the next page is requested
+  var showT = null, failT = null, navigating = false;
   function show() {
     overlay.hidden = false; start();
     requestAnimationFrame(function () { overlay.classList.add("on"); });
     clearTimeout(failT); failT = setTimeout(hide, 10000); // never leave the page covered
   }
   function hide() {
-    clearTimeout(showT); clearTimeout(failT);
+    clearTimeout(showT); clearTimeout(failT); navigating = false;
     overlay.classList.remove("on"); stop();
     setTimeout(function () { if (!overlay.classList.contains("on")) overlay.hidden = true; }, 200);
   }
@@ -1300,8 +1301,13 @@
     var u; try { u = new URL(a.href, location.href); } catch (e) { return; }
     if (u.origin !== location.origin || !/^https?:$/.test(u.protocol)) return;
     if (u.pathname === location.pathname && u.search === location.search) return; // same-page jump
-    clearTimeout(showT);
-    showT = setTimeout(show, 120); // skip the flash on instant loads
+    // Fast loads would never show the loader, so hold the navigation briefly while it plays.
+    ev.preventDefault();
+    if (navigating) return;
+    navigating = true;
+    show();
+    var go = u.href;
+    setTimeout(function () { location.href = go; }, reduce ? 500 : MIN_SHOW_MS); // skip the flash on instant loads
   }, true);
 })();
 </script>
